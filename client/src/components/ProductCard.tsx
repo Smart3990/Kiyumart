@@ -72,7 +72,7 @@ export default function ProductCard({
         />
         {discount > 0 && (
           <Badge 
-            className="absolute top-2 left-2 bg-destructive text-destructive-foreground"
+            className="absolute top-2 left-2 bg-destructive text-destructive-foreground z-10 font-semibold text-xs px-2 py-1 shadow-md"
             data-testid={`badge-discount-${id}`}
           >
             -{discount}%
