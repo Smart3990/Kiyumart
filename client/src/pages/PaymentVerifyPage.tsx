@@ -65,12 +65,27 @@ export default function PaymentVerifyPage() {
   useEffect(() => {
     if (verification) {
       if (verification.verified && verification.orderId) {
-        navigate(`/payment/success?orderId=${verification.orderId}`);
-      } else if (!verification.verified) {
-        navigate(`/payment/failure?reason=${encodeURIComponent(verification.message || "Payment failed")}`);
+        const timer = setTimeout(() => {
+          navigate(`/payment/success?orderId=${verification.orderId}`);
+        }, 500);
+        return () => clearTimeout(timer);
+      } else {
+        const timer = setTimeout(() => {
+          navigate(`/payment/failure?reason=${encodeURIComponent(verification.message || "Payment failed")}`);
+        }, 500);
+        return () => clearTimeout(timer);
       }
     }
   }, [verification, navigate]);
+
+  useEffect(() => {
+    if (error) {
+      const timer = setTimeout(() => {
+        navigate(`/payment/failure?reason=${encodeURIComponent((error as Error).message || "Verification failed")}`);
+      }, 500);
+      return () => clearTimeout(timer);
+    }
+  }, [error, navigate]);
 
   if (authLoading || isLoading || !reference) {
     return (
@@ -88,111 +103,16 @@ export default function PaymentVerifyPage() {
     );
   }
 
-  if (error) {
-    return (
-      <div className="min-h-screen bg-background flex items-center justify-center p-4">
-        <Card className="max-w-md w-full">
-          <CardHeader>
-            <div className="flex items-center gap-2 text-destructive">
-              <AlertCircle className="h-6 w-6" />
-              <CardTitle>Verification Error</CardTitle>
-            </div>
-            <CardDescription>
-              {(error as Error).message || "Failed to verify payment"}
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-3">
-            <p className="text-sm text-muted-foreground">
-              If you were charged, please contact support with reference: <strong>{reference}</strong>
-            </p>
-            <Button onClick={() => navigate("/")} className="w-full" data-testid="button-home">
-              Return to Home
-            </Button>
-          </CardContent>
-        </Card>
-      </div>
-    );
-  }
-
-  if (verification?.verified) {
-    return (
-      <div className="min-h-screen bg-background flex items-center justify-center p-4">
-        <Card className="max-w-md w-full">
-          <CardHeader>
-            <div className="flex items-center gap-2 text-green-600">
-              <CheckCircle2 className="h-6 w-6" />
-              <CardTitle>Payment Successful!</CardTitle>
-            </div>
-            <CardDescription>Your payment has been confirmed</CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            {verification.transaction && (
-              <div className="bg-muted p-4 rounded-lg space-y-2 text-sm">
-                <div className="flex justify-between">
-                  <span className="text-muted-foreground">Transaction ID</span>
-                  <span className="font-mono text-xs" data-testid="text-transaction-id">
-                    {verification.transaction.id}
-                  </span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-muted-foreground">Amount</span>
-                  <span className="font-medium" data-testid="text-transaction-amount">
-                    GHS {parseFloat(verification.transaction.amount).toFixed(2)}
-                  </span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-muted-foreground">Status</span>
-                  <span className="font-medium text-green-600" data-testid="text-transaction-status">
-                    {verification.transaction.status}
-                  </span>
-                </div>
-              </div>
-            )}
-
-            <div className="space-y-3">
-              <Button 
-                onClick={() => navigate("/track")} 
-                className="w-full" 
-                size="lg"
-                data-testid="button-track-order"
-              >
-                Track Your Order
-              </Button>
-              <Button 
-                onClick={() => navigate("/")} 
-                variant="outline" 
-                className="w-full"
-                data-testid="button-continue-shopping"
-              >
-                Continue Shopping
-              </Button>
-            </div>
-          </CardContent>
-        </Card>
-      </div>
-    );
-  }
-
   return (
-    <div className="min-h-screen bg-background flex items-center justify-center p-4">
+    <div className="min-h-screen bg-background flex items-center justify-center">
       <Card className="max-w-md w-full">
         <CardHeader>
-          <div className="flex items-center gap-2 text-destructive">
-            <XCircle className="h-6 w-6" />
-            <CardTitle>Payment Failed</CardTitle>
-          </div>
-          <CardDescription>
-            {verification?.message || "Your payment could not be completed"}
-          </CardDescription>
+          <CardTitle className="flex items-center gap-2">
+            <Loader2 className="h-5 w-5 animate-spin" />
+            Verifying Payment
+          </CardTitle>
+          <CardDescription>Please wait while we confirm your payment...</CardDescription>
         </CardHeader>
-        <CardContent className="space-y-3">
-          <p className="text-sm text-muted-foreground">
-            Reference: <strong>{reference}</strong>
-          </p>
-          <Button onClick={() => navigate("/")} className="w-full" data-testid="button-try-again">
-            Return to Home
-          </Button>
-        </CardContent>
       </Card>
     </div>
   );

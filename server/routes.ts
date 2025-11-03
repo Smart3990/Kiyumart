@@ -861,9 +861,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Check if transaction already exists (idempotency)
       const existingTransaction = await storage.getTransactionByReference(req.params.reference);
       if (existingTransaction) {
+        const order = await storage.getOrder(existingTransaction.orderId);
         return res.json({ 
           transaction: existingTransaction, 
           verified: existingTransaction.status === "completed",
+          orderId: existingTransaction.orderId,
           message: "Transaction already processed"
         });
       }
