@@ -10,6 +10,26 @@ Preferred communication style: Simple, everyday language.
 
 ## Recent Changes (November 2025)
 
+### Custom Logo Implementation (Nov 3, 2025)
+- Integrated custom KiyuMart logo with separate assets for light and dark modes
+- Light mode: Dark teal logo (logoLight.png) displayed on white/light backgrounds
+- Dark mode: Light teal logo (logoDark.png) displayed on dark backgrounds  
+- Automatic theme-aware switching using CSS classes
+- Logo positioned in header with proper navigation and accessibility
+
+### Database Product Updates (Nov 3, 2025)
+- Populated cost_price field for all products to enable strikethrough pricing display
+- Updated product names to Islamic fashion items (Elegant Black Abaya, Navy Blue Embroidered Modest Dress, etc.)
+- All products categorized under "abayas" category
+- Cost prices set 25-33% higher than selling prices to show realistic discounts
+
+### Category Page Implementation (Nov 3, 2025)
+- Created dynamic CategoryPage component with filtering by category ID
+- Route: `/category/:id` for abayas, hijabs, and evening wear categories
+- Displays category title, description, and filtered product grid
+- Empty state messaging when no products exist in a category
+- Seamless integration with existing ProductCard component showing cost price strikethrough
+
 ### Islamic Women's Fashion Update
 - Updated all product and category images to feature Islamic women's modest fashion
 - Products now exclusively showcase elegant abayas, hijabs, and modest dresses
@@ -26,6 +46,7 @@ Preferred communication style: Simple, everyday language.
 ### New Pages
 - **Notifications Page** (`/notifications`): View order updates, delivery status, promotions, and system notifications with read/unread status
 - **Profile Page** (`/profile`): User account management with tabs for personal information, order history, and settings
+- **Category Pages** (`/category/:id`): Dynamic product browsing by category with filtering and empty states
 
 ## System Architecture
 
