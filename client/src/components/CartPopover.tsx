@@ -7,6 +7,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { queryClient, apiRequest } from "@/lib/queryClient";
 import { useLocation } from "wouter";
+import { useLanguage } from "@/contexts/LanguageContext";
 
 interface CartItem {
   id: string;
@@ -19,6 +20,7 @@ interface CartItem {
 
 export default function CartPopover() {
   const [, navigate] = useLocation();
+  const { currencySymbol } = useLanguage();
 
   const { data: cart = [], isLoading } = useQuery<CartItem[]>({
     queryKey: ["/api/cart"],
@@ -116,7 +118,7 @@ export default function CartPopover() {
                           {item.productName}
                         </h4>
                         <p className="text-sm font-semibold text-primary mt-1" data-testid={`text-price-${item.id}`}>
-                          GHS {parseFloat(item.price).toFixed(2)}
+                          {currencySymbol} {parseFloat(item.price).toFixed(2)}
                         </p>
                         <div className="flex items-center gap-2 mt-2">
                           <Button
@@ -176,7 +178,7 @@ export default function CartPopover() {
               <div className="flex items-center justify-between">
                 <span className="font-semibold">Total:</span>
                 <span className="text-lg font-bold text-primary" data-testid="text-cart-total">
-                  GHS {totalAmount.toFixed(2)}
+                  {currencySymbol} {totalAmount.toFixed(2)}
                 </span>
               </div>
               <div className="grid grid-cols-2 gap-2">

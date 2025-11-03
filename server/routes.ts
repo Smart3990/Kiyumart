@@ -126,6 +126,60 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // ============ Profile Routes ============
+  app.get("/api/profile", requireAuth, async (req: AuthRequest, res) => {
+    try {
+      const user = await storage.getUser(req.user!.id);
+      if (!user) {
+        return res.status(404).json({ error: "User not found" });
+      }
+
+      const { password, ...profile } = user;
+      res.json(profile);
+    } catch (error: any) {
+      res.status(400).json({ error: error.message });
+    }
+  });
+
+  app.patch("/api/profile", requireAuth, async (req: AuthRequest, res) => {
+    try {
+      const { password, role, isApproved, ...updateData } = req.body;
+      
+      const updatedUser = await storage.updateUser(req.user!.id, updateData);
+      if (!updatedUser) {
+        return res.status(404).json({ error: "User not found" });
+      }
+
+      const { password: _, ...userWithoutPassword } = updatedUser;
+      res.json(userWithoutPassword);
+    } catch (error: any) {
+      res.status(400).json({ error: error.message });
+    }
+  });
+
+  app.post("/api/profile/upload-image", requireAuth, upload.single("profileImage"), async (req: AuthRequest, res) => {
+    try {
+      if (!req.file) {
+        return res.status(400).json({ error: "No image file provided" });
+      }
+
+      const imageUrl = await uploadToCloudinary(req.file.buffer, "kiyumart/profiles");
+
+      const updatedUser = await storage.updateUser(req.user!.id, {
+        profileImage: imageUrl,
+      });
+
+      if (!updatedUser) {
+        return res.status(404).json({ error: "User not found" });
+      }
+
+      const { password, ...userWithoutPassword } = updatedUser;
+      res.json({ profileImage: imageUrl, user: userWithoutPassword });
+    } catch (error: any) {
+      res.status(400).json({ error: error.message });
+    }
+  });
+
   // ============ User Management (Admin only) ============
   app.get("/api/users", requireAuth, requireRole("admin"), async (req, res) => {
     try {
