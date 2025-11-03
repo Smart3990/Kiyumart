@@ -7,8 +7,8 @@ import { AuthProvider } from "@/lib/auth";
 
 import Home from "@/pages/HomeConnected";
 import AuthPage from "@/pages/AuthPage";
-import AdminDashboard from "@/pages/AdminDashboard";
-import SellerDashboard from "@/pages/SellerDashboard";
+import AdminDashboard from "@/pages/AdminDashboardConnected";
+import SellerDashboard from "@/pages/SellerDashboardConnected";
 import RiderDashboard from "@/pages/RiderDashboard";
 import ChatPage from "@/pages/ChatPage";
 import OrderTracking from "@/pages/OrderTracking";
