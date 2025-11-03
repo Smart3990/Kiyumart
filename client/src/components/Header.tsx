@@ -4,6 +4,7 @@ import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { useLocation } from "wouter";
 import { useLanguage, languages, Language } from "@/contexts/LanguageContext";
+import { useQuery } from "@tanstack/react-query";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -22,6 +23,11 @@ interface HeaderProps {
   onSearch?: (query: string) => void;
 }
 
+interface WishlistItem {
+  id: string;
+  productId: string;
+}
+
 export default function Header({ 
   cartItemsCount = 0,
   notificationCount = 0,
@@ -29,8 +35,14 @@ export default function Header({
   onCartClick,
   onSearch 
 }: HeaderProps) {
-  const [, navigate] = useLocation();
+  const [location, navigate] = useLocation();
   const { language, currency, currencySymbol, countryName, setLanguage, t } = useLanguage();
+  
+  const { data: wishlist = [] } = useQuery<WishlistItem[]>({
+    queryKey: ["/api/wishlist"],
+  });
+
+  const isActive = (path: string) => location === path;
 
   return (
     <header className="sticky top-0 z-50 w-full border-b bg-background">
@@ -110,7 +122,7 @@ export default function Header({
               onClick={() => navigate("/notifications")}
               data-testid="button-notifications"
             >
-              <Bell className="h-5 w-5" />
+              <Bell className={`h-5 w-5 ${isActive("/notifications") ? "text-primary" : ""}`} />
               {notificationCount > 0 && (
                 <Badge 
                   className="absolute -top-1 -right-1 h-5 w-5 flex items-center justify-center p-0 text-xs bg-destructive text-destructive-foreground rounded-full"
@@ -124,10 +136,19 @@ export default function Header({
             <Button 
               variant="ghost" 
               size="icon"
+              className="relative"
               onClick={() => navigate("/wishlist")}
               data-testid="button-wishlist"
             >
-              <Heart className="h-5 w-5" />
+              <Heart className={`h-5 w-5 ${isActive("/wishlist") ? "text-primary fill-primary" : ""}`} />
+              {wishlist.length > 0 && (
+                <Badge 
+                  className="absolute -top-1 -right-1 h-5 w-5 flex items-center justify-center p-0 text-xs bg-primary text-primary-foreground rounded-full"
+                  data-testid="badge-wishlist-count"
+                >
+                  {wishlist.length > 9 ? "9+" : wishlist.length}
+                </Badge>
+              )}
             </Button>
 
             <Button 
@@ -136,7 +157,7 @@ export default function Header({
               onClick={() => navigate("/orders")}
               data-testid="button-orders"
             >
-              <Package className="h-5 w-5" />
+              <Package className={`h-5 w-5 ${isActive("/orders") ? "text-primary" : ""}`} />
             </Button>
 
             <Button 
@@ -145,7 +166,7 @@ export default function Header({
               onClick={() => navigate("/profile")}
               data-testid="button-account"
             >
-              <User className="h-5 w-5" />
+              <User className={`h-5 w-5 ${isActive("/profile") ? "text-primary" : ""}`} />
             </Button>
 
             <CartPopover />
