@@ -29,6 +29,14 @@ Preferred communication style: Simple, everyday language.
 - **Shopping Cart Bug Fix**: Fixed NaN price display in cart by updating getCart() function to join with products table and return complete price data
 - **Paystack Payment Integration Fix**: Updated payment routes to use Paystack secret key from platform_settings instead of environment variable
 - **QR Code Display Fix**: Enhanced QRCodeDisplay component with forced white background (!bg-white) for proper visibility in both light and dark modes
+- **Admin Settings Page**: Created comprehensive platform settings management interface at `/admin/settings`
+  - General settings: Platform name, multi-vendor toggle
+  - Payment configuration: Paystack public/secret keys, processing fee percentage
+  - Contact information: Phone, email, address, social media links, footer description
+  - Branding: Primary color customization
+  - Currency: Default currency selection (GHS, NGN, XOF, USD, EUR, SAR)
+  - Accessible from admin dashboard via "Configure" button
+  - Form validation with Zod and real-time updates
 
 ### UI/UX and Navigation Enhancements (Nov 3, 2025)
 - **Shopping Cart Currency**: Cart and CartPopover use dynamic currencySymbol from LanguageContext (GHS/EUR/USD)
