@@ -31,6 +31,9 @@ const settingsSchema = z.object({
   paystackPublicKey: z.string().optional(),
   paystackSecretKey: z.string().optional(),
   processingFeePercent: z.string().min(0),
+  cloudinaryCloudName: z.string().optional(),
+  cloudinaryApiKey: z.string().optional(),
+  cloudinaryApiSecret: z.string().optional(),
   contactPhone: z.string().min(1, "Contact phone is required"),
   contactEmail: z.string().email("Must be a valid email"),
   contactAddress: z.string().min(1, "Contact address is required"),
@@ -67,6 +70,9 @@ export default function AdminSettings() {
       paystackPublicKey: settings.paystackPublicKey || "",
       paystackSecretKey: settings.paystackSecretKey || "",
       processingFeePercent: settings.processingFeePercent,
+      cloudinaryCloudName: settings.cloudinaryCloudName || "",
+      cloudinaryApiKey: settings.cloudinaryApiKey || "",
+      cloudinaryApiSecret: settings.cloudinaryApiSecret || "",
       contactPhone: settings.contactPhone,
       contactEmail: settings.contactEmail,
       contactAddress: settings.contactAddress,
@@ -245,6 +251,56 @@ export default function AdminSettings() {
                     />
                     <p className="text-xs text-muted-foreground">
                       Percentage fee charged per transaction
+                    </p>
+                  </div>
+                </CardContent>
+              </Card>
+
+              <Card>
+                <CardHeader>
+                  <CardTitle>Cloudinary Storage</CardTitle>
+                  <CardDescription>
+                    Configure Cloudinary for media uploads and storage
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="cloudinaryCloudName">Cloud Name</Label>
+                    <Input
+                      id="cloudinaryCloudName"
+                      {...form.register("cloudinaryCloudName")}
+                      placeholder="your-cloud-name"
+                      data-testid="input-cloudinary-name"
+                    />
+                    <p className="text-xs text-muted-foreground">
+                      Your Cloudinary cloud name from the dashboard
+                    </p>
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="cloudinaryApiKey">API Key</Label>
+                    <Input
+                      id="cloudinaryApiKey"
+                      {...form.register("cloudinaryApiKey")}
+                      placeholder="123456789012345"
+                      data-testid="input-cloudinary-key"
+                    />
+                    <p className="text-xs text-muted-foreground">
+                      Your Cloudinary API key
+                    </p>
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="cloudinaryApiSecret">API Secret</Label>
+                    <Input
+                      id="cloudinaryApiSecret"
+                      type="password"
+                      {...form.register("cloudinaryApiSecret")}
+                      placeholder="*************************"
+                      data-testid="input-cloudinary-secret"
+                    />
+                    <p className="text-xs text-muted-foreground">
+                      Your Cloudinary API secret key
                     </p>
                   </div>
                 </CardContent>

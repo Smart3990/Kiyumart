@@ -23,6 +23,7 @@ import Notifications from "@/pages/Notifications";
 import Profile from "@/pages/Profile";
 import Settings from "@/pages/Settings";
 import AdminSettings from "@/pages/AdminSettings";
+import AdminDeliveryZones from "@/pages/AdminDeliveryZones";
 import CategoryPage from "@/pages/CategoryPage";
 import Wishlist from "@/pages/Wishlist";
 import Orders from "@/pages/Orders";
@@ -46,6 +47,7 @@ function Router() {
       <Route path="/orders" component={Orders} />
       <Route path="/admin" component={AdminDashboard} />
       <Route path="/admin/settings" component={AdminSettings} />
+      <Route path="/admin/delivery-zones" component={AdminDeliveryZones} />
       <Route path="/seller" component={SellerDashboard} />
       <Route path="/rider" component={RiderDashboard} />
       <Route path="/chat" component={ChatPage} />

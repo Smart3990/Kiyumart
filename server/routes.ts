@@ -383,6 +383,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  app.delete("/api/delivery-zones/:id", requireAuth, requireRole("admin"), async (req, res) => {
+    try {
+      await storage.deleteDeliveryZone(req.params.id);
+      res.json({ success: true });
+    } catch (error: any) {
+      res.status(400).json({ error: error.message });
+    }
+  });
+
   // ============ Cart Routes ============
   app.post("/api/cart", requireAuth, async (req: AuthRequest, res) => {
     try {

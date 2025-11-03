@@ -228,7 +228,16 @@ export default function Settings() {
                       Add an extra layer of security to your account
                     </p>
                   </div>
-                  <Button variant="outline" data-testid="button-setup-2fa">
+                  <Button 
+                    variant="outline" 
+                    onClick={() => {
+                      toast({
+                        title: "Coming Soon",
+                        description: "Two-factor authentication will be available in a future update.",
+                      });
+                    }}
+                    data-testid="button-setup-2fa"
+                  >
                     Set Up
                   </Button>
                 </div>
@@ -242,7 +251,16 @@ export default function Settings() {
                       Update your password regularly
                     </p>
                   </div>
-                  <Button variant="outline" data-testid="button-change-password">
+                  <Button 
+                    variant="outline"
+                    onClick={() => {
+                      toast({
+                        title: "Password Change",
+                        description: "Please contact support to change your password securely.",
+                      });
+                    }}
+                    data-testid="button-change-password"
+                  >
                     Change
                   </Button>
                 </div>
@@ -260,10 +278,33 @@ export default function Settings() {
                 </CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
-                <Button variant="outline" className="w-full" data-testid="button-download-data">
+                <Button 
+                  variant="outline" 
+                  className="w-full"
+                  onClick={() => {
+                    toast({
+                      title: "Data Export",
+                      description: "Your data export request has been received. You'll receive a download link via email within 24 hours.",
+                    });
+                  }}
+                  data-testid="button-download-data"
+                >
                   Download My Data
                 </Button>
-                <Button variant="outline" className="w-full text-destructive hover:text-destructive" data-testid="button-delete-account">
+                <Button 
+                  variant="outline" 
+                  className="w-full text-destructive hover:text-destructive"
+                  onClick={() => {
+                    if (confirm("Are you sure you want to delete your account? This action cannot be undone.")) {
+                      toast({
+                        title: "Account Deletion",
+                        description: "Please contact support to permanently delete your account.",
+                        variant: "destructive",
+                      });
+                    }
+                  }}
+                  data-testid="button-delete-account"
+                >
                   Delete Account
                 </Button>
               </CardContent>

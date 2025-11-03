@@ -39,6 +39,7 @@ export interface IStorage {
   createDeliveryZone(zone: InsertDeliveryZone): Promise<DeliveryZone>;
   getDeliveryZones(): Promise<DeliveryZone[]>;
   updateDeliveryZone(id: string, data: Partial<DeliveryZone>): Promise<DeliveryZone | undefined>;
+  deleteDeliveryZone(id: string): Promise<boolean>;
   
   // Chat operations
   createMessage(message: InsertChatMessage & { senderId: string }): Promise<ChatMessage>;
@@ -242,6 +243,11 @@ export class DbStorage implements IStorage {
   async updateDeliveryZone(id: string, data: Partial<DeliveryZone>): Promise<DeliveryZone | undefined> {
     const result = await db.update(deliveryZones).set(data).where(eq(deliveryZones.id, id)).returning();
     return result[0];
+  }
+
+  async deleteDeliveryZone(id: string): Promise<boolean> {
+    const result = await db.delete(deliveryZones).where(eq(deliveryZones.id, id));
+    return true;
   }
 
   // Chat operations
