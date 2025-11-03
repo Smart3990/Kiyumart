@@ -36,7 +36,7 @@ const categoryInfo: Record<string, { title: string; description: string }> = {
 
 export default function CategoryPage() {
   const { id } = useParams();
-  const { currency, t } = useLanguage();
+  const { currencySymbol, t } = useLanguage();
 
   const { data: products = [], isLoading } = useQuery<Product[]>({
     queryKey: ["/api/products"],
@@ -107,6 +107,9 @@ export default function CategoryPage() {
                 const originalPrice = product.costPrice
                   ? parseFloat(product.costPrice)
                   : null;
+                const calculatedDiscount = originalPrice && originalPrice > sellingPrice
+                  ? Math.round(((originalPrice - sellingPrice) / originalPrice) * 100)
+                  : 0;
 
                 return (
                   <ProductCard
@@ -115,9 +118,9 @@ export default function CategoryPage() {
                     name={product.name}
                     price={sellingPrice}
                     costPrice={originalPrice || undefined}
-                    currency={currency}
+                    currency={currencySymbol}
                     image={product.images[0]}
-                    discount={product.discount}
+                    discount={calculatedDiscount}
                     rating={parseFloat(product.ratings) || 0}
                     reviewCount={product.totalRatings}
                     onToggleWishlist={(id) => console.log("Wishlist toggled:", id)}

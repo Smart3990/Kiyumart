@@ -2,6 +2,7 @@ import { useState } from "react";
 import { useLocation } from "wouter";
 import { useQuery } from "@tanstack/react-query";
 import { useAuth } from "@/lib/auth";
+import { useLanguage } from "@/contexts/LanguageContext";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import ProductCard from "@/components/ProductCard";
@@ -31,6 +32,7 @@ interface Product {
 export default function Wishlist() {
   const [, navigate] = useLocation();
   const { isAuthenticated, isLoading: authLoading } = useAuth();
+  const { currencySymbol } = useLanguage();
   const [isCartOpen, setIsCartOpen] = useState(false);
 
   const { data: wishlist = [], isLoading: wishlistLoading } = useQuery<WishlistItem[]>({
@@ -124,7 +126,7 @@ export default function Wishlist() {
                   const sellingPrice = parseFloat(product.price);
                   const discount = costPrice && costPrice > sellingPrice
                     ? Math.round(((costPrice - sellingPrice) / costPrice) * 100)
-                    : product.discount || 0;
+                    : 0;
 
                   return (
                     <ProductCard
@@ -132,6 +134,8 @@ export default function Wishlist() {
                       id={product.id}
                       name={product.name}
                       price={sellingPrice}
+                      costPrice={costPrice}
+                      currency={currencySymbol}
                       image={product.images[0]}
                       discount={discount}
                       rating={parseFloat(product.ratings) || 0}

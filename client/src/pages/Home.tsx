@@ -25,7 +25,7 @@ import eveningCategoryImage from "@assets/generated_images/Evening_wear_category
 
 export default function Home() {
   const [, navigate] = useLocation();
-  const { currency, t } = useLanguage();
+  const { currencySymbol, t } = useLanguage();
   const [isCartOpen, setIsCartOpen] = useState(false);
   const [cartItems, setCartItems] = useState([
     {
@@ -181,7 +181,7 @@ export default function Home() {
               <ProductCard
                 key={product.id}
                 {...product}
-                currency={currency}
+                currency={currencySymbol}
                 onToggleWishlist={(id) => console.log('Wishlist toggled:', id)}
               />
             ))}
