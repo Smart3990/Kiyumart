@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { useLocation } from "wouter";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { apiRequest, queryClient } from "@/lib/queryClient";
@@ -48,6 +48,7 @@ export default function HomeConnected() {
   const { isAuthenticated } = useAuth();
   const { toast } = useToast();
   const [isCartOpen, setIsCartOpen] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
 
   const { data: products = [], isLoading: productsLoading } = useQuery<Product[]>({
     queryKey: ["/api/products"],
@@ -220,6 +221,35 @@ export default function HomeConnected() {
     }
   };
 
+  // Debounced search handler
+  const debounceTimerRef = useRef<NodeJS.Timeout | null>(null);
+  const handleSearch = useCallback((query: string) => {
+    if (debounceTimerRef.current) {
+      clearTimeout(debounceTimerRef.current);
+    }
+    
+    debounceTimerRef.current = setTimeout(() => {
+      setSearchQuery(query.toLowerCase().trim());
+    }, 300);
+  }, []);
+
+  // Cleanup debounce timer on unmount
+  useEffect(() => {
+    return () => {
+      if (debounceTimerRef.current) {
+        clearTimeout(debounceTimerRef.current);
+      }
+    };
+  }, []);
+
+  // Filter products based on search query
+  const filteredProducts = searchQuery
+    ? products.filter(product => 
+        product.name.toLowerCase().includes(searchQuery) ||
+        product.category.toLowerCase().includes(searchQuery)
+      )
+    : products;
+
   return (
     <div className="min-h-screen flex flex-col">
       <div className="flex items-center justify-end p-2 border-b bg-background">
@@ -229,6 +259,7 @@ export default function HomeConnected() {
       <Header
         cartItemsCount={cartItems.reduce((sum, item) => sum + item.quantity, 0)}
         onCartClick={() => isAuthenticated ? setIsCartOpen(true) : navigate("/auth")}
+        onSearch={handleSearch}
       />
 
       <HeroBanner slides={bannerSlides} />
@@ -249,13 +280,19 @@ export default function HomeConnected() {
 
         <section className="max-w-7xl mx-auto px-4 py-12">
           <div className="flex items-center justify-between mb-8">
-            <h2 className="text-3xl font-bold">Featured Products</h2>
+            <h2 className="text-3xl font-bold">
+              {searchQuery ? `Search Results (${filteredProducts.length})` : 'Featured Products'}
+            </h2>
           </div>
           {productsLoading ? (
             <div className="text-center py-12">Loading products...</div>
+          ) : filteredProducts.length === 0 ? (
+            <div className="text-center py-12 text-muted-foreground">
+              No products found matching "{searchQuery}"
+            </div>
           ) : (
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-              {products.slice(0, 8).map((product) => {
+              {(searchQuery ? filteredProducts : filteredProducts.slice(0, 8)).map((product) => {
                 const sellingPrice = parseFloat(product.price);
                 const originalPrice = product.costPrice ? parseFloat(product.costPrice) : null;
                 const calculatedDiscount = originalPrice && originalPrice > sellingPrice
