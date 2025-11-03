@@ -18,6 +18,8 @@ import OrderTracking from "@/pages/OrderTracking";
 import Checkout from "@/pages/CheckoutConnected";
 import PaymentPage from "@/pages/PaymentPage";
 import PaymentVerifyPage from "@/pages/PaymentVerifyPage";
+import Notifications from "@/pages/Notifications";
+import Profile from "@/pages/Profile";
 import NotFound from "@/pages/not-found";
 
 function Router() {
@@ -30,6 +32,8 @@ function Router() {
       <Route path="/checkout" component={Checkout} />
       <Route path="/payment/:orderId" component={PaymentPage} />
       <Route path="/payment/verify" component={PaymentVerifyPage} />
+      <Route path="/notifications" component={Notifications} />
+      <Route path="/profile" component={Profile} />
       <Route path="/admin" component={AdminDashboard} />
       <Route path="/seller" component={SellerDashboard} />
       <Route path="/rider" component={RiderDashboard} />
