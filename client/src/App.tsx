@@ -13,6 +13,8 @@ import RiderDashboard from "@/pages/RiderDashboard";
 import ChatPage from "@/pages/ChatPage";
 import OrderTracking from "@/pages/OrderTracking";
 import Checkout from "@/pages/CheckoutConnected";
+import PaymentPage from "@/pages/PaymentPage";
+import PaymentVerifyPage from "@/pages/PaymentVerifyPage";
 import NotFound from "@/pages/not-found";
 
 function Router() {
@@ -21,6 +23,8 @@ function Router() {
       <Route path="/" component={Home} />
       <Route path="/auth" component={AuthPage} />
       <Route path="/checkout" component={Checkout} />
+      <Route path="/payment/:orderId" component={PaymentPage} />
+      <Route path="/payment/verify" component={PaymentVerifyPage} />
       <Route path="/admin" component={AdminDashboard} />
       <Route path="/seller" component={SellerDashboard} />
       <Route path="/rider" component={RiderDashboard} />
