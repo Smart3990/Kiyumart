@@ -164,6 +164,8 @@ export class DbStorage implements IStorage {
       });
     }
 
+    await this.clearCart(order.buyerId);
+
     return newOrder;
   }
 
