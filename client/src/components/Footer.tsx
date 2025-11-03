@@ -8,7 +8,7 @@ export default function Footer() {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
           <div>
             <h3 className="text-xl font-bold text-primary mb-4" data-testid="text-footer-logo">
-              ModestGlow
+              KiyuMart
             </h3>
             <p className="text-muted-foreground mb-4">
               Your trusted fashion marketplace. Quality products, fast delivery, and excellent service.
@@ -66,7 +66,7 @@ export default function Footer() {
         </div>
 
         <div className="border-t mt-8 pt-8 text-center text-muted-foreground">
-          <p>&copy; 2024 ModestGlow. All rights reserved.</p>
+          <p>&copy; 2024 KiyuMart. All rights reserved.</p>
         </div>
       </div>
     </footer>

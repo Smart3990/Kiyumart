@@ -38,7 +38,7 @@ export default function AuthPage() {
       await signup({ name, email, password, role: "buyer" });
       toast({
         title: "Account Created",
-        description: "Welcome to ModestGlow!",
+        description: "Welcome to KiyuMart!",
       });
       navigate("/");
     } catch (error: any) {
@@ -59,7 +59,7 @@ export default function AuthPage() {
       <div className="flex-1 flex items-center justify-center p-6 bg-muted/30">
         <div className="w-full max-w-md">
           <div className="text-center mb-8">
-            <h1 className="text-4xl font-bold text-primary mb-2">ModestGlow</h1>
+            <h1 className="text-4xl font-bold text-primary mb-2">KiyuMart</h1>
             <p className="text-muted-foreground">Your Fashion Marketplace</p>
           </div>
           

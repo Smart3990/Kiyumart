@@ -38,7 +38,7 @@ export default function Header({
             </Button>
             
             <h1 className="text-2xl font-bold text-primary" data-testid="text-logo">
-              ModestGlow
+              KiyuMart
             </h1>
           </div>
 

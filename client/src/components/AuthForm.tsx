@@ -30,7 +30,7 @@ export default function AuthForm({ onLogin, onSignup }: AuthFormProps) {
   return (
     <Card className="w-full max-w-md">
       <CardHeader>
-        <CardTitle className="text-2xl text-center">Welcome to ModestGlow</CardTitle>
+        <CardTitle className="text-2xl text-center">Welcome to KiyuMart</CardTitle>
         <CardDescription className="text-center">
           Sign in to your account or create a new one
         </CardDescription>

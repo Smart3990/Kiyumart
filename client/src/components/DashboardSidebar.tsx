@@ -70,7 +70,7 @@ export default function DashboardSidebar({
     <div className="flex flex-col h-full w-64 bg-card border-r">
       <div className="p-6 border-b">
         <h2 className="text-2xl font-bold text-primary" data-testid="text-dashboard-logo">
-          ModestGlow
+          KiyuMart
         </h2>
         <p className="text-sm text-muted-foreground mt-1 capitalize">
           {role} Dashboard
