@@ -4,6 +4,7 @@ import { useQuery, useMutation } from "@tanstack/react-query";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useAuth } from "@/lib/auth";
 import { useToast } from "@/hooks/use-toast";
+import { useLanguage } from "@/contexts/LanguageContext";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Minus, Plus, Trash2, ShoppingBag, ArrowLeft } from "lucide-react";
@@ -32,6 +33,7 @@ export default function Cart() {
   const [, navigate] = useLocation();
   const { isAuthenticated } = useAuth();
   const { toast } = useToast();
+  const { currencySymbol } = useLanguage();
 
   useEffect(() => {
     if (!isAuthenticated) {
@@ -198,11 +200,11 @@ export default function Cart() {
                               className="font-bold text-primary"
                               data-testid={`text-cart-item-price-${item.productId}`}
                             >
-                              GHS {item.price.toFixed(2)}
+                              {currencySymbol} {item.price.toFixed(2)}
                             </span>
                             {item.originalPrice && item.originalPrice > item.price && (
                               <span className="text-sm text-muted-foreground line-through">
-                                GHS {item.originalPrice.toFixed(2)}
+                                {currencySymbol} {item.originalPrice.toFixed(2)}
                               </span>
                             )}
                           </div>
@@ -258,7 +260,7 @@ export default function Cart() {
                             className="text-sm font-semibold"
                             data-testid={`text-subtotal-${item.productId}`}
                           >
-                            GHS {(item.price * item.quantity).toFixed(2)}
+                            {currencySymbol} {(item.price * item.quantity).toFixed(2)}
                           </span>
                         </div>
                       </div>
@@ -275,7 +277,7 @@ export default function Cart() {
                     <div className="flex justify-between">
                       <span className="text-muted-foreground">Subtotal</span>
                       <span className="font-semibold" data-testid="text-subtotal">
-                        GHS {subtotal.toFixed(2)}
+                        {currencySymbol} {subtotal.toFixed(2)}
                       </span>
                     </div>
                     <div className="flex justify-between">
@@ -286,7 +288,7 @@ export default function Cart() {
                       <div className="flex justify-between">
                         <span className="text-lg font-semibold">Total</span>
                         <span className="text-lg font-bold text-primary" data-testid="text-total">
-                          GHS {subtotal.toFixed(2)}
+                          {currencySymbol} {subtotal.toFixed(2)}
                         </span>
                       </div>
                     </div>

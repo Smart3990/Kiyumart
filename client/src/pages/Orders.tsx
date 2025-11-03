@@ -1,5 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { useLocation } from "wouter";
+import { useLanguage } from "@/contexts/LanguageContext";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -7,12 +8,13 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import ThemeToggle from "@/components/ThemeToggle";
-import { Package, Clock, CheckCircle, XCircle, Truck } from "lucide-react";
+import { Package, Clock, CheckCircle, XCircle, Truck, CreditCard } from "lucide-react";
 
 interface Order {
   id: string;
   userId: string;
   status: string;
+  paymentStatus: string;
   totalAmount: string;
   createdAt: string;
   deliveryAddress: string;
@@ -26,6 +28,7 @@ interface Order {
 
 export default function Orders() {
   const [, navigate] = useLocation();
+  const { currencySymbol } = useLanguage();
 
   const { data: orders = [], isLoading } = useQuery<Order[]>({
     queryKey: ["/api/orders"],
@@ -103,8 +106,18 @@ export default function Orders() {
           <div className="flex justify-between text-sm">
             <span className="text-muted-foreground">Total:</span>
             <span className="font-bold text-primary">
-              GHS {parseFloat(order.totalAmount).toFixed(2)}
+              {currencySymbol} {parseFloat(order.totalAmount).toFixed(2)}
             </span>
+          </div>
+          <div className="flex justify-between text-sm">
+            <span className="text-muted-foreground">Payment:</span>
+            <Badge 
+              variant={order.paymentStatus === 'completed' ? 'default' : 'secondary'}
+              className="h-5"
+            >
+              <CreditCard className="h-3 w-3 mr-1" />
+              {order.paymentStatus === 'completed' ? 'Paid' : order.paymentStatus}
+            </Badge>
           </div>
           <div className="flex justify-between text-sm">
             <span className="text-muted-foreground">Delivery:</span>
