@@ -10,6 +10,15 @@ Preferred communication style: Simple, everyday language.
 
 ## Recent Changes (November 2025)
 
+### E-commerce Enhancements (Nov 3, 2025)
+- **Payment Flow**: Changed "Place Order" to "Pay" button with direct Paystack integration and callback handling
+- **Product Variants**: Added database schema and API for product colors and sizes (productVariants table)
+- **Hero Banners**: Added hero_banners table for multiple auto-scrolling banners
+- **Wishlist Page**: Created dedicated wishlist page at /wishlist route
+- **Product Gallery**: Updated products to support up to 5 images with thumbnail navigation
+- **Category Navigation**: Fixed category cards to properly navigate to category pages
+- **Sample Data**: Added 8 product variants (S/M/L/XL sizes) and 3 hero banners
+
 ### Product Reviews System (Nov 3, 2025)
 - Added complete reviews functionality for products
 - Database schema: `reviews` table with productId, userId, rating (1-5), comment, helpful count, timestamps

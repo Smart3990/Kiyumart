@@ -2,11 +2,12 @@ import { db } from "../db/index";
 import { 
   users, products, orders, orderItems, deliveryZones, deliveryTracking,
   chatMessages, transactions, platformSettings, cart, wishlist, reviews,
+  productVariants, heroBanners,
   type User, type InsertUser, type Product, type InsertProduct,
   type Order, type InsertOrder, type DeliveryZone, type InsertDeliveryZone,
   type ChatMessage, type InsertChatMessage, type Transaction, type PlatformSettings,
   type Cart, type Wishlist, type DeliveryTracking, type InsertDeliveryTracking,
-  type Review, type InsertReview
+  type Review, type InsertReview, type ProductVariant, type HeroBanner
 } from "@shared/schema";
 import { eq, and, desc, sql } from "drizzle-orm";
 
@@ -71,6 +72,12 @@ export interface IStorage {
   // Review operations
   createReview(review: InsertReview & { userId: string }): Promise<Review>;
   getProductReviews(productId: string): Promise<Array<Review & { userName: string }>>;
+  
+  // Product Variant operations
+  getProductVariants(productId: string): Promise<ProductVariant[]>;
+  
+  // Hero Banner operations
+  getHeroBanners(): Promise<HeroBanner[]>;
   
   // Analytics
   getAnalytics(userId?: string, role?: string): Promise<any>;
@@ -360,6 +367,18 @@ export class DbStorage implements IStorage {
       .where(eq(reviews.productId, productId))
       .orderBy(desc(reviews.createdAt));
     return result as Array<Review & { userName: string }>;
+  }
+
+  // Product Variant operations
+  async getProductVariants(productId: string): Promise<ProductVariant[]> {
+    return await db.select().from(productVariants).where(eq(productVariants.productId, productId));
+  }
+
+  // Hero Banner operations
+  async getHeroBanners(): Promise<HeroBanner[]> {
+    return await db.select().from(heroBanners)
+      .where(eq(heroBanners.isActive, true))
+      .orderBy(heroBanners.displayOrder);
   }
 
   // Delivery Tracking operations

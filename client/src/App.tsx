@@ -21,6 +21,7 @@ import PaymentVerifyPage from "@/pages/PaymentVerifyPage";
 import Notifications from "@/pages/Notifications";
 import Profile from "@/pages/Profile";
 import CategoryPage from "@/pages/CategoryPage";
+import Wishlist from "@/pages/Wishlist";
 import NotFound from "@/pages/not-found";
 
 function Router() {
@@ -36,6 +37,7 @@ function Router() {
       <Route path="/payment/verify" component={PaymentVerifyPage} />
       <Route path="/notifications" component={Notifications} />
       <Route path="/profile" component={Profile} />
+      <Route path="/wishlist" component={Wishlist} />
       <Route path="/admin" component={AdminDashboard} />
       <Route path="/seller" component={SellerDashboard} />
       <Route path="/rider" component={RiderDashboard} />

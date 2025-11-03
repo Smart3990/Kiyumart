@@ -5,7 +5,7 @@ import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { useLanguage } from "@/contexts/LanguageContext";
 import Header from "@/components/Header";
-import HeroBanner from "@/components/HeroBanner";
+import HeroCarousel from "@/components/HeroCarousel";
 import CategoryCard from "@/components/CategoryCard";
 import ProductCard from "@/components/ProductCard";
 import Footer from "@/components/Footer";
@@ -153,7 +153,7 @@ export default function Home() {
         onCartClick={() => setIsCartOpen(true)}
       />
 
-      <HeroBanner slides={bannerSlides} />
+      <HeroCarousel />
 
       <main className="flex-1">
         <section className="max-w-7xl mx-auto px-4 py-12">

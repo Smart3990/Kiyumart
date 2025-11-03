@@ -403,6 +403,24 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  app.get("/api/products/:productId/variants", async (req, res) => {
+    try {
+      const variants = await storage.getProductVariants(req.params.productId);
+      res.json(variants);
+    } catch (error: any) {
+      res.status(400).json({ error: error.message });
+    }
+  });
+
+  app.get("/api/hero-banners", async (req, res) => {
+    try {
+      const banners = await storage.getHeroBanners();
+      res.json(banners);
+    } catch (error: any) {
+      res.status(400).json({ error: error.message });
+    }
+  });
+
   // ============ Order Routes ============
   app.post("/api/orders", requireAuth, async (req: AuthRequest, res) => {
     try {
