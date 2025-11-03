@@ -1,3 +1,4 @@
+import { useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import QRCodeDisplay from "@/components/QRCodeDisplay";
@@ -24,24 +25,46 @@ export default function OrderTracking() {
   const { user, isAuthenticated, isLoading: authLoading } = useAuth();
   const [, navigate] = useLocation();
 
-  const { data: orders, isLoading } = useQuery<Order[]>({
+  // Redirect to auth if not authenticated
+  useEffect(() => {
+    if (!authLoading && !isAuthenticated) {
+      navigate("/auth");
+    }
+  }, [authLoading, isAuthenticated, navigate]);
+
+  const { data: orders, isLoading, error } = useQuery<Order[]>({
     queryKey: ["/api/orders"],
-    enabled: !!user,
+    enabled: isAuthenticated && !!user,
   });
 
   const hasOrders = orders && orders.length > 0;
 
-  if (authLoading || isLoading) {
+  if (authLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
-        <p data-testid="text-loading">Loading order information...</p>
+        <p data-testid="text-loading">Loading...</p>
       </div>
     );
   }
 
   if (!isAuthenticated) {
-    navigate("/auth");
     return null;
+  }
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <p data-testid="text-loading">Loading orders...</p>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <p className="text-destructive">Error loading orders. Please try again.</p>
+      </div>
+    );
   }
 
   return (
