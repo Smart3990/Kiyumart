@@ -398,6 +398,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // ============ Chat Routes ============
+  app.get("/api/support/contacts", requireAuth, async (req: AuthRequest, res) => {
+    try {
+      // Allow any authenticated user to get admin contacts for support
+      const admins = await storage.getUsersByRole("admin");
+      const adminsWithoutPasswords = admins.map(({ password, ...admin }) => admin);
+      res.json(adminsWithoutPasswords);
+    } catch (error: any) {
+      res.status(400).json({ error: error.message });
+    }
+  });
+
   app.post("/api/messages", requireAuth, async (req: AuthRequest, res) => {
     try {
       const messageData = {
