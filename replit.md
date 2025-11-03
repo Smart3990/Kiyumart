@@ -27,6 +27,8 @@ Preferred communication style: Simple, everyday language.
   - "Change Password" → navigates to settings page (/settings)
   - "Manage Email Preferences" → navigates to settings page (/settings)
 - **Shopping Cart Bug Fix**: Fixed NaN price display in cart by updating getCart() function to join with products table and return complete price data
+- **Paystack Payment Integration Fix**: Updated payment routes to use Paystack secret key from platform_settings instead of environment variable
+- **QR Code Display Fix**: Enhanced QRCodeDisplay component with forced white background (!bg-white) for proper visibility in both light and dark modes
 
 ### UI/UX and Navigation Enhancements (Nov 3, 2025)
 - **Shopping Cart Currency**: Cart and CartPopover use dynamic currencySymbol from LanguageContext (GHS/EUR/USD)
