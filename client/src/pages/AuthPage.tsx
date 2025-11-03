@@ -1,7 +1,55 @@
+import { useEffect } from "react";
+import { useLocation } from "wouter";
+import { useAuth } from "@/lib/auth";
+import { useToast } from "@/hooks/use-toast";
 import AuthForm from "@/components/AuthForm";
 import ThemeToggle from "@/components/ThemeToggle";
 
 export default function AuthPage() {
+  const [, navigate] = useLocation();
+  const { login, signup, isAuthenticated } = useAuth();
+  const { toast } = useToast();
+
+  useEffect(() => {
+    if (isAuthenticated) {
+      navigate("/");
+    }
+  }, [isAuthenticated, navigate]);
+
+  const handleLogin = async (email: string, password: string) => {
+    try {
+      await login(email, password);
+      toast({
+        title: "Login Successful",
+        description: "Welcome back!",
+      });
+      navigate("/");
+    } catch (error: any) {
+      toast({
+        title: "Login Failed",
+        description: error.message || "Invalid email or password",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleSignup = async (name: string, email: string, password: string) => {
+    try {
+      await signup({ name, email, password, role: "buyer" });
+      toast({
+        title: "Account Created",
+        description: "Welcome to KiyuMart!",
+      });
+      navigate("/");
+    } catch (error: any) {
+      toast({
+        title: "Signup Failed",
+        description: error.message || "Failed to create account",
+        variant: "destructive",
+      });
+    }
+  };
+
   return (
     <div className="min-h-screen flex flex-col">
       <div className="flex items-center justify-end p-4">
@@ -16,8 +64,8 @@ export default function AuthPage() {
           </div>
           
           <AuthForm
-            onLogin={(email, password) => console.log('Login:', email, password)}
-            onSignup={(name, email, password) => console.log('Signup:', name, email, password)}
+            onLogin={handleLogin}
+            onSignup={handleSignup}
           />
         </div>
       </div>

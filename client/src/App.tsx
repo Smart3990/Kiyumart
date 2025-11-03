@@ -3,15 +3,16 @@ import { queryClient } from "./lib/queryClient";
 import { QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
+import { AuthProvider } from "@/lib/auth";
 
-import Home from "@/pages/Home";
+import Home from "@/pages/HomeConnected";
 import AuthPage from "@/pages/AuthPage";
 import AdminDashboard from "@/pages/AdminDashboard";
 import SellerDashboard from "@/pages/SellerDashboard";
 import RiderDashboard from "@/pages/RiderDashboard";
 import ChatPage from "@/pages/ChatPage";
 import OrderTracking from "@/pages/OrderTracking";
-import Checkout from "@/pages/Checkout";
+import Checkout from "@/pages/CheckoutConnected";
 import NotFound from "@/pages/not-found";
 
 function Router() {
@@ -33,10 +34,12 @@ function Router() {
 function App() {
   return (
     <QueryClientProvider client={queryClient}>
-      <TooltipProvider>
-        <Toaster />
-        <Router />
-      </TooltipProvider>
+      <AuthProvider>
+        <TooltipProvider>
+          <Toaster />
+          <Router />
+        </TooltipProvider>
+      </AuthProvider>
     </QueryClientProvider>
   );
 }
