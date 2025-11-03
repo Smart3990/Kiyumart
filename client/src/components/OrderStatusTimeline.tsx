@@ -16,7 +16,7 @@ const statusSteps = [
   { key: "delivered", label: "Delivered", icon: CheckCircle2 },
 ];
 
-const statusOrder = ["pending", "processing", "delivering", "shipped", "delivered"];
+const statusOrder = ["pending", "processing", "delivering", "delivered"];
 
 export default function OrderStatusTimeline({ 
   currentStatus, 

@@ -127,7 +127,7 @@ export default function OrderTracking() {
     if (!orders || orders.length === 0) return;
 
     const fetchRiderLocations = async () => {
-      const deliveringOrders = orders.filter(order => order.status === "delivering" || order.status === "shipped");
+      const deliveringOrders = orders.filter(order => order.status === "delivering");
       
       for (const order of deliveringOrders) {
         try {
@@ -256,7 +256,6 @@ export default function OrderTracking() {
                         <SelectItem value="pending">Pending</SelectItem>
                         <SelectItem value="processing">Processing</SelectItem>
                         <SelectItem value="delivering">Delivering</SelectItem>
-                        <SelectItem value="shipped">Delivering (Legacy)</SelectItem>
                         <SelectItem value="delivered">Delivered</SelectItem>
                         <SelectItem value="cancelled">Cancelled</SelectItem>
                         <SelectItem value="disputed">Disputed</SelectItem>
@@ -353,7 +352,7 @@ export default function OrderTracking() {
                         </div>
 
                         {/* Live Delivery Map for Delivering Orders */}
-                        {(order.status === "delivering" || order.status === "shipped") && order.deliveryLatitude && order.deliveryLongitude && 
+                        {order.status === "delivering" && order.deliveryLatitude && order.deliveryLongitude && 
                          !isNaN(parseFloat(order.deliveryLatitude)) && !isNaN(parseFloat(order.deliveryLongitude)) && (
                           <div className="pt-4 border-t">
                             <DeliveryMap
