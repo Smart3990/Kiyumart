@@ -36,6 +36,13 @@ interface CartItem {
   createdAt: string;
 }
 
+interface WishlistItem {
+  id: string;
+  userId: string;
+  productId: string;
+  createdAt: string;
+}
+
 export default function HomeConnected() {
   const [, navigate] = useLocation();
   const { isAuthenticated } = useAuth();
@@ -48,6 +55,11 @@ export default function HomeConnected() {
 
   const { data: cartItems = [], isLoading: cartLoading } = useQuery<CartItem[]>({
     queryKey: ["/api/cart"],
+    enabled: isAuthenticated,
+  });
+
+  const { data: wishlist = [] } = useQuery<WishlistItem[]>({
+    queryKey: ["/api/wishlist"],
     enabled: isAuthenticated,
   });
 
@@ -111,6 +123,47 @@ export default function HomeConnected() {
     },
   });
 
+  const addToWishlistMutation = useMutation({
+    mutationFn: async (productId: string) => {
+      const res = await apiRequest("POST", "/api/wishlist", { productId });
+      return res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/wishlist"] });
+      toast({
+        title: "Added to wishlist",
+        description: "Product has been added to your wishlist",
+      });
+    },
+    onError: () => {
+      toast({
+        title: "Error",
+        description: "Could not add to wishlist",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const removeFromWishlistMutation = useMutation({
+    mutationFn: async (productId: string) => {
+      await apiRequest("DELETE", `/api/wishlist/${productId}`, {});
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/wishlist"] });
+      toast({
+        title: "Removed from wishlist",
+        description: "Product has been removed from your wishlist",
+      });
+    },
+    onError: () => {
+      toast({
+        title: "Error",
+        description: "Could not remove from wishlist",
+        variant: "destructive",
+      });
+    },
+  });
+
   const bannerSlides = [
     {
       image: heroImage,
@@ -151,6 +204,20 @@ export default function HomeConnected() {
       return;
     }
     addToCartMutation.mutate({ productId });
+  };
+
+  const handleToggleWishlist = (productId: string) => {
+    if (!isAuthenticated) {
+      navigate("/auth");
+      return;
+    }
+
+    const isWishlisted = wishlist.some(item => item.productId === productId);
+    if (isWishlisted) {
+      removeFromWishlistMutation.mutate(productId);
+    } else {
+      addToWishlistMutation.mutate(productId);
+    }
   };
 
   return (
@@ -195,6 +262,8 @@ export default function HomeConnected() {
                   ? Math.round(((originalPrice - sellingPrice) / originalPrice) * 100)
                   : 0;
 
+                const isWishlisted = wishlist.some(item => item.productId === product.id);
+
                 return (
                   <ProductCard
                     key={product.id}
@@ -206,7 +275,8 @@ export default function HomeConnected() {
                     discount={calculatedDiscount}
                     rating={parseFloat(product.ratings) || 0}
                     reviewCount={product.totalRatings}
-                    onToggleWishlist={(id) => console.log('Wishlist toggled:', id)}
+                    isWishlisted={isWishlisted}
+                    onToggleWishlist={handleToggleWishlist}
                   />
                 );
               })}

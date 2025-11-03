@@ -2,7 +2,7 @@ import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Heart, Star } from "lucide-react";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useLocation } from "wouter";
 
 interface ProductCardProps {
@@ -36,6 +36,11 @@ export default function ProductCard({
 }: ProductCardProps) {
   const [, navigate] = useLocation();
   const [isWishlisted, setIsWishlisted] = useState(initialWishlisted);
+
+  // Sync local state with prop changes (e.g., after wishlist query refetch)
+  useEffect(() => {
+    setIsWishlisted(initialWishlisted);
+  }, [initialWishlisted]);
 
   // Convert decimal strings to numbers for display
   const sellingPrice = typeof price === 'string' ? parseFloat(price) : price;
