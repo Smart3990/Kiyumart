@@ -117,12 +117,6 @@ export default function ProductCard({
         </div>
 
         <div className="flex items-baseline gap-2">
-          <span 
-            className="text-xl font-bold"
-            data-testid={`text-selling-price-${id}`}
-          >
-            {currency} {sellingPrice.toFixed(2)}
-          </span>
           {originalPrice && originalPrice > sellingPrice && (
             <span 
               className="text-sm text-muted-foreground line-through"
@@ -131,6 +125,12 @@ export default function ProductCard({
               {currency} {originalPrice.toFixed(2)}
             </span>
           )}
+          <span 
+            className="text-xl font-bold text-primary"
+            data-testid={`text-selling-price-${id}`}
+          >
+            {currency} {sellingPrice.toFixed(2)}
+          </span>
         </div>
       </div>
     </Card>

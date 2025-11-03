@@ -1,7 +1,8 @@
-import { ShoppingCart, Search, Menu, Globe, User } from "lucide-react";
+import { ShoppingCart, Search, Menu, Globe, User, Bell } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
+import { useLocation } from "wouter";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -11,17 +12,21 @@ import {
 
 interface HeaderProps {
   cartItemsCount?: number;
+  notificationCount?: number;
   onMenuClick?: () => void;
   onCartClick?: () => void;
   onSearch?: (query: string) => void;
 }
 
 export default function Header({ 
-  cartItemsCount = 0, 
+  cartItemsCount = 0,
+  notificationCount = 0,
   onMenuClick,
   onCartClick,
   onSearch 
 }: HeaderProps) {
+  const [, navigate] = useLocation();
+
   return (
     <header className="sticky top-0 z-50 w-full border-b bg-background">
       <div className="max-w-7xl mx-auto px-4 py-3">
@@ -37,7 +42,11 @@ export default function Header({
               <Menu className="h-5 w-5" />
             </Button>
             
-            <h1 className="text-2xl font-bold text-primary" data-testid="text-logo">
+            <h1 
+              className="text-2xl font-bold text-primary cursor-pointer" 
+              data-testid="text-logo"
+              onClick={() => navigate("/")}
+            >
               KiyuMart
             </h1>
           </div>
@@ -71,6 +80,25 @@ export default function Header({
             <Button 
               variant="ghost" 
               size="icon"
+              className="relative"
+              onClick={() => navigate("/notifications")}
+              data-testid="button-notifications"
+            >
+              <Bell className="h-5 w-5" />
+              {notificationCount > 0 && (
+                <Badge 
+                  className="absolute -top-1 -right-1 h-5 w-5 flex items-center justify-center p-0 text-xs bg-destructive text-destructive-foreground"
+                  data-testid="badge-notification-count"
+                >
+                  {notificationCount > 9 ? "9+" : notificationCount}
+                </Badge>
+              )}
+            </Button>
+
+            <Button 
+              variant="ghost" 
+              size="icon"
+              onClick={() => navigate("/profile")}
               data-testid="button-account"
             >
               <User className="h-5 w-5" />
@@ -80,7 +108,7 @@ export default function Header({
               variant="ghost"
               size="icon"
               className="relative"
-              onClick={onCartClick}
+              onClick={onCartClick || (() => navigate("/cart"))}
               data-testid="button-cart"
             >
               <ShoppingCart className="h-5 w-5" />
