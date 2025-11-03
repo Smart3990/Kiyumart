@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useLocation } from "wouter";
 import { useMutation } from "@tanstack/react-query";
 import { useForm } from "react-hook-form";
@@ -47,6 +47,12 @@ export default function ChangePassword() {
     },
   });
 
+  useEffect(() => {
+    if (!isAuthenticated && !authLoading) {
+      navigate("/auth");
+    }
+  }, [isAuthenticated, authLoading, navigate]);
+
   const changePasswordMutation = useMutation({
     mutationFn: async (data: ChangePasswordForm) => {
       const res = await fetch("/api/auth/change-password", {
@@ -83,8 +89,7 @@ export default function ChangePassword() {
     },
   });
 
-  if (!isAuthenticated && !authLoading) {
-    navigate("/auth");
+  if (authLoading || !isAuthenticated) {
     return null;
   }
 
