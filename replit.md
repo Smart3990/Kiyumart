@@ -1,8 +1,8 @@
-# ModestGlow - Islamic Fashion E-commerce Platform
+# KiyuMart - Fashion E-commerce Marketplace
 
 ## Overview
 
-ModestGlow is an Islamic fashion e-commerce platform for women, specializing in modest and elegant clothing like Abayas, Hijabs, and accessories. It operates as a dual-mode system (single-store or multi-vendor marketplace) controlled by an admin. Built with React (Vite) for the frontend and Node.js + Express for the backend, it offers comprehensive e-commerce functionalities including product management, order processing, delivery tracking with live map visualization, real-time chat, and Paystack payment integration. The platform emphasizes an Islamic-inspired design system with a focus on elegance and modesty.
+KiyuMart is a dual-mode e-commerce platform that operates as both a single-store fashion marketplace and a multi-vendor marketplace. The platform supports dynamic switching between modes through admin controls, allowing for flexible business models. Built with React (Vite) on the frontend and Node.js + Express on the backend, it provides comprehensive e-commerce functionality including product management, order processing, delivery tracking with live map visualization, real-time chat, and Paystack payment integration.
 
 ## User Preferences
 
@@ -12,7 +12,7 @@ Preferred communication style: Simple, everyday language.
 
 ### Frontend Architecture
 
-The frontend uses React 18 with Vite, TypeScript, and Wouter for routing. TanStack Query manages server state and API data fetching. UI is built with Shadcn UI (Radix UI primitives) and Tailwind CSS, following a mobile-first, responsive design. The aesthetic is an Islamic-inspired design system, rebranding from KiyuMart to ModestGlow, using an emerald green, gold, and cream color palette. Key features include a persistent shopping cart, product browsing with filtering, real-time order tracking with visual timelines and Socket.IO updates, multi-currency support, QR code generation, role-based dashboards, and Paystack integration. Live delivery tracking includes Leaflet.js with OpenStreetMap for interactive map visualization.
+The frontend uses React 18 with Vite, TypeScript, and Wouter for routing. TanStack Query manages server state and API data fetching. UI is built with Shadcn UI (Radix UI primitives) and Tailwind CSS, following a mobile-first, responsive design with a modern blue color scheme. Key features include a persistent shopping cart, product browsing with filtering, real-time order tracking with visual timelines and Socket.IO updates, multi-currency support, QR code generation, role-based dashboards, notification system, and Paystack integration. Live delivery tracking includes Leaflet.js with OpenStreetMap for interactive map visualization. Product cards display ratings, cost price (strikethrough), and selling price (colored and bolded).
 
 ### Backend Architecture
 

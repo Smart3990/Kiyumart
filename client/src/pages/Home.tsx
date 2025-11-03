@@ -170,7 +170,6 @@ export default function Home() {
               <ProductCard
                 key={product.id}
                 {...product}
-                onAddToCart={handleAddToCart}
                 onToggleWishlist={(id) => console.log('Wishlist toggled:', id)}
               />
             ))}
