@@ -1,4 +1,8 @@
 import { useState } from "react";
+import { useLocation } from "wouter";
+import { useQuery, useMutation } from "@tanstack/react-query";
+import { apiRequest, queryClient } from "@/lib/queryClient";
+import { useToast } from "@/hooks/use-toast";
 import Header from "@/components/Header";
 import HeroBanner from "@/components/HeroBanner";
 import CategoryCard from "@/components/CategoryCard";
@@ -19,6 +23,7 @@ import accessoriesImage from "@assets/generated_images/Women's_accessories_categ
 import footwearImage from "@assets/generated_images/Footwear_category_image_9d3587fc.png";
 
 export default function Home() {
+  const [, navigate] = useLocation();
   const [isCartOpen, setIsCartOpen] = useState(false);
   const [cartItems, setCartItems] = useState([
     {
@@ -187,7 +192,10 @@ export default function Home() {
         onRemoveItem={(id) => {
           setCartItems(cartItems.filter(item => item.id !== id));
         }}
-        onCheckout={() => console.log('Checkout clicked')}
+        onCheckout={() => {
+          setIsCartOpen(false);
+          navigate('/checkout');
+        }}
       />
     </div>
   );

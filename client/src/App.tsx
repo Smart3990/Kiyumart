@@ -11,6 +11,7 @@ import SellerDashboard from "@/pages/SellerDashboard";
 import RiderDashboard from "@/pages/RiderDashboard";
 import ChatPage from "@/pages/ChatPage";
 import OrderTracking from "@/pages/OrderTracking";
+import Checkout from "@/pages/Checkout";
 import NotFound from "@/pages/not-found";
 
 function Router() {
@@ -18,6 +19,7 @@ function Router() {
     <Switch>
       <Route path="/" component={Home} />
       <Route path="/auth" component={AuthPage} />
+      <Route path="/checkout" component={Checkout} />
       <Route path="/admin" component={AdminDashboard} />
       <Route path="/seller" component={SellerDashboard} />
       <Route path="/rider" component={RiderDashboard} />
