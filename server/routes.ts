@@ -54,7 +54,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const token = generateToken(user);
       const { password, ...userWithoutPassword } = user;
 
-      res.json({ user: userWithoutPassword, token });
+      // Set token as httpOnly cookie for security
+      res.cookie("token", token, {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === "production",
+        sameSite: "lax",
+        maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
+      });
+
+      res.json({ user: userWithoutPassword });
     } catch (error: any) {
       res.status(400).json({ error: error.message });
     }
@@ -85,10 +93,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const token = generateToken(user);
       const { password: _, ...userWithoutPassword } = user;
 
-      res.json({ user: userWithoutPassword, token });
+      // Set token as httpOnly cookie for security
+      res.cookie("token", token, {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === "production",
+        sameSite: "lax",
+        maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
+      });
+
+      res.json({ user: userWithoutPassword });
     } catch (error: any) {
       res.status(400).json({ error: error.message });
     }
+  });
+
+  app.post("/api/auth/logout", (req, res) => {
+    res.clearCookie("token");
+    res.json({ success: true });
   });
 
   app.get("/api/auth/me", requireAuth, async (req: AuthRequest, res) => {
