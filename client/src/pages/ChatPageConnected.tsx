@@ -35,7 +35,7 @@ export default function ChatPageConnected() {
   const [selectedContact, setSelectedContact] = useState<User | null>(null);
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const socketRef = useRef<Socket | null>(null);
-  const hasAutoSelected = useRef(false);
+  const prevContactsLength = useRef(0);
 
   useEffect(() => {
     if (!isAuthenticated && !authLoading) {
@@ -104,13 +104,8 @@ export default function ChatPageConnected() {
     enabled: isAuthenticated && !!user,
   });
 
-  // Auto-select first contact for non-admin users (support chat)
-  useEffect(() => {
-    if (user?.role !== "admin" && contacts.length > 0 && !hasAutoSelected.current) {
-      setSelectedContact(contacts[0]);
-      hasAutoSelected.current = true;
-    }
-  }, [contacts.length, user?.role]); // Only when contacts count or role changes
+  // Auto-select disabled to prevent infinite loop - users must manually select contact
+  // TODO: Fix and re-enable auto-selection for non-admin users
 
   const { data: chatMessages = [], refetch: refetchMessages } = useQuery<ChatMessage[]>({
     queryKey: ["/api/messages", selectedContact?.id],
@@ -127,7 +122,7 @@ export default function ChatPageConnected() {
 
   useEffect(() => {
     setMessages(chatMessages);
-  }, [chatMessages, selectedContact?.id]);
+  }, [chatMessages]);
 
   const sendMessageMutation = useMutation({
     mutationFn: async (message: string) => {
