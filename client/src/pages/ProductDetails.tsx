@@ -22,6 +22,7 @@ interface Product {
   costPrice?: string;
   category: string;
   images: string[];
+  video?: string;
   ratings: string;
   totalRatings: number;
   stock: number;
@@ -45,6 +46,16 @@ interface Review {
   userName: string;
 }
 
+interface ProductVariant {
+  id: string;
+  productId: string;
+  color: string | null;
+  size: string | null;
+  sku: string | null;
+  stock: number;
+  priceAdjustment: string;
+}
+
 export default function ProductDetails() {
   const [, params] = useRoute("/product/:id");
   const [, navigate] = useLocation();
@@ -53,6 +64,8 @@ export default function ProductDetails() {
   const { currency } = useLanguage();
   const [quantity, setQuantity] = useState(1);
   const [selectedImage, setSelectedImage] = useState(0);
+  const [selectedColor, setSelectedColor] = useState<string>("");
+  const [selectedSize, setSelectedSize] = useState<string>("");
 
   const productId = params?.id || "";
 
@@ -85,8 +98,78 @@ export default function ProductDetails() {
     enabled: !!productId,
   });
 
+  const { data: variants = [] } = useQuery<ProductVariant[]>({
+    queryKey: ["/api/products", productId, "variants"],
+    queryFn: async () => {
+      const res = await fetch(`/api/products/${productId}/variants`);
+      if (!res.ok) return [];
+      return res.json();
+    },
+    enabled: !!productId,
+  });
+
+  const { data: relatedProducts = [] } = useQuery<Product[]>({
+    queryKey: ["/api/products"],
+    select: (products) => {
+      if (!product) return [];
+      return products
+        .filter((p) => p.id !== product.id && p.category === product.category)
+        .slice(0, 4);
+    },
+    enabled: !!product,
+  });
+
   const isWishlisted = wishlist.some(item => item.productId === productId);
   const cartItemsCount = cartItems.reduce((sum, item) => sum + item.quantity, 0);
+
+  const hasColorVariants = variants.some(v => v.color);
+  const hasSizeVariants = variants.some(v => v.size);
+
+  const activeVariant = (() => {
+    if (!variants.length) return null;
+    
+    const colorRequired = hasColorVariants;
+    const sizeRequired = hasSizeVariants;
+    
+    if (colorRequired && !selectedColor) return null;
+    if (sizeRequired && !selectedSize) return null;
+    
+    return variants.find(v => {
+      const colorMatch = !colorRequired || v.color === selectedColor;
+      const sizeMatch = !sizeRequired || v.size === selectedSize;
+      return colorMatch && sizeMatch;
+    }) || null;
+  })();
+
+  const availableStock = activeVariant 
+    ? activeVariant.stock 
+    : (!hasColorVariants && !hasSizeVariants ? (product?.stock || 0) : 0);
+
+  useEffect(() => {
+    if (quantity > availableStock && availableStock > 0) {
+      setQuantity(availableStock);
+    } else if (availableStock === 0) {
+      setQuantity(1);
+    }
+  }, [selectedColor, selectedSize, availableStock]);
+
+  useEffect(() => {
+    if (selectedColor && selectedSize && hasSizeVariants && hasColorVariants) {
+      const combination = variants.find(v => v.color === selectedColor && v.size === selectedSize);
+      if (!combination || combination.stock === 0) {
+        setSelectedSize("");
+      }
+    }
+  }, [selectedColor, variants, hasSizeVariants, hasColorVariants]);
+
+  useEffect(() => {
+    if (selectedSize && selectedColor && hasSizeVariants && hasColorVariants) {
+      const combination = variants.find(v => v.color === selectedColor && v.size === selectedSize);
+      if (!combination || combination.stock === 0) {
+        setSelectedSize("");
+      }
+    }
+  }, [selectedSize, variants, hasSizeVariants, hasColorVariants]);
 
   const addToCartMutation = useMutation({
     mutationFn: async ({ productId, quantity }: { productId: string; quantity: number }) => {
@@ -234,22 +317,37 @@ export default function ProductDetails() {
               </Card>
 
               {product.images.length > 1 && (
-                <div className="grid grid-cols-4 gap-2">
+                <div className="grid grid-cols-5 gap-2">
                   {product.images.map((image, idx) => (
                     <Card
                       key={idx}
-                      className={`cursor-pointer overflow-hidden ${selectedImage === idx ? 'ring-2 ring-primary' : ''}`}
+                      className={`cursor-pointer overflow-hidden hover-elevate ${selectedImage === idx ? 'ring-2 ring-primary' : ''}`}
                       onClick={() => setSelectedImage(idx)}
                       data-testid={`img-thumbnail-${idx}`}
                     >
-                      <img
-                        src={image}
-                        alt={`${product.name} ${idx + 1}`}
-                        className="w-full aspect-square object-cover"
-                      />
+                      <div className="relative aspect-square">
+                        <img
+                          src={image}
+                          alt={`${product.name} ${idx + 1}`}
+                          className="w-full h-full object-cover"
+                        />
+                      </div>
                     </Card>
                   ))}
                 </div>
+              )}
+
+              {product.video && (
+                <Card className="overflow-hidden mt-4">
+                  <video
+                    controls
+                    className="w-full"
+                    data-testid="video-product"
+                  >
+                    <source src={product.video} type="video/mp4" />
+                    Your browser does not support the video tag.
+                  </video>
+                </Card>
               )}
             </div>
 
@@ -315,6 +413,108 @@ export default function ProductDetails() {
                 </div>
               )}
 
+              {variants.length > 0 && (
+                <div className="space-y-4">
+                  <h2 className="text-xl font-semibold">Options</h2>
+                  
+                  {/* Color Selection */}
+                  {hasColorVariants && (
+                    <div>
+                      <label className="text-sm font-medium mb-2 block">
+                        Color {hasColorVariants && <span className="text-destructive">*</span>}
+                      </label>
+                      <div className="flex flex-wrap gap-2">
+                        {Array.from(new Set(variants.filter(v => v.color).map(v => v.color))).map((color) => {
+                          const colorVariants = variants.filter(v => v.color === color);
+                          const hasStock = colorVariants.some(v => v.stock > 0);
+                          
+                          return (
+                            <Button
+                              key={color}
+                              variant={selectedColor === color ? "default" : "outline"}
+                              onClick={() => setSelectedColor(color || "")}
+                              disabled={!hasStock}
+                              className="min-w-[80px]"
+                              data-testid={`button-color-${color}`}
+                            >
+                              {color}
+                            </Button>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Size Selection */}
+                  {hasSizeVariants && (
+                    <div>
+                      <label className="text-sm font-medium mb-2 block">
+                        Size {hasSizeVariants && <span className="text-destructive">*</span>}
+                      </label>
+                      <div className="flex flex-wrap gap-2">
+                        {Array.from(new Set(variants.filter(v => v.size).map(v => v.size))).map((size) => {
+                          const sizeVariants = variants.filter(v => {
+                            const sizeMatch = v.size === size;
+                            const colorMatch = !hasColorVariants || !selectedColor || v.color === selectedColor;
+                            return sizeMatch && colorMatch;
+                          });
+                          const hasStock = sizeVariants.some(v => v.stock > 0);
+                          
+                          return (
+                            <Button
+                              key={size}
+                              variant={selectedSize === size ? "default" : "outline"}
+                              onClick={() => setSelectedSize(size || "")}
+                              disabled={!hasStock}
+                              className="min-w-[60px]"
+                              data-testid={`button-size-${size}`}
+                            >
+                              {size}
+                            </Button>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Stock Information */}
+                  {activeVariant && (
+                    <div className="text-sm text-muted-foreground">
+                      <span data-testid="text-variant-stock">
+                        {activeVariant.stock > 0 
+                          ? `${activeVariant.stock} in stock` 
+                          : "Out of stock"}
+                      </span>
+                    </div>
+                  )}
+
+                  {/* Selection Required Message */}
+                  {(hasColorVariants || hasSizeVariants) && !activeVariant && (
+                    <div className="text-sm text-destructive" data-testid="text-selection-required">
+                      {(() => {
+                        const needsColor = hasColorVariants && !selectedColor;
+                        const needsSize = hasSizeVariants && !selectedSize;
+                        const invalidCombo = selectedColor && selectedSize && !activeVariant;
+                        
+                        if (invalidCombo) {
+                          return "This combination is not available. Please select a different option.";
+                        }
+                        if (needsColor && needsSize) {
+                          return "Please select a color and a size";
+                        }
+                        if (needsColor) {
+                          return "Please select a color";
+                        }
+                        if (needsSize) {
+                          return "Please select a size";
+                        }
+                        return "";
+                      })()}
+                    </div>
+                  )}
+                </div>
+              )}
+
               <div className="space-y-4">
                 <div>
                   <label className="block text-sm font-medium mb-2">Quantity</label>
@@ -337,14 +537,14 @@ export default function ProductDetails() {
                     <Button
                       variant="outline"
                       size="icon"
-                      onClick={() => setQuantity(Math.min(product.stock, quantity + 1))}
-                      disabled={quantity >= product.stock}
+                      onClick={() => setQuantity(Math.min(availableStock, quantity + 1))}
+                      disabled={quantity >= availableStock}
                       data-testid="button-increase-quantity"
                     >
                       <Plus className="h-4 w-4" />
                     </Button>
                     <span className="text-sm text-muted-foreground ml-2">
-                      ({product.stock} available)
+                      ({availableStock} available)
                     </span>
                   </div>
                 </div>
@@ -353,11 +553,11 @@ export default function ProductDetails() {
                   className="w-full"
                   size="lg"
                   onClick={handleAddToCart}
-                  disabled={!product.isActive || product.stock === 0 || addToCartMutation.isPending}
+                  disabled={!product.isActive || availableStock === 0 || addToCartMutation.isPending}
                   data-testid="button-add-to-cart"
                 >
                   <ShoppingCart className="h-5 w-5 mr-2" />
-                  {product.stock === 0 ? "Out of Stock" : "Add to Cart"}
+                  {availableStock === 0 ? "Out of Stock" : "Add to Cart"}
                 </Button>
               </div>
             </div>
@@ -413,6 +613,69 @@ export default function ProductDetails() {
                     </div>
                   </Card>
                 ))}
+              </div>
+            </div>
+          )}
+
+          {relatedProducts.length > 0 && (
+            <div className="mt-12">
+              <h2 className="text-2xl font-bold mb-6" data-testid="heading-related">
+                You May Also Like
+              </h2>
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+                {relatedProducts.map((relatedProduct) => {
+                  const costPrice = relatedProduct.costPrice ? parseFloat(relatedProduct.costPrice) : undefined;
+                  const sellingPrice = parseFloat(relatedProduct.price);
+                  const discount = costPrice && costPrice > sellingPrice
+                    ? Math.round(((costPrice - sellingPrice) / costPrice) * 100)
+                    : 0;
+                  
+                  return (
+                    <Card 
+                      key={relatedProduct.id} 
+                      className="overflow-hidden cursor-pointer hover-elevate active-elevate-2 transition-all"
+                      onClick={() => navigate(`/product/${relatedProduct.id}`)}
+                      data-testid={`related-product-${relatedProduct.id}`}
+                    >
+                      <div className="relative aspect-square">
+                        <img
+                          src={relatedProduct.images[0]}
+                          alt={relatedProduct.name}
+                          className="w-full h-full object-cover"
+                        />
+                        {discount > 0 && (
+                          <Badge className="absolute top-2 right-2 bg-destructive text-destructive-foreground">
+                            -{discount}%
+                          </Badge>
+                        )}
+                      </div>
+                      <div className="p-4 space-y-2">
+                        <h3 className="font-semibold line-clamp-2 min-h-[3rem]">
+                          {relatedProduct.name}
+                        </h3>
+                        <div className="flex items-center gap-1">
+                          <Star className="h-4 w-4 fill-primary text-primary" />
+                          <span className="text-sm font-medium">
+                            {parseFloat(relatedProduct.ratings).toFixed(1)}
+                          </span>
+                          <span className="text-sm text-muted-foreground">
+                            ({relatedProduct.totalRatings})
+                          </span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <span className="text-lg font-bold text-primary">
+                            {currency} {sellingPrice.toFixed(2)}
+                          </span>
+                          {costPrice && costPrice > sellingPrice && (
+                            <span className="text-sm text-muted-foreground line-through">
+                              {currency} {costPrice.toFixed(2)}
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                    </Card>
+                  );
+                })}
               </div>
             </div>
           )}
