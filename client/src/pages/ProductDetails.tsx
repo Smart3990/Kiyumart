@@ -20,6 +20,7 @@ interface Product {
   description?: string;
   price: string;
   costPrice?: string;
+  discount?: number;
   category: string;
   images: string[];
   video?: string;
@@ -258,9 +259,10 @@ export default function ProductDetails() {
 
   const sellingPrice = parseFloat(product.price);
   const originalPrice = product.costPrice ? parseFloat(product.costPrice) : null;
-  const discount = originalPrice && originalPrice > sellingPrice
+  const calculatedDiscount = originalPrice && originalPrice > sellingPrice
     ? Math.round(((originalPrice - sellingPrice) / originalPrice) * 100)
     : 0;
+  const discount = calculatedDiscount > 0 ? calculatedDiscount : (product.discount || 0);
   const rating = parseFloat(product.ratings) || 0;
 
   return (
