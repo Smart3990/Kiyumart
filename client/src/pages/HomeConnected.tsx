@@ -274,7 +274,7 @@ export default function HomeConnected() {
               <CategoryCard
                 key={category.id}
                 {...category}
-                onClick={(id) => console.log('Category clicked:', id)}
+                onClick={(id) => navigate(`/category/${id}`)}
               />
             ))}
           </div>
