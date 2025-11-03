@@ -25,17 +25,61 @@ KiyuMart is a dual-mode e-commerce platform that operates as both a single-store
 - Cloudinary-powered image management
 - Mobile-responsive design
 
-**🔄 Phase 2 Status:**
-- **Chat System**: Backend complete (Socket.IO, APIs, DB schema), frontend has rendering issues requiring debugging
-- **Order Tracking**: Backend functional, frontend needs optimization
-- **Delivery Tracking**: Needs Leaflet.js integration
+**✅ Phase 2 - Enhanced Order Tracking (COMPLETE):**
+- **Visual Order Status Timeline**: Progressive indicator showing order journey (pending → processing → shipped → delivered)
+- **Real-time Status Updates**: Socket.IO integration for instant order status notifications
+- **Status Badges**: Color-coded badges with icons for quick status identification
+- **Advanced Filtering**: Search by order number/address, filter by status
+- **Responsive Design**: Mobile-optimized timeline and card layouts
+- **Toast Notifications**: Real-time alerts when order status changes
+
+**🔄 Phase 2 - In Progress:**
+- **Chat System**: Backend complete (Socket.IO, APIs, DB schema), frontend auth guard fixed, manual testing pending
+- **Delivery Tracking**: Needs Leaflet.js map integration
 - **Analytics**: Needs charts and advanced dashboards
 
 ## User Preferences
 
 Preferred communication style: Simple, everyday language.
 
-## Recent Changes (Phase 1 MVP - Completed Nov 3, 2025)
+## Recent Changes
+
+### Phase 2 - Enhanced Order Tracking (Completed Nov 3, 2025)
+
+**OrderStatusTimeline Component:**
+- Visual timeline showing order progression through stages
+- Icons for each stage: Clock (pending), Package (processing), Truck (shipped), CheckCircle (delivered)
+- Completed steps highlighted in primary color with connecting lines
+- Special UI for cancelled (red) and disputed (yellow) orders
+- Delivery timestamp shown for completed orders
+
+**OrderStatusBadge Component:**
+- Color-coded badges for all order statuses
+- Background colors adapt to light/dark themes
+- Icons integrated for visual clarity
+- Variants: pending (gray), processing (blue), shipped (purple), delivered (green), cancelled (red), disputed (yellow)
+
+**Enhanced OrderTracking Page:**
+- Search functionality with real-time filtering by order number or address
+- Status filter dropdown (all, pending, processing, shipped, delivered, cancelled, disputed)
+- Results count display showing filtered vs total orders
+- Improved card layout with header sections
+- Timeline integration in each order card
+- QR code hidden for cancelled orders
+
+**Real-time Socket.IO Updates:**
+- Backend emits `order_status_updated` event when order status changes
+- Frontend listens for updates and invalidates query cache
+- Toast notifications alert users of status changes
+- Automatic UI refresh without page reload
+- Socket connection cleanup on component unmount
+
+**Backend Enhancements:**
+- PATCH /api/orders/:id/status now emits Socket.IO events to buyer
+- Event payload includes orderId, orderNumber, status, updatedAt
+- Targeted emission to specific buyer's socket room
+
+### Phase 1 MVP (Completed Nov 3, 2025)
 
 **Product Display Enhancements:**
 - Added `costPrice` field to products schema (decimal type)
