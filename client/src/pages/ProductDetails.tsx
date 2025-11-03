@@ -300,10 +300,11 @@ export default function ProductDetails() {
                   />
                   {discount > 0 && (
                     <Badge 
-                      className="absolute top-4 left-4 bg-destructive text-destructive-foreground z-10 font-semibold text-xs px-3 py-1 shadow-md rounded-full"
+                      className="absolute top-4 left-4 bg-destructive text-destructive-foreground font-semibold px-3 py-1.5 shadow-lg"
+                      style={{ zIndex: 20 }}
                       data-testid="badge-discount"
                     >
-                      -{discount}%
+                      -{discount}% OFF
                     </Badge>
                   )}
                 </div>

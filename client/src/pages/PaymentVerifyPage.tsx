@@ -25,20 +25,15 @@ export default function PaymentVerifyPage() {
   const [reference, setReference] = useState<string | null>(null);
 
   useEffect(() => {
-    if (!isAuthenticated && !authLoading) {
-      navigate("/auth");
-      return;
-    }
-
     const params = new URLSearchParams(window.location.search);
     const ref = params.get("reference");
     
     if (ref) {
       setReference(ref);
-    } else {
+    } else if (!authLoading) {
       navigate("/");
     }
-  }, [isAuthenticated, authLoading, navigate]);
+  }, [authLoading, navigate]);
 
   const { data: verification, isLoading, error } = useQuery<VerificationResult>({
     queryKey: ["/api/payments/verify", reference],

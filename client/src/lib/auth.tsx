@@ -81,6 +81,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     onSuccess: () => {
       setUser(null);
       queryClient.clear();
+      window.location.href = "/";
     },
   });
 
