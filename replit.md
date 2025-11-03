@@ -12,10 +12,22 @@ Preferred communication style: Simple, everyday language.
 
 ### E-commerce Enhancements (Nov 3, 2025)
 - **Payment Flow**: Changed "Place Order" to "Pay" button with direct Paystack integration and callback handling
-- **Product Variants**: Added database schema and API for product colors and sizes (productVariants table)
+- **Product Variants**: 
+  - Added database schema and API for product colors and sizes (productVariants table)
+  - Implemented variant selection UI with color and size buttons on ProductDetails page
+  - Variant-aware stock management - availability updates based on selected color/size combination
+  - Automatic validation that resets invalid combinations
+  - Disabled buttons for out-of-stock variants
+  - Required selections marked with red asterisks
+  - Clear messaging for missing or invalid selections
 - **Hero Banners**: Added hero_banners table for multiple auto-scrolling banners
 - **Wishlist Page**: Created dedicated wishlist page at /wishlist route
-- **Product Gallery**: Updated products to support up to 5 images with thumbnail navigation
+- **Product Gallery**: 
+  - Updated products to support up to 5 images with thumbnail navigation
+  - Thumbnail grid uses 5 columns (grid-cols-5) for even distribution
+  - Clickable thumbnails with hover effects and selection indicators
+  - Video playback support for products with video field
+- **Related Products**: "You May Also Like" section on ProductDetails page showing up to 4 products from same category
 - **Category Navigation**: Fixed category cards to properly navigate to category pages
 - **Sample Data**: Added 8 product variants (S/M/L/XL sizes) and 3 hero banners
 
