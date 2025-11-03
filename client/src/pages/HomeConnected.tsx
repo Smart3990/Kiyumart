@@ -13,10 +13,10 @@ import Footer from "@/components/Footer";
 import CartSidebar from "@/components/CartSidebar";
 import ThemeToggle from "@/components/ThemeToggle";
 
-import heroImage from "@assets/generated_images/Fashion_hero_banner_lifestyle_000ccc89.png";
-import menCategoryImage from "@assets/generated_images/Men's_fashion_category_image_d439510a.png";
-import accessoriesImage from "@assets/generated_images/Women's_accessories_category_image_091f4ac1.png";
-import footwearImage from "@assets/generated_images/Footwear_category_image_9d3587fc.png";
+import heroImage from "@assets/generated_images/Islamic_fashion_hero_banner_6bb20763.png";
+import abayaCategoryImage from "@assets/generated_images/Abayas_category_collection_image_cbf9978c.png";
+import hijabCategoryImage from "@assets/generated_images/Hijabs_and_accessories_category_09f9b1a2.png";
+import eveningCategoryImage from "@assets/generated_images/Evening_wear_category_image_455c3389.png";
 
 interface Product {
   id: string;
@@ -183,9 +183,9 @@ export default function HomeConnected() {
   ];
 
   const categories = [
-    { id: "men", name: "Men's Fashion", image: menCategoryImage, productCount: products.filter(p => p.category === "men").length },
-    { id: "women", name: "Women's Accessories", image: accessoriesImage, productCount: products.filter(p => p.category === "women").length },
-    { id: "footwear", name: "Footwear Collection", image: footwearImage, productCount: products.filter(p => p.category === "footwear").length },
+    { id: "abayas", name: "Elegant Abayas", image: abayaCategoryImage, productCount: products.filter(p => p.category === "abayas").length || 245 },
+    { id: "hijabs", name: "Hijabs & Accessories", image: hijabCategoryImage, productCount: products.filter(p => p.category === "hijabs").length || 318 },
+    { id: "evening", name: "Evening Wear", image: eveningCategoryImage, productCount: products.filter(p => p.category === "evening").length || 156 },
   ];
 
   const cartItemsForSidebar = cartItems.map(cartItem => {

@@ -12,16 +12,16 @@ import Footer from "@/components/Footer";
 import CartSidebar from "@/components/CartSidebar";
 import ThemeToggle from "@/components/ThemeToggle";
 
-import heroImage from "@assets/generated_images/Fashion_hero_banner_lifestyle_000ccc89.png";
-import handbagImage from "@assets/generated_images/Designer_handbag_product_photo_d9f11f99.png";
-import sneakersImage from "@assets/generated_images/Men's_sneakers_product_photo_2c87b833.png";
-import dressImage from "@assets/generated_images/Summer_dress_product_photo_9f6f8356.png";
-import jacketImage from "@assets/generated_images/Leather_jacket_product_photo_999cea00.png";
-import sunglassesImage from "@assets/generated_images/Designer_sunglasses_product_photo_2aa575e1.png";
-import watchImage from "@assets/generated_images/Men's_watch_product_photo_7b78c9da.png";
-import menCategoryImage from "@assets/generated_images/Men's_fashion_category_image_d439510a.png";
-import accessoriesImage from "@assets/generated_images/Women's_accessories_category_image_091f4ac1.png";
-import footwearImage from "@assets/generated_images/Footwear_category_image_9d3587fc.png";
+import heroImage from "@assets/generated_images/Islamic_fashion_hero_banner_6bb20763.png";
+import abaya1 from "@assets/generated_images/Elegant_black_abaya_with_gold_embroidery_cc860cad.png";
+import abaya2 from "@assets/generated_images/Navy_blue_embroidered_modest_dress_aa08f435.png";
+import abaya3 from "@assets/generated_images/Pink_lace_abaya_dress_53759991.png";
+import abaya4 from "@assets/generated_images/Burgundy_velvet_abaya_with_pearls_c19f2d40.png";
+import abaya5 from "@assets/generated_images/Emerald_green_satin_dress_530931af.png";
+import abaya6 from "@assets/generated_images/Cream_abaya_with_beige_embroidery_92e12aec.png";
+import abayaCategoryImage from "@assets/generated_images/Abayas_category_collection_image_cbf9978c.png";
+import hijabCategoryImage from "@assets/generated_images/Hijabs_and_accessories_category_09f9b1a2.png";
+import eveningCategoryImage from "@assets/generated_images/Evening_wear_category_image_455c3389.png";
 
 export default function Home() {
   const [, navigate] = useLocation();
@@ -30,10 +30,10 @@ export default function Home() {
   const [cartItems, setCartItems] = useState([
     {
       id: '1',
-      name: 'Designer Leather Handbag',
+      name: 'Elegant Black Abaya',
       price: 299.99,
       quantity: 1,
-      image: handbagImage
+      image: abaya1
     }
   ]);
 
@@ -53,60 +53,69 @@ export default function Home() {
   ];
 
   const categories = [
-    { id: "men", name: "Men's Fashion", image: menCategoryImage, productCount: 245 },
-    { id: "women", name: "Women's Accessories", image: accessoriesImage, productCount: 318 },
-    { id: "footwear", name: "Footwear Collection", image: footwearImage, productCount: 156 },
+    { id: "abayas", name: "Elegant Abayas", image: abayaCategoryImage, productCount: 245 },
+    { id: "hijabs", name: "Hijabs & Accessories", image: hijabCategoryImage, productCount: 318 },
+    { id: "evening", name: "Evening Wear", image: eveningCategoryImage, productCount: 156 },
   ];
 
   const products = [
     {
       id: "1",
-      name: "Designer Leather Handbag",
+      name: "Elegant Black Abaya with Gold Embroidery",
       price: 299.99,
-      image: handbagImage,
-      discount: 15,
-      rating: 4.5,
+      costPrice: 399.99,
+      image: abaya1,
+      discount: 25,
+      rating: 4.8,
       reviewCount: 128,
     },
     {
       id: "2",
-      name: "Men's Casual Sneakers",
-      price: 89.99,
-      image: sneakersImage,
-      rating: 4.8,
+      name: "Navy Blue Embroidered Modest Dress",
+      price: 189.99,
+      costPrice: 249.99,
+      image: abaya2,
+      discount: 24,
+      rating: 4.9,
       reviewCount: 256,
     },
     {
       id: "3",
-      name: "Summer Floral Dress",
-      price: 129.99,
-      image: dressImage,
-      discount: 20,
+      name: "Pink Lace Abaya Dress",
+      price: 229.99,
+      costPrice: 299.99,
+      image: abaya3,
+      discount: 23,
       rating: 4.6,
       reviewCount: 89,
     },
     {
       id: "4",
-      name: "Premium Leather Jacket",
-      price: 399.99,
-      image: jacketImage,
+      name: "Burgundy Velvet Abaya with Pearls",
+      price: 449.99,
+      costPrice: 599.99,
+      image: abaya4,
+      discount: 25,
       rating: 4.9,
       reviewCount: 45,
     },
     {
       id: "5",
-      name: "Designer Sunglasses",
-      price: 159.99,
-      image: sunglassesImage,
-      discount: 10,
+      name: "Emerald Green Satin Dress with Hijab",
+      price: 279.99,
+      costPrice: 349.99,
+      image: abaya5,
+      discount: 20,
       rating: 4.7,
       reviewCount: 203,
     },
     {
       id: "6",
-      name: "Classic Men's Watch",
+      name: "Cream Abaya with Beige Embroidery",
       price: 249.99,
-      image: watchImage,
+      costPrice: 329.99,
+      image: abaya6,
+      discount: 24,
       rating: 4.8,
       reviewCount: 167,
     },
