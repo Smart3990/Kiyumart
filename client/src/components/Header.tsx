@@ -1,15 +1,18 @@
-import { Search, Menu, Globe, User, Bell, Package, Heart } from "lucide-react";
+import { Search, Menu, Globe, User, Bell, Package, Heart, LayoutDashboard, ShoppingBag } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { useLocation } from "wouter";
 import { useLanguage, languages, Language } from "@/contexts/LanguageContext";
 import { useQuery } from "@tanstack/react-query";
+import { useAuth } from "@/lib/auth";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
+  DropdownMenuSeparator,
+  DropdownMenuLabel,
 } from "@/components/ui/dropdown-menu";
 import CartPopover from "@/components/CartPopover";
 import logoLight from "@assets/light_mode_1762169855262.png";
@@ -37,12 +40,24 @@ export default function Header({
 }: HeaderProps) {
   const [location, navigate] = useLocation();
   const { language, currency, currencySymbol, countryName, setLanguage, t } = useLanguage();
+  const { user, isAuthenticated } = useAuth();
   
   const { data: wishlist = [] } = useQuery<WishlistItem[]>({
     queryKey: ["/api/wishlist"],
   });
 
   const isActive = (path: string) => location === path;
+
+  // Check if user has a dashboard role (admin, seller, rider)
+  const hasDashboard = user && ['admin', 'seller', 'rider'].includes(user.role);
+  const isDashboardPage = location.startsWith('/admin') || location.startsWith('/seller') || location.startsWith('/rider');
+  
+  const getDashboardPath = () => {
+    if (user?.role === 'admin') return '/admin';
+    if (user?.role === 'seller') return '/seller';
+    if (user?.role === 'rider') return '/rider';
+    return '/';
+  };
 
   return (
     <header className="sticky top-0 z-50 w-full border-b bg-background">
@@ -159,6 +174,38 @@ export default function Header({
             >
               <Package className={`h-5 w-5 ${isActive("/orders") ? "text-primary" : ""}`} />
             </Button>
+
+            {hasDashboard && (
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button 
+                    variant={isDashboardPage ? "default" : "ghost"}
+                    size="icon"
+                    data-testid="button-role-switcher"
+                  >
+                    <LayoutDashboard className="h-5 w-5" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end">
+                  <DropdownMenuLabel>Switch Mode</DropdownMenuLabel>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem 
+                    onClick={() => navigate(getDashboardPath())}
+                    data-testid="menu-dashboard"
+                  >
+                    <LayoutDashboard className="mr-2 h-4 w-4" />
+                    <span>{user.role === 'admin' ? 'Admin' : user.role === 'seller' ? 'Seller' : 'Rider'} Dashboard</span>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem 
+                    onClick={() => navigate("/")}
+                    data-testid="menu-shop"
+                  >
+                    <ShoppingBag className="mr-2 h-4 w-4" />
+                    <span>Shop Mode</span>
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            )}
 
             <Button 
               variant="ghost" 

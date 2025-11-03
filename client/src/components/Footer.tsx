@@ -1,6 +1,8 @@
 import { Facebook, Instagram, Twitter, Mail, Phone, MapPin } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useQuery } from "@tanstack/react-query";
+import { Link } from "wouter";
+import { useAuth } from "@/lib/auth";
 import logoLight from "@assets/light_mode_1762169855262.png";
 import logoDark from "@assets/photo_2025-09-24_21-19-48-removebg-preview_1762169855290.png";
 
@@ -20,10 +22,18 @@ export default function Footer() {
   const { data: settings } = useQuery<PlatformSettings>({
     queryKey: ["/api/settings"],
   });
+  const { isAuthenticated } = useAuth();
 
   const openSocialLink = (url?: string) => {
     if (url) {
       window.open(url, '_blank', 'noopener,noreferrer');
+    }
+  };
+
+  const handleCustomerSupportClick = (e: React.MouseEvent) => {
+    if (!isAuthenticated) {
+      e.preventDefault();
+      window.location.href = '/auth';
     }
   };
 
@@ -95,20 +105,27 @@ export default function Footer() {
           <div>
             <h4 className="font-semibold mb-4">Shop</h4>
             <ul className="space-y-2 text-muted-foreground">
-              <li><a href="/" className="hover:text-foreground transition-colors">Home</a></li>
-              <li><a href="/category/abayas" className="hover:text-foreground transition-colors">Abayas</a></li>
-              <li><a href="/category/hijabs" className="hover:text-foreground transition-colors">Hijabs</a></li>
-              <li><a href="/category/dresses" className="hover:text-foreground transition-colors">Dresses</a></li>
+              <li><Link href="/" className="hover:text-foreground transition-colors" data-testid="link-home">Home</Link></li>
+              <li><Link href="/category/abayas" className="hover:text-foreground transition-colors" data-testid="link-abayas">Abayas</Link></li>
+              <li><Link href="/category/hijabs" className="hover:text-foreground transition-colors" data-testid="link-hijabs">Hijabs</Link></li>
+              <li><Link href="/category/dresses" className="hover:text-foreground transition-colors" data-testid="link-dresses">Dresses</Link></li>
             </ul>
           </div>
 
           <div>
             <h4 className="font-semibold mb-4">Customer Service</h4>
             <ul className="space-y-2 text-muted-foreground">
-              <li><a href="/support" className="hover:text-foreground transition-colors">Customer Support</a></li>
-              <li><a href="/track" className="hover:text-foreground transition-colors">Track Order</a></li>
-              <li><a href="/orders" className="hover:text-foreground transition-colors">My Orders</a></li>
-              <li><a href="/wishlist" className="hover:text-foreground transition-colors">Wishlist</a></li>
+              <li>
+                <Link 
+                  href={isAuthenticated ? "/support" : "/auth"} 
+                  className="hover:text-foreground transition-colors"
+                  data-testid="link-support"
+                >
+                  Customer Support
+                </Link>
+              </li>
+              <li><Link href="/orders" className="hover:text-foreground transition-colors" data-testid="link-orders">My Orders</Link></li>
+              <li><Link href="/wishlist" className="hover:text-foreground transition-colors" data-testid="link-wishlist">Wishlist</Link></li>
             </ul>
           </div>
 
