@@ -21,6 +21,7 @@ import PaymentPage from "@/pages/PaymentPage";
 import PaymentVerifyPage from "@/pages/PaymentVerifyPage";
 import Notifications from "@/pages/Notifications";
 import Profile from "@/pages/Profile";
+import Settings from "@/pages/Settings";
 import CategoryPage from "@/pages/CategoryPage";
 import Wishlist from "@/pages/Wishlist";
 import Orders from "@/pages/Orders";
@@ -39,6 +40,7 @@ function Router() {
       <Route path="/payment/verify" component={PaymentVerifyPage} />
       <Route path="/notifications" component={Notifications} />
       <Route path="/profile" component={Profile} />
+      <Route path="/settings" component={Settings} />
       <Route path="/wishlist" component={Wishlist} />
       <Route path="/orders" component={Orders} />
       <Route path="/admin" component={AdminDashboard} />
