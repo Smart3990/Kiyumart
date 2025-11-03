@@ -124,8 +124,24 @@ export default function Footer() {
                   Customer Support
                 </Link>
               </li>
-              <li><Link href="/orders" className="hover:text-foreground transition-colors" data-testid="link-orders">My Orders</Link></li>
-              <li><Link href="/wishlist" className="hover:text-foreground transition-colors" data-testid="link-wishlist">Wishlist</Link></li>
+              <li>
+                <Link 
+                  href={isAuthenticated ? "/orders" : "/auth"} 
+                  className="hover:text-foreground transition-colors" 
+                  data-testid="link-orders"
+                >
+                  My Orders
+                </Link>
+              </li>
+              <li>
+                <Link 
+                  href={isAuthenticated ? "/wishlist" : "/auth"} 
+                  className="hover:text-foreground transition-colors" 
+                  data-testid="link-wishlist"
+                >
+                  Wishlist
+                </Link>
+              </li>
             </ul>
           </div>
 

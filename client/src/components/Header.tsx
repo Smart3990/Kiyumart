@@ -215,13 +215,13 @@ export default function Header({
             <Button 
               variant="ghost" 
               size="icon"
-              onClick={() => navigate("/profile")}
+              onClick={() => isAuthenticated ? navigate("/profile") : navigate("/auth")}
               data-testid="button-account"
             >
               <User className={`h-5 w-5 ${isActive("/profile") ? "text-primary" : ""}`} />
             </Button>
 
-            <CartPopover />
+            <CartPopover isAuthenticated={isAuthenticated} />
           </div>
         </div>
 

@@ -1,3 +1,4 @@
+import { type MouseEvent } from "react";
 import { ShoppingCart, X, Plus, Minus, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -18,7 +19,11 @@ interface CartItem {
   price: string;
 }
 
-export default function CartPopover() {
+interface CartPopoverProps {
+  isAuthenticated?: boolean;
+}
+
+export default function CartPopover({ isAuthenticated = false }: CartPopoverProps) {
   const [, navigate] = useLocation();
   const { currencySymbol } = useLanguage();
 
@@ -53,6 +58,13 @@ export default function CartPopover() {
 
   const totalItems = cart.reduce((sum, item) => sum + item.quantity, 0);
 
+  const handleCartClick = (e: MouseEvent) => {
+    if (!isAuthenticated) {
+      e.preventDefault();
+      navigate("/auth");
+    }
+  };
+
   return (
     <Popover>
       <PopoverTrigger asChild>
@@ -61,6 +73,7 @@ export default function CartPopover() {
           size="icon"
           className="relative"
           data-testid="button-cart"
+          onClick={handleCartClick}
         >
           <ShoppingCart className="h-5 w-5" />
           {totalItems > 0 && (
