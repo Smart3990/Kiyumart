@@ -10,6 +10,19 @@ Preferred communication style: Simple, everyday language.
 
 ## Recent Changes (November 2025)
 
+### UI/UX and Profile Improvements (Nov 3, 2025)
+- **Shopping Cart Currency Fix**: Updated CartPopover to use dynamic currencySymbol from LanguageContext instead of hardcoded "GHS"
+- **Perfect Circle Badges**: All notification badges (cart, wishlist, notifications) now display as perfect circles using rounded-full class
+- **Wishlist Icon in Header**: Added Heart icon button to header for quick access to wishlist page
+- **Profile Picture Upload**: Complete implementation with:
+  - Camera icon button on profile avatar with file upload functionality
+  - Frontend validation: file type and 5MB size limit
+  - Server-side validation: MIME type checking, file size enforcement
+  - Cloudinary integration for secure image storage in kiyumart/profiles folder
+  - Real-time UI updates with proper cache invalidation
+  - Loading states and comprehensive error handling
+- **Profile Security**: Enhanced profile update endpoint with field whitelisting (username, phone, address, city, country only) to prevent privilege escalation
+
 ### E-commerce Enhancements (Nov 3, 2025)
 - **Payment Flow**: Changed "Place Order" to "Pay" button with direct Paystack integration and callback handling
 - **Product Variants**: 

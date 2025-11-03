@@ -143,7 +143,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.patch("/api/profile", requireAuth, async (req: AuthRequest, res) => {
     try {
-      const { password, role, isApproved, ...updateData } = req.body;
+      // Only allow updating specific safe fields
+      const allowedFields = ['username', 'phone', 'address', 'city', 'country'];
+      const updateData: Record<string, any> = {};
+      
+      for (const field of allowedFields) {
+        if (req.body[field] !== undefined) {
+          updateData[field] = req.body[field];
+        }
+      }
+
+      // Prevent updates if no valid fields provided
+      if (Object.keys(updateData).length === 0) {
+        return res.status(400).json({ error: "No valid fields to update" });
+      }
       
       const updatedUser = await storage.updateUser(req.user!.id, updateData);
       if (!updatedUser) {
@@ -163,6 +176,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ error: "No image file provided" });
       }
 
+      // Validate file type (server-side)
+      const allowedMimeTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp', 'image/gif'];
+      if (!allowedMimeTypes.includes(req.file.mimetype)) {
+        return res.status(400).json({ error: "Invalid file type. Only JPEG, PNG, WEBP, and GIF images are allowed" });
+      }
+
+      // Validate file size (max 5MB)
+      const maxSize = 5 * 1024 * 1024; // 5MB in bytes
+      if (req.file.size > maxSize) {
+        return res.status(400).json({ error: "File too large. Maximum size is 5MB" });
+      }
+
       const imageUrl = await uploadToCloudinary(req.file.buffer, "kiyumart/profiles");
 
       const updatedUser = await storage.updateUser(req.user!.id, {
@@ -176,7 +201,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const { password, ...userWithoutPassword } = updatedUser;
       res.json({ profileImage: imageUrl, user: userWithoutPassword });
     } catch (error: any) {
-      res.status(400).json({ error: error.message });
+      console.error("Profile image upload error:", error);
+      res.status(500).json({ error: error.message || "Failed to upload profile image" });
     }
   });
 
