@@ -344,7 +344,10 @@ export default function Profile() {
                       <p className="text-muted-foreground mb-4">
                         Start shopping to see your orders here
                       </p>
-                      <Button data-testid="button-start-shopping">
+                      <Button 
+                        onClick={() => navigate("/")}
+                        data-testid="button-start-shopping"
+                      >
                         Start Shopping
                       </Button>
                     </div>
@@ -362,7 +365,12 @@ export default function Profile() {
                               {order.createdAt}
                             </p>
                           </div>
-                          <Button variant="outline" size="sm">
+                          <Button 
+                            variant="outline" 
+                            size="sm"
+                            onClick={() => navigate(`/track`)}
+                            data-testid={`button-view-order-${order.id}`}
+                          >
                             View Details
                           </Button>
                         </div>
@@ -390,7 +398,11 @@ export default function Profile() {
                           Update your password to keep your account secure
                         </p>
                       </div>
-                      <Button variant="outline" data-testid="button-change-password">
+                      <Button 
+                        variant="outline" 
+                        onClick={() => navigate("/settings")}
+                        data-testid="button-change-password"
+                      >
                         Change
                       </Button>
                     </div>
@@ -401,7 +413,11 @@ export default function Profile() {
                           Manage your email notification preferences
                         </p>
                       </div>
-                      <Button variant="outline" data-testid="button-email-preferences">
+                      <Button 
+                        variant="outline"
+                        onClick={() => navigate("/settings")}
+                        data-testid="button-email-preferences"
+                      >
                         Manage
                       </Button>
                     </div>

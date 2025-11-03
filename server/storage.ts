@@ -55,7 +55,7 @@ export interface IStorage {
   
   // Cart operations
   addToCart(userId: string, productId: string, quantity: number): Promise<Cart>;
-  getCart(userId: string): Promise<Cart[]>;
+  getCart(userId: string): Promise<Array<{ id: string; productId: string; productName: string; productImage: string; quantity: number; price: string }>>;
   updateCartItem(id: string, quantity: number): Promise<Cart | undefined>;
   removeFromCart(id: string): Promise<boolean>;
   clearCart(userId: string): Promise<void>;
@@ -318,8 +318,27 @@ export class DbStorage implements IStorage {
     return newItem;
   }
 
-  async getCart(userId: string): Promise<Cart[]> {
-    return db.select().from(cart).where(eq(cart.userId, userId)).orderBy(desc(cart.createdAt));
+  async getCart(userId: string): Promise<Array<{ id: string; productId: string; productName: string; productImage: string; quantity: number; price: string }>> {
+    const items = await db
+      .select({
+        id: cart.id,
+        productId: cart.productId,
+        productName: products.name,
+        productImage: sql<string>`${products.images}[1]`,
+        quantity: cart.quantity,
+        price: products.price,
+      })
+      .from(cart)
+      .leftJoin(products, eq(cart.productId, products.id))
+      .where(eq(cart.userId, userId))
+      .orderBy(desc(cart.createdAt));
+    
+    return items.map(item => ({
+      ...item,
+      productName: item.productName || "Unknown Product",
+      productImage: item.productImage || "",
+      price: item.price || "0"
+    }));
   }
 
   async updateCartItem(id: string, quantity: number): Promise<Cart | undefined> {
