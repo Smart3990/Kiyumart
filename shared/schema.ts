@@ -159,6 +159,15 @@ export const wishlist = pgTable("wishlist", {
   uniqueUserProduct: unique("wishlist_user_product_unique").on(table.userId, table.productId),
 }));
 
+export const reviews = pgTable("reviews", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  productId: varchar("product_id").notNull().references(() => products.id),
+  userId: varchar("user_id").notNull().references(() => users.id),
+  rating: integer("rating").notNull(),
+  comment: text("comment"),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
 // Zod schemas for validation
 export const insertUserSchema = createInsertSchema(users).pick({
   email: true,
@@ -222,6 +231,12 @@ export const insertDeliveryTrackingSchema = createInsertSchema(deliveryTracking)
   heading: true,
 });
 
+export const insertReviewSchema = createInsertSchema(reviews).pick({
+  productId: true,
+  rating: true,
+  comment: true,
+});
+
 // TypeScript types
 export type InsertUser = z.infer<typeof insertUserSchema>;
 export type User = typeof users.$inferSelect;
@@ -251,3 +266,6 @@ export type Wishlist = typeof wishlist.$inferSelect;
 
 export type InsertDeliveryTracking = z.infer<typeof insertDeliveryTrackingSchema>;
 export type DeliveryTracking = typeof deliveryTracking.$inferSelect;
+
+export type InsertReview = z.infer<typeof insertReviewSchema>;
+export type Review = typeof reviews.$inferSelect;
