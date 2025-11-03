@@ -908,9 +908,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
           status: "processing",
           updatedAt: new Date().toISOString(),
         });
-        
-        // Redirect to success page
-        return res.redirect(`/payment/success?orderId=${orderId}`);
       } else {
         await storage.updateOrder(orderId, {
           paymentStatus: "failed",
@@ -922,15 +919,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
           orderNumber: order.orderNumber,
           reason: data.data.gateway_response || "Payment failed",
         });
-        
-        // Redirect to failure page
-        const reason = encodeURIComponent(data.data.gateway_response || "Payment failed");
-        return res.redirect(`/payment/failure?orderId=${orderId}&reason=${reason}`);
       }
+
+      res.json({ 
+        transaction, 
+        verified: data.data.status === "success",
+        orderId: order.id,
+        message: data.data.status === "success" ? "Payment verified successfully" : data.data.gateway_response || "Payment failed"
+      });
     } catch (error: any) {
-      // On error, redirect to failure page
-      const reason = encodeURIComponent(error.message || "An error occurred during payment verification");
-      return res.redirect(`/payment/failure?reason=${reason}`);
+      res.status(400).json({ error: error.message });
     }
   });
 

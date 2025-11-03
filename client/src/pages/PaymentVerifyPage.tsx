@@ -10,6 +10,7 @@ import { Loader2, CheckCircle2, XCircle, AlertCircle } from "lucide-react";
 interface VerificationResult {
   verified: boolean;
   message: string;
+  orderId?: string;
   transaction?: {
     id: string;
     orderId: string;
@@ -60,6 +61,16 @@ export default function PaymentVerifyPage() {
     enabled: !!reference && isAuthenticated,
     retry: false,
   });
+
+  useEffect(() => {
+    if (verification) {
+      if (verification.verified && verification.orderId) {
+        navigate(`/payment/success?orderId=${verification.orderId}`);
+      } else if (!verification.verified) {
+        navigate(`/payment/failure?reason=${encodeURIComponent(verification.message || "Payment failed")}`);
+      }
+    }
+  }, [verification, navigate]);
 
   if (authLoading || isLoading || !reference) {
     return (
