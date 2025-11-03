@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -9,9 +9,12 @@ import OrderStatusTimeline from "@/components/OrderStatusTimeline";
 import OrderStatusBadge from "@/components/OrderStatusBadge";
 import { ArrowLeft, Search, Filter, Loader2 } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
+import { queryClient } from "@/lib/queryClient";
 import { useAuth } from "@/lib/auth";
 import { useLocation } from "wouter";
+import { useToast } from "@/hooks/use-toast";
 import { format } from "date-fns";
+import { io, Socket } from "socket.io-client";
 
 interface Order {
   id: string;
@@ -30,8 +33,10 @@ interface Order {
 export default function OrderTracking() {
   const { user, isAuthenticated, isLoading: authLoading } = useAuth();
   const [, navigate] = useLocation();
+  const { toast } = useToast();
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("all");
+  const socketRef = useRef<Socket | null>(null);
 
   // Redirect to auth if not authenticated
   useEffect(() => {
@@ -39,6 +44,39 @@ export default function OrderTracking() {
       navigate("/auth");
     }
   }, [authLoading, user, navigate]);
+
+  // Initialize Socket.IO connection for real-time order updates
+  useEffect(() => {
+    if (!user) return;
+
+    const socket = io({
+      auth: { userId: user.id }
+    });
+
+    socket.on("connect", () => {
+      console.log("Socket connected for order tracking");
+      socket.emit("register", user.id);
+    });
+
+    socket.on("order_status_updated", (data: { orderId: string; orderNumber: string; status: string; updatedAt: string }) => {
+      console.log("Order status updated:", data);
+      
+      // Invalidate and refetch orders
+      queryClient.invalidateQueries({ queryKey: ["/api/orders"] });
+      
+      // Show toast notification
+      toast({
+        title: "Order Status Updated",
+        description: `Order #${data.orderNumber} is now ${data.status}`,
+      });
+    });
+
+    socketRef.current = socket;
+
+    return () => {
+      socket.disconnect();
+    };
+  }, [user?.id, toast]);
 
   const { data: orders = [], isLoading, error } = useQuery<Order[]>({
     queryKey: ["/api/orders"],

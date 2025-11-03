@@ -428,6 +428,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (!order) {
         return res.status(404).json({ error: "Order not found" });
       }
+      
+      // Emit real-time order status update to buyer
+      io.to(order.buyerId).emit("order_status_updated", {
+        orderId: order.id,
+        orderNumber: order.orderNumber,
+        status: order.status,
+        updatedAt: order.updatedAt,
+      });
+      
       res.json(order);
     } catch (error: any) {
       res.status(400).json({ error: error.message });
