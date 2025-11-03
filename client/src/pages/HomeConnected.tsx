@@ -183,9 +183,9 @@ export default function HomeConnected() {
   ];
 
   const categories = [
-    { id: "abayas", name: "Elegant Abayas", image: abayaCategoryImage, productCount: products.filter(p => p.category === "abayas").length || 245 },
-    { id: "hijabs", name: "Hijabs & Accessories", image: hijabCategoryImage, productCount: products.filter(p => p.category === "hijabs").length || 318 },
-    { id: "evening", name: "Evening Wear", image: eveningCategoryImage, productCount: products.filter(p => p.category === "evening").length || 156 },
+    { id: "abayas", name: "Elegant Abayas", image: abayaCategoryImage, productCount: products.filter(p => p.category === "abayas").length },
+    { id: "hijabs", name: "Hijabs & Accessories", image: hijabCategoryImage, productCount: products.filter(p => p.category === "hijabs").length },
+    { id: "evening", name: "Evening Wear", image: eveningCategoryImage, productCount: products.filter(p => p.category === "evening").length },
   ];
 
   const cartItemsForSidebar = cartItems.map(cartItem => {
