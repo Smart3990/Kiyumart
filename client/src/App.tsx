@@ -19,6 +19,8 @@ import OrderTracking from "@/pages/OrderTracking";
 import Checkout from "@/pages/CheckoutConnected";
 import PaymentPage from "@/pages/PaymentPage";
 import PaymentVerifyPage from "@/pages/PaymentVerifyPage";
+import PaymentSuccess from "@/pages/PaymentSuccess";
+import PaymentFailure from "@/pages/PaymentFailure";
 import Notifications from "@/pages/Notifications";
 import Profile from "@/pages/Profile";
 import Settings from "@/pages/Settings";
@@ -38,6 +40,8 @@ function Router() {
       <Route path="/cart" component={Cart} />
       <Route path="/auth" component={AuthPage} />
       <Route path="/checkout" component={Checkout} />
+      <Route path="/payment/success" component={PaymentSuccess} />
+      <Route path="/payment/failure" component={PaymentFailure} />
       <Route path="/payment/:orderId" component={PaymentPage} />
       <Route path="/payment/verify" component={PaymentVerifyPage} />
       <Route path="/notifications" component={Notifications} />
