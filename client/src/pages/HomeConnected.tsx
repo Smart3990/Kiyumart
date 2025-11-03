@@ -48,7 +48,7 @@ export default function HomeConnected() {
   const [, navigate] = useLocation();
   const { isAuthenticated } = useAuth();
   const { toast } = useToast();
-  const { currency, t } = useLanguage();
+  const { currency, currencySymbol, t } = useLanguage();
   const [isCartOpen, setIsCartOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
 
@@ -310,7 +310,7 @@ export default function HomeConnected() {
                     name={product.name}
                     price={sellingPrice}
                     costPrice={originalPrice || undefined}
-                    currency={currency}
+                    currency={currencySymbol}
                     image={product.images[0] || heroImage}
                     discount={calculatedDiscount}
                     rating={parseFloat(product.ratings) || 0}

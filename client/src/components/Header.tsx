@@ -30,7 +30,7 @@ export default function Header({
   onSearch 
 }: HeaderProps) {
   const [, navigate] = useLocation();
-  const { language, currency, setLanguage, t } = useLanguage();
+  const { language, currency, currencySymbol, countryName, setLanguage, t } = useLanguage();
 
   return (
     <header className="sticky top-0 z-50 w-full border-b bg-background">
@@ -86,7 +86,7 @@ export default function Header({
                   <Globe className="h-5 w-5" />
                 </Button>
               </DropdownMenuTrigger>
-              <DropdownMenuContent align="end">
+              <DropdownMenuContent align="end" className="w-64">
                 {Object.values(languages).map((lang) => (
                   <DropdownMenuItem
                     key={lang.code}
@@ -94,7 +94,10 @@ export default function Header({
                     data-testid={`option-${lang.code}`}
                     className={language === lang.code ? "bg-accent" : ""}
                   >
-                    {lang.flag} {lang.name} - {lang.currency}
+                    <div className="flex items-center justify-between w-full">
+                      <span>{lang.flag} {lang.country}</span>
+                      <span className="text-muted-foreground text-xs">{lang.currency} ({lang.symbol})</span>
+                    </div>
                   </DropdownMenuItem>
                 ))}
               </DropdownMenuContent>
