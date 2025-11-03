@@ -46,7 +46,7 @@ interface WishlistItem {
 
 export default function HomeConnected() {
   const [, navigate] = useLocation();
-  const { isAuthenticated } = useAuth();
+  const { isAuthenticated, isLoading: authLoading } = useAuth();
   const { toast } = useToast();
   const { currency, currencySymbol, t } = useLanguage();
   const [isCartOpen, setIsCartOpen] = useState(false);
@@ -58,12 +58,12 @@ export default function HomeConnected() {
 
   const { data: cartItems = [], isLoading: cartLoading } = useQuery<CartItem[]>({
     queryKey: ["/api/cart"],
-    enabled: isAuthenticated,
+    enabled: isAuthenticated && !authLoading,
   });
 
   const { data: wishlist = [] } = useQuery<WishlistItem[]>({
     queryKey: ["/api/wishlist"],
-    enabled: isAuthenticated,
+    enabled: isAuthenticated && !authLoading,
   });
 
   const { data: cartProducts = [] } = useQuery<Product[]>({
