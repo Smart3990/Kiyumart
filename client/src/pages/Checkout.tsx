@@ -200,9 +200,9 @@ export default function Checkout() {
                   size="lg"
                   onClick={handlePlaceOrder}
                   disabled={isProcessing}
-                  data-testid="button-place-order"
+                  data-testid="button-pay"
                 >
-                  {isProcessing ? "Processing..." : "Place Order"}
+                  {isProcessing ? "Processing..." : "Pay"}
                 </Button>
 
                 <p className="text-xs text-center text-muted-foreground">

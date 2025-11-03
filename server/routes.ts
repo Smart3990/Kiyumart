@@ -644,6 +644,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       // Initialize payment with Paystack
+      const callbackUrl = `${req.protocol}://${req.get('host')}/payment/verify`;
+      
       const response = await fetch("https://api.paystack.co/transaction/initialize", {
         method: "POST",
         headers: {
@@ -654,6 +656,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           email: req.user!.email,
           amount: Math.round(parseFloat(order.total) * 100),
           currency: order.currency,
+          callback_url: callbackUrl,
           metadata: {
             orderId: order.id,
             userId: req.user!.id,

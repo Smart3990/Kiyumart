@@ -75,25 +75,30 @@ export default function CheckoutConnected() {
       const res = await apiRequest("POST", "/api/orders", orderData);
       return res.json();
     },
-    onSuccess: (data) => {
-      queryClient.invalidateQueries({ queryKey: ["/api/cart"] });
-      queryClient.invalidateQueries({ queryKey: ["/api/orders"] });
-      
-      toast({
-        title: "Order Placed Successfully",
-        description: `Order #${data.orderNumber} has been created`,
-      });
-
-      if (data.paymentStatus === "pending") {
-        navigate(`/payment/${data.id}`);
-      } else {
-        navigate("/track");
+    onSuccess: async (data) => {
+      try {
+        const paymentRes = await apiRequest("POST", "/api/payments/initialize", {
+          orderId: data.id,
+        });
+        const paymentData = await paymentRes.json();
+        
+        if (paymentData.authorization_url) {
+          window.location.href = paymentData.authorization_url;
+        } else {
+          throw new Error("Failed to initialize payment");
+        }
+      } catch (error: any) {
+        toast({
+          title: "Payment Initialization Failed",
+          description: error.message || "Failed to initialize payment",
+          variant: "destructive",
+        });
       }
     },
     onError: (error: any) => {
       toast({
         title: "Order Failed",
-        description: error.message || "Failed to place order",
+        description: error.message || "Failed to create order",
         variant: "destructive",
       });
     },
@@ -327,9 +332,9 @@ export default function CheckoutConnected() {
                   size="lg"
                   onClick={handlePlaceOrder}
                   disabled={createOrderMutation.isPending}
-                  data-testid="button-place-order"
+                  data-testid="button-pay"
                 >
-                  {createOrderMutation.isPending ? "Processing..." : "Place Order"}
+                  {createOrderMutation.isPending ? "Processing..." : "Pay"}
                 </Button>
 
                 <p className="text-xs text-center text-muted-foreground">
