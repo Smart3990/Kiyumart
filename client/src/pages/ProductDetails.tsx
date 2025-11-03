@@ -9,7 +9,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
-import { Heart, ShoppingCart, Star, ArrowLeft, Minus, Plus } from "lucide-react";
+import { Heart, ShoppingCart, Star, ArrowLeft, Minus, Plus, X } from "lucide-react";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import ThemeToggle from "@/components/ThemeToggle";
@@ -67,6 +67,7 @@ export default function ProductDetails() {
   const [selectedImage, setSelectedImage] = useState(0);
   const [selectedColor, setSelectedColor] = useState<string>("");
   const [selectedSize, setSelectedSize] = useState<string>("");
+  const [isImageExpanded, setIsImageExpanded] = useState(false);
 
   const productId = params?.id || "";
 
@@ -290,23 +291,28 @@ export default function ProductDetails() {
 
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
             <div className="space-y-4">
-              <Card className="overflow-hidden">
-                <div className="relative aspect-square">
+              <Card className="overflow-hidden cursor-pointer" onClick={() => setIsImageExpanded(true)}>
+                <div className="relative aspect-square group">
                   <img
                     src={product.images[selectedImage] || product.images[0]}
                     alt={product.name}
-                    className="w-full h-full object-cover"
+                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
                     data-testid="img-product-main"
                   />
                   {discount > 0 && (
                     <Badge 
-                      className="absolute top-4 left-4 bg-destructive text-destructive-foreground font-semibold px-3 py-1.5 shadow-lg"
+                      className="absolute top-2 left-2 bg-red-600 text-white font-bold px-4 py-2 text-base shadow-xl"
                       style={{ zIndex: 20 }}
                       data-testid="badge-discount"
                     >
-                      -{discount}% OFF
+                      {discount}% OFF
                     </Badge>
                   )}
+                  <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-colors duration-300 flex items-center justify-center">
+                    <p className="text-white opacity-0 group-hover:opacity-100 transition-opacity duration-300 bg-black/50 px-4 py-2 rounded-lg">
+                      Click to expand
+                    </p>
+                  </div>
                 </div>
               </Card>
 
@@ -685,6 +691,67 @@ export default function ProductDetails() {
       </main>
 
       <Footer />
+
+      {/* Image Expansion Modal */}
+      {isImageExpanded && (
+        <div 
+          className="fixed inset-0 bg-black/90 z-50 flex items-center justify-center p-4"
+          onClick={() => setIsImageExpanded(false)}
+          data-testid="modal-image-expanded"
+        >
+          <div className="relative w-full max-w-[60vw] max-h-[90vh]" onClick={(e) => e.stopPropagation()}>
+            <Button
+              variant="ghost"
+              size="icon"
+              className="absolute -top-12 right-0 text-white hover:bg-white/20 h-10 w-10"
+              onClick={() => setIsImageExpanded(false)}
+              data-testid="button-close-expanded"
+            >
+              <X className="h-6 w-6" />
+            </Button>
+            <div className="relative bg-background rounded-lg overflow-hidden">
+              <div className="relative">
+                <img
+                  src={product.images[selectedImage] || product.images[0]}
+                  alt={product.name}
+                  className="w-full h-auto object-contain max-h-[80vh]"
+                  data-testid="img-expanded"
+                />
+                {discount > 0 && (
+                  <Badge 
+                    className="absolute top-3 left-3 bg-red-600 text-white font-bold px-5 py-2.5 text-lg shadow-2xl"
+                    data-testid="badge-discount-expanded"
+                  >
+                    {discount}% OFF
+                  </Badge>
+                )}
+              </div>
+              {product.images.length > 1 && (
+                <div className="p-4 bg-background border-t">
+                  <div className="grid grid-cols-8 gap-2">
+                    {product.images.map((image, idx) => (
+                      <Card
+                        key={idx}
+                        className={`cursor-pointer overflow-hidden hover-elevate ${selectedImage === idx ? 'ring-2 ring-primary' : ''}`}
+                        onClick={() => setSelectedImage(idx)}
+                        data-testid={`img-expanded-thumbnail-${idx}`}
+                      >
+                        <div className="relative aspect-square">
+                          <img
+                            src={image}
+                            alt={`${product.name} ${idx + 1}`}
+                            className="w-full h-full object-cover"
+                          />
+                        </div>
+                      </Card>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

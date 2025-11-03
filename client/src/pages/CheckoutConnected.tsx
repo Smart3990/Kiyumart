@@ -457,22 +457,23 @@ export default function CheckoutConnected() {
                   {itemsWithProducts.map((item) => {
                     const originalPrice = parseFloat(item.product!.price);
                     const discountedPrice = calculateItemPrice(item.product!);
-                    const hasDiscount = item.product!.discount && item.product!.discount > 0;
+                    const discount = item.product!.discount || 0;
+                    const hasDiscount = discount > 0;
                     
                     return (
                       <div key={item.id} className="flex gap-3" data-testid={`summary-item-${item.id}`}>
-                        <div className="flex-1">
+                        <div className="flex-1 space-y-1">
                           <div className="text-sm font-medium line-clamp-2">{item.product!.name}</div>
                           <div className="text-sm text-muted-foreground">Qty: {item.quantity}</div>
                           {hasDiscount && (
-                            <Badge variant="secondary" className="mt-1 bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-100" data-testid={`badge-discount-${item.id}`}>
-                              {item.product!.discount}% OFF
+                            <Badge variant="secondary" className="bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-100" data-testid={`badge-discount-${item.id}`}>
+                              {discount}% OFF
                             </Badge>
                           )}
                         </div>
-                        <div className="text-sm text-right">
+                        <div className="text-sm text-right flex flex-col justify-start">
                           {hasDiscount && (
-                            <div className="text-muted-foreground line-through text-xs" data-testid={`text-original-price-${item.id}`}>
+                            <div className="text-muted-foreground line-through text-xs mb-1" data-testid={`text-original-price-${item.id}`}>
                               GHS {(originalPrice * item.quantity).toFixed(2)}
                             </div>
                           )}
