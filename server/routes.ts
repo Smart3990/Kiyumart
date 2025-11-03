@@ -36,10 +36,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ error: "Email already exists" });
       }
 
+      const requestedRole = validatedData.role || "buyer";
+      if (requestedRole === "admin") {
+        return res.status(403).json({ error: "Cannot self-register as admin" });
+      }
+
       const hashedPassword = await hashPassword(validatedData.password);
       
       const userData: any = {
         ...validatedData,
+        role: requestedRole,
         password: hashedPassword,
       };
       
@@ -271,6 +277,54 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(404).json({ error: "Zone not found" });
       }
       res.json(zone);
+    } catch (error: any) {
+      res.status(400).json({ error: error.message });
+    }
+  });
+
+  // ============ Cart Routes ============
+  app.post("/api/cart", requireAuth, async (req: AuthRequest, res) => {
+    try {
+      const { productId, quantity = 1 } = req.body;
+      const cartItem = await storage.addToCart(req.user!.id, productId, quantity);
+      res.json(cartItem);
+    } catch (error: any) {
+      res.status(400).json({ error: error.message });
+    }
+  });
+
+  app.get("/api/cart", requireAuth, async (req: AuthRequest, res) => {
+    try {
+      const cartItems = await storage.getCart(req.user!.id);
+      res.json(cartItems);
+    } catch (error: any) {
+      res.status(400).json({ error: error.message });
+    }
+  });
+
+  app.patch("/api/cart/:id", requireAuth, async (req, res) => {
+    try {
+      const { quantity } = req.body;
+      const updated = await storage.updateCartItem(req.params.id, quantity);
+      res.json(updated || { deleted: true });
+    } catch (error: any) {
+      res.status(400).json({ error: error.message });
+    }
+  });
+
+  app.delete("/api/cart/:id", requireAuth, async (req, res) => {
+    try {
+      await storage.removeFromCart(req.params.id);
+      res.json({ success: true });
+    } catch (error: any) {
+      res.status(400).json({ error: error.message });
+    }
+  });
+
+  app.delete("/api/cart", requireAuth, async (req: AuthRequest, res) => {
+    try {
+      await storage.clearCart(req.user!.id);
+      res.json({ success: true });
     } catch (error: any) {
       res.status(400).json({ error: error.message });
     }

@@ -124,6 +124,15 @@ export const transactions = pgTable("transactions", {
   createdAt: timestamp("created_at").defaultNow(),
 });
 
+export const cart = pgTable("cart", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  userId: varchar("user_id").notNull().references(() => users.id),
+  productId: varchar("product_id").notNull().references(() => products.id),
+  quantity: integer("quantity").notNull().default(1),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
 // Zod schemas for validation
 export const insertUserSchema = createInsertSchema(users).pick({
   email: true,
@@ -193,3 +202,5 @@ export type ChatMessage = typeof chatMessages.$inferSelect;
 export type Transaction = typeof transactions.$inferSelect;
 
 export type PlatformSettings = typeof platformSettings.$inferSelect;
+
+export type Cart = typeof cart.$inferSelect;

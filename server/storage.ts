@@ -1,10 +1,11 @@
 import { db } from "../db/index";
 import { 
   users, products, orders, orderItems, deliveryZones, 
-  chatMessages, transactions, platformSettings,
+  chatMessages, transactions, platformSettings, cart,
   type User, type InsertUser, type Product, type InsertProduct,
   type Order, type InsertOrder, type DeliveryZone, type InsertDeliveryZone,
-  type ChatMessage, type InsertChatMessage, type Transaction, type PlatformSettings
+  type ChatMessage, type InsertChatMessage, type Transaction, type PlatformSettings,
+  type Cart
 } from "@shared/schema";
 import { eq, and, desc, sql } from "drizzle-orm";
 
@@ -47,6 +48,13 @@ export interface IStorage {
   // Platform settings
   getPlatformSettings(): Promise<PlatformSettings>;
   updatePlatformSettings(data: Partial<PlatformSettings>): Promise<PlatformSettings>;
+  
+  // Cart operations
+  addToCart(userId: string, productId: string, quantity: number): Promise<Cart>;
+  getCart(userId: string): Promise<Cart[]>;
+  updateCartItem(id: string, quantity: number): Promise<Cart | undefined>;
+  removeFromCart(id: string): Promise<boolean>;
+  clearCart(userId: string): Promise<void>;
   
   // Analytics
   getAnalytics(userId?: string, role?: string): Promise<any>;
@@ -238,6 +246,49 @@ export class DbStorage implements IStorage {
       .where(eq(platformSettings.id, existing.id))
       .returning();
     return result[0];
+  }
+
+  // Cart operations
+  async addToCart(userId: string, productId: string, quantity: number): Promise<Cart> {
+    const existing = await db.select().from(cart)
+      .where(and(eq(cart.userId, userId), eq(cart.productId, productId)))
+      .limit(1);
+
+    if (existing.length > 0) {
+      const [updated] = await db.update(cart)
+        .set({ quantity: existing[0].quantity + quantity, updatedAt: new Date() })
+        .where(eq(cart.id, existing[0].id))
+        .returning();
+      return updated;
+    }
+
+    const [newItem] = await db.insert(cart).values({ userId, productId, quantity }).returning();
+    return newItem;
+  }
+
+  async getCart(userId: string): Promise<Cart[]> {
+    return db.select().from(cart).where(eq(cart.userId, userId)).orderBy(desc(cart.createdAt));
+  }
+
+  async updateCartItem(id: string, quantity: number): Promise<Cart | undefined> {
+    if (quantity <= 0) {
+      await db.delete(cart).where(eq(cart.id, id));
+      return undefined;
+    }
+    const [updated] = await db.update(cart)
+      .set({ quantity, updatedAt: new Date() })
+      .where(eq(cart.id, id))
+      .returning();
+    return updated;
+  }
+
+  async removeFromCart(id: string): Promise<boolean> {
+    await db.delete(cart).where(eq(cart.id, id));
+    return true;
+  }
+
+  async clearCart(userId: string): Promise<void> {
+    await db.delete(cart).where(eq(cart.userId, userId));
   }
 
   // Analytics

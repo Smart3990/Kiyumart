@@ -3,7 +3,11 @@ import bcrypt from "bcryptjs";
 import { type User } from "@shared/schema";
 import { Request, Response, NextFunction } from "express";
 
-const JWT_SECRET = process.env.SESSION_SECRET || "kiyu-mart-secret-key-change-in-production";
+if (!process.env.SESSION_SECRET) {
+  throw new Error("SESSION_SECRET environment variable is required for JWT authentication");
+}
+
+const JWT_SECRET = process.env.SESSION_SECRET;
 const JWT_EXPIRES_IN = "7d";
 
 export interface AuthRequest extends Request {
