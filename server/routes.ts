@@ -126,6 +126,47 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  app.post("/api/auth/change-password", requireAuth, async (req: AuthRequest, res) => {
+    try {
+      const { currentPassword, newPassword } = req.body;
+      
+      if (!currentPassword || !newPassword) {
+        return res.status(400).json({ error: "Current and new passwords are required" });
+      }
+
+      // Server-side password validation
+      if (newPassword.length < 8) {
+        return res.status(400).json({ error: "Password must be at least 8 characters long" });
+      }
+      if (!/[A-Z]/.test(newPassword)) {
+        return res.status(400).json({ error: "Password must contain at least one uppercase letter" });
+      }
+      if (!/[a-z]/.test(newPassword)) {
+        return res.status(400).json({ error: "Password must contain at least one lowercase letter" });
+      }
+      if (!/[0-9]/.test(newPassword)) {
+        return res.status(400).json({ error: "Password must contain at least one number" });
+      }
+
+      const user = await storage.getUser(req.user!.id);
+      if (!user) {
+        return res.status(404).json({ error: "User not found" });
+      }
+
+      const isValidPassword = await comparePassword(currentPassword, user.password);
+      if (!isValidPassword) {
+        return res.status(401).json({ error: "Current password is incorrect" });
+      }
+
+      const hashedPassword = await hashPassword(newPassword);
+      await storage.updateUser(user.id, { password: hashedPassword });
+
+      res.json({ success: true, message: "Password changed successfully" });
+    } catch (error: any) {
+      res.status(400).json({ error: error.message });
+    }
+  });
+
   // ============ Profile Routes ============
   app.get("/api/profile", requireAuth, async (req: AuthRequest, res) => {
     try {
@@ -972,6 +1013,244 @@ export async function registerRoutes(app: Express): Promise<Server> {
     socket.on("stop_typing", ({ receiverId }) => {
       io.to(receiverId).emit("user_stop_typing", socket.id);
     });
+  });
+
+  // ============ Customer Support Routes ============
+  app.get("/api/support/conversations", requireAuth, async (req: AuthRequest, res) => {
+    try {
+      const user = req.user!;
+      const { db } = await import("../db/index");
+      const { supportConversations, supportMessages, users } = await import("@shared/schema");
+      const { eq, desc, or } = await import("drizzle-orm");
+
+      let conversationsQuery;
+      
+      if (user.role === "agent") {
+        // Agents see all conversations
+        conversationsQuery = db
+          .select({
+            id: supportConversations.id,
+            customerId: supportConversations.customerId,
+            customerName: users.name,
+            customerEmail: users.email,
+            agentId: supportConversations.agentId,
+            agentName: users.name,
+            status: supportConversations.status,
+            subject: supportConversations.subject,
+            lastMessage: supportConversations.lastMessage,
+            createdAt: supportConversations.createdAt,
+            updatedAt: supportConversations.updatedAt,
+          })
+          .from(supportConversations)
+          .leftJoin(users, eq(supportConversations.customerId, users.id))
+          .orderBy(desc(supportConversations.updatedAt));
+      } else {
+        // Customers see only their conversations
+        conversationsQuery = db
+          .select({
+            id: supportConversations.id,
+            customerId: supportConversations.customerId,
+            customerName: users.name,
+            customerEmail: users.email,
+            agentId: supportConversations.agentId,
+            agentName: users.name,
+            status: supportConversations.status,
+            subject: supportConversations.subject,
+            lastMessage: supportConversations.lastMessage,
+            createdAt: supportConversations.createdAt,
+            updatedAt: supportConversations.updatedAt,
+          })
+          .from(supportConversations)
+          .leftJoin(users, eq(supportConversations.customerId, users.id))
+          .where(eq(supportConversations.customerId, user.id))
+          .orderBy(desc(supportConversations.updatedAt));
+      }
+
+      const result = await conversationsQuery;
+      res.json(result);
+    } catch (error: any) {
+      res.status(400).json({ error: error.message });
+    }
+  });
+
+  app.post("/api/support/conversations", requireAuth, async (req: AuthRequest, res) => {
+    try {
+      const { subject, message } = req.body;
+      const user = req.user!;
+      
+      if (!subject || !message) {
+        return res.status(400).json({ error: "Subject and message are required" });
+      }
+
+      const { db } = await import("../db/index");
+      const { supportConversations, supportMessages } = await import("@shared/schema");
+
+      // Create conversation
+      const [conversation] = await db.insert(supportConversations).values({
+        customerId: user.id,
+        subject,
+        lastMessage: message,
+        status: "open",
+      }).returning();
+
+      // Create first message
+      await db.insert(supportMessages).values({
+        conversationId: conversation.id,
+        senderId: user.id,
+        message,
+      });
+
+      res.json(conversation);
+    } catch (error: any) {
+      res.status(400).json({ error: error.message });
+    }
+  });
+
+  app.get("/api/support/conversations/:id/messages", requireAuth, async (req: AuthRequest, res) => {
+    try {
+      const { id } = req.params;
+      const user = req.user!;
+      const { db } = await import("../db/index");
+      const { supportMessages, supportConversations, users } = await import("@shared/schema");
+      const { eq, asc, or } = await import("drizzle-orm");
+
+      // Check access
+      const [conversation] = await db
+        .select()
+        .from(supportConversations)
+        .where(eq(supportConversations.id, id))
+        .limit(1);
+
+      if (!conversation) {
+        return res.status(404).json({ error: "Conversation not found" });
+      }
+
+      if (user.role !== "agent" && conversation.customerId !== user.id) {
+        return res.status(403).json({ error: "Access denied" });
+      }
+
+      // Get messages with sender info
+      const messages = await db
+        .select({
+          id: supportMessages.id,
+          senderId: supportMessages.senderId,
+          senderName: users.name,
+          message: supportMessages.message,
+          createdAt: supportMessages.createdAt,
+        })
+        .from(supportMessages)
+        .leftJoin(users, eq(supportMessages.senderId, users.id))
+        .where(eq(supportMessages.conversationId, id))
+        .orderBy(asc(supportMessages.createdAt));
+
+      res.json(messages);
+    } catch (error: any) {
+      res.status(400).json({ error: error.message });
+    }
+  });
+
+  app.post("/api/support/conversations/:id/messages", requireAuth, async (req: AuthRequest, res) => {
+    try {
+      const { id } = req.params;
+      const { message } = req.body;
+      const user = req.user!;
+      const { db } = await import("../db/index");
+      const { supportMessages, supportConversations } = await import("@shared/schema");
+      const { eq } = await import("drizzle-orm");
+
+      if (!message) {
+        return res.status(400).json({ error: "Message is required" });
+      }
+
+      // Check access
+      const [conversation] = await db
+        .select()
+        .from(supportConversations)
+        .where(eq(supportConversations.id, id))
+        .limit(1);
+
+      if (!conversation) {
+        return res.status(404).json({ error: "Conversation not found" });
+      }
+
+      if (user.role !== "agent" && conversation.customerId !== user.id) {
+        return res.status(403).json({ error: "Access denied" });
+      }
+
+      // Create message
+      const [newMessage] = await db.insert(supportMessages).values({
+        conversationId: id,
+        senderId: user.id,
+        message,
+      }).returning();
+
+      // Update conversation last message and timestamp
+      await db
+        .update(supportConversations)
+        .set({ lastMessage: message, updatedAt: new Date() })
+        .where(eq(supportConversations.id, id));
+
+      res.json(newMessage);
+    } catch (error: any) {
+      res.status(400).json({ error: error.message });
+    }
+  });
+
+  app.post("/api/support/conversations/:id/assign", requireAuth, async (req: AuthRequest, res) => {
+    try {
+      const { id } = req.params;
+      const user = req.user!;
+
+      if (req.user?.role !== "agent") {
+        return res.status(403).json({ error: "Only agents can assign conversations" });
+      }
+
+      const { db } = await import("../db/index");
+      const { supportConversations } = await import("@shared/schema");
+      const { eq } = await import("drizzle-orm");
+
+      const [updated] = await db
+        .update(supportConversations)
+        .set({ agentId: user.id, status: "assigned", updatedAt: new Date() })
+        .where(eq(supportConversations.id, id))
+        .returning();
+
+      if (!updated) {
+        return res.status(404).json({ error: "Conversation not found" });
+      }
+
+      res.json(updated);
+    } catch (error: any) {
+      res.status(400).json({ error: error.message });
+    }
+  });
+
+  app.post("/api/support/conversations/:id/resolve", requireAuth, async (req: AuthRequest, res) => {
+    try {
+      const { id } = req.params;
+
+      if (req.user?.role !== "agent") {
+        return res.status(403).json({ error: "Only agents can resolve conversations" });
+      }
+
+      const { db } = await import("../db/index");
+      const { supportConversations } = await import("@shared/schema");
+      const { eq } = await import("drizzle-orm");
+
+      const [updated] = await db
+        .update(supportConversations)
+        .set({ status: "resolved", updatedAt: new Date() })
+        .where(eq(supportConversations.id, id))
+        .returning();
+
+      if (!updated) {
+        return res.status(404).json({ error: "Conversation not found" });
+      }
+
+      res.json(updated);
+    } catch (error: any) {
+      res.status(400).json({ error: error.message });
+    }
   });
 
   return httpServer;

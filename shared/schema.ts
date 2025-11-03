@@ -7,6 +7,7 @@ export const userRoleEnum = pgEnum("user_role", ["admin", "seller", "buyer", "ri
 export const orderStatusEnum = pgEnum("order_status", ["pending", "processing", "delivering", "delivered", "cancelled", "disputed"]);
 export const deliveryMethodEnum = pgEnum("delivery_method", ["pickup", "bus", "rider"]);
 export const paymentStatusEnum = pgEnum("payment_status", ["pending", "processing", "completed", "failed", "refunded"]);
+export const supportStatusEnum = pgEnum("support_status", ["open", "assigned", "resolved"]);
 
 export const users = pgTable("users", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
@@ -135,6 +136,25 @@ export const chatMessages = pgTable("chat_messages", {
   message: text("message").notNull(),
   messageType: text("message_type").default("text"),
   isRead: boolean("is_read").default(false),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+export const supportConversations = pgTable("support_conversations", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  customerId: varchar("customer_id").notNull().references(() => users.id),
+  agentId: varchar("agent_id").references(() => users.id),
+  status: supportStatusEnum("status").notNull().default("open"),
+  subject: text("subject").notNull(),
+  lastMessage: text("last_message").default(""),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+export const supportMessages = pgTable("support_messages", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  conversationId: varchar("conversation_id").notNull().references(() => supportConversations.id),
+  senderId: varchar("sender_id").notNull().references(() => users.id),
+  message: text("message").notNull(),
   createdAt: timestamp("created_at").defaultNow(),
 });
 
@@ -321,6 +341,21 @@ export type DeliveryTracking = typeof deliveryTracking.$inferSelect;
 
 export type InsertReview = z.infer<typeof insertReviewSchema>;
 export type Review = typeof reviews.$inferSelect;
+
+export const insertSupportConversationSchema = createInsertSchema(supportConversations).pick({
+  subject: true,
+});
+
+export const insertSupportMessageSchema = createInsertSchema(supportMessages).pick({
+  conversationId: true,
+  message: true,
+});
+
+export type InsertSupportConversation = z.infer<typeof insertSupportConversationSchema>;
+export type SupportConversation = typeof supportConversations.$inferSelect;
+
+export type InsertSupportMessage = z.infer<typeof insertSupportMessageSchema>;
+export type SupportMessage = typeof supportMessages.$inferSelect;
 
 export type InsertProductVariant = z.infer<typeof insertProductVariantSchema>;
 export type ProductVariant = typeof productVariants.$inferSelect;

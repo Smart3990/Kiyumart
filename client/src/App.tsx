@@ -24,11 +24,13 @@ import PaymentFailure from "@/pages/PaymentFailure";
 import Notifications from "@/pages/Notifications";
 import Profile from "@/pages/Profile";
 import Settings from "@/pages/Settings";
+import ChangePassword from "@/pages/ChangePassword";
 import AdminSettings from "@/pages/AdminSettings";
 import AdminDeliveryZones from "@/pages/AdminDeliveryZones";
 import CategoryPage from "@/pages/CategoryPage";
 import Wishlist from "@/pages/Wishlist";
 import Orders from "@/pages/Orders";
+import CustomerSupport from "@/pages/CustomerSupport";
 import NotFound from "@/pages/not-found";
 
 function Router() {
@@ -47,8 +49,10 @@ function Router() {
       <Route path="/notifications" component={Notifications} />
       <Route path="/profile" component={Profile} />
       <Route path="/settings" component={Settings} />
+      <Route path="/change-password" component={ChangePassword} />
       <Route path="/wishlist" component={Wishlist} />
       <Route path="/orders" component={Orders} />
+      <Route path="/support" component={CustomerSupport} />
       <Route path="/admin" component={AdminDashboard} />
       <Route path="/admin/settings" component={AdminSettings} />
       <Route path="/admin/delivery-zones" component={AdminDeliveryZones} />

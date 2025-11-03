@@ -95,20 +95,20 @@ export default function Footer() {
           <div>
             <h4 className="font-semibold mb-4">Shop</h4>
             <ul className="space-y-2 text-muted-foreground">
-              <li><a href="#" className="hover:text-foreground transition-colors">Men's Fashion</a></li>
-              <li><a href="#" className="hover:text-foreground transition-colors">Women's Fashion</a></li>
-              <li><a href="#" className="hover:text-foreground transition-colors">Accessories</a></li>
-              <li><a href="#" className="hover:text-foreground transition-colors">Footwear</a></li>
+              <li><a href="/" className="hover:text-foreground transition-colors">Home</a></li>
+              <li><a href="/category/abayas" className="hover:text-foreground transition-colors">Abayas</a></li>
+              <li><a href="/category/hijabs" className="hover:text-foreground transition-colors">Hijabs</a></li>
+              <li><a href="/category/dresses" className="hover:text-foreground transition-colors">Dresses</a></li>
             </ul>
           </div>
 
           <div>
             <h4 className="font-semibold mb-4">Customer Service</h4>
             <ul className="space-y-2 text-muted-foreground">
-              <li><a href="#" className="hover:text-foreground transition-colors">Contact Us</a></li>
-              <li><a href="#" className="hover:text-foreground transition-colors">Track Order</a></li>
-              <li><a href="#" className="hover:text-foreground transition-colors">Returns</a></li>
-              <li><a href="#" className="hover:text-foreground transition-colors">FAQs</a></li>
+              <li><a href="/support" className="hover:text-foreground transition-colors">Customer Support</a></li>
+              <li><a href="/track" className="hover:text-foreground transition-colors">Track Order</a></li>
+              <li><a href="/orders" className="hover:text-foreground transition-colors">My Orders</a></li>
+              <li><a href="/wishlist" className="hover:text-foreground transition-colors">Wishlist</a></li>
             </ul>
           </div>
 

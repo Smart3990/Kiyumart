@@ -253,12 +253,7 @@ export default function Settings() {
                   </div>
                   <Button 
                     variant="outline"
-                    onClick={() => {
-                      toast({
-                        title: "Password Change",
-                        description: "Please contact support to change your password securely.",
-                      });
-                    }}
+                    onClick={() => window.location.href = "/change-password"}
                     data-testid="button-change-password"
                   >
                     Change
