@@ -10,6 +10,24 @@ Preferred communication style: Simple, everyday language.
 
 ## Recent Changes (November 2025)
 
+### Footer and Platform Settings Management (Nov 3, 2025)
+- **Footer Logo Display**: Logo now displays in Footer with theme-aware variants (light/dark mode)
+- **Dynamic Footer Content**: Footer fetches data from platform_settings table via `/api/settings` endpoint
+  - Contact information (phone, email, address) dynamically displayed
+  - Social media links (Facebook, Instagram, Twitter) shown only when configured
+  - Footer description text controlled from database
+  - Platform name displayed in copyright section
+- **Platform Settings Schema**: Added footer control fields to platform_settings table:
+  - contactPhone, contactEmail, contactAddress (default values set)
+  - facebookUrl, instagramUrl, twitterUrl (optional social links)
+  - footerDescription (editable platform description)
+- **Profile Page Buttons Connected**: All dormant buttons now navigate properly:
+  - "Start Shopping" → navigates to home page (/)
+  - "View Details" (in orders) → navigates to order tracking page (/track)
+  - "Change Password" → navigates to settings page (/settings)
+  - "Manage Email Preferences" → navigates to settings page (/settings)
+- **Shopping Cart Bug Fix**: Fixed NaN price display in cart by updating getCart() function to join with products table and return complete price data
+
 ### UI/UX and Navigation Enhancements (Nov 3, 2025)
 - **Shopping Cart Currency**: Cart and CartPopover use dynamic currencySymbol from LanguageContext (GHS/EUR/USD)
 - **Perfect Circle Badges**: All notification badges (cart, wishlist, notifications) display as perfect circles with rounded-full class
