@@ -27,7 +27,7 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
 
-  const { data: currentUser, isLoading } = useQuery<User | null>({
+  const { data: currentUser, isLoading, isError } = useQuery<User | null>({
     queryKey: ["/api/auth/me"],
     retry: false,
     staleTime: 5 * 60 * 1000,
@@ -36,8 +36,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     if (currentUser) {
       setUser(currentUser);
+    } else if ((currentUser === null && !isLoading) || isError) {
+      setUser(null);
+      queryClient.setQueryData(["/api/auth/me"], null);
     }
-  }, [currentUser]);
+  }, [currentUser, isLoading, isError]);
 
   const loginMutation = useMutation({
     mutationFn: async ({ email, password }: { email: string; password: string }) => {
