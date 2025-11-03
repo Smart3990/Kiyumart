@@ -1,46 +1,130 @@
-import DeliveryTracker from "@/components/DeliveryTracker";
+import { Button } from "@/components/ui/button";
+import { Card } from "@/components/ui/card";
 import QRCodeDisplay from "@/components/QRCodeDisplay";
 import ThemeToggle from "@/components/ThemeToggle";
-import { Button } from "@/components/ui/button";
 import { ArrowLeft } from "lucide-react";
+import { useQuery } from "@tanstack/react-query";
+import { useAuth } from "@/lib/auth";
+import { useLocation } from "wouter";
+import { format } from "date-fns";
+
+interface Order {
+  id: string;
+  orderNumber: string;
+  status: string;
+  totalAmount: number;
+  deliveryAddress: string;
+  deliveryCity: string;
+  deliveryPhone: string;
+  qrCode: string;
+  createdAt: string;
+}
 
 export default function OrderTracking() {
-  const trackingSteps = [
-    { label: 'Order Placed', time: 'Nov 2, 10:30 AM', completed: true },
-    { label: 'Order Confirmed', time: 'Nov 2, 10:35 AM', completed: true },
-    { label: 'Out for Delivery', time: 'Nov 2, 2:15 PM', completed: true },
-    { label: 'Delivered', completed: false },
-  ];
+  const { user, isAuthenticated, isLoading: authLoading } = useAuth();
+  const [, navigate] = useLocation();
+
+  const { data: orders, isLoading } = useQuery<Order[]>({
+    queryKey: ["/api/orders"],
+    enabled: !!user,
+  });
+
+  const hasOrders = orders && orders.length > 0;
+
+  if (authLoading || isLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <p data-testid="text-loading">Loading order information...</p>
+      </div>
+    );
+  }
+
+  if (!isAuthenticated) {
+    navigate("/auth");
+    return null;
+  }
 
   return (
     <div className="min-h-screen flex flex-col bg-background">
       <header className="border-b p-4 flex items-center justify-between">
         <div className="flex items-center gap-4">
-          <Button variant="ghost" size="icon">
+          <Button variant="ghost" size="icon" onClick={() => navigate("/")} data-testid="button-back">
             <ArrowLeft className="h-5 w-5" />
           </Button>
-          <h1 className="text-2xl font-bold">Track Your Order</h1>
+          <h1 className="text-2xl font-bold">Track Your Orders</h1>
         </div>
         <ThemeToggle />
       </header>
 
       <main className="flex-1 p-6">
-        <div className="max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-2 gap-8">
-          <DeliveryTracker
-            orderId="ORD-001"
-            riderName="Kwame Mensah"
-            riderPhone="+233 XX XXX XXXX"
-            steps={trackingSteps}
-            estimatedArrival="3:30 PM"
-          />
-          
-          <div className="flex items-center justify-center">
-            <QRCodeDisplay
-              value="ORD-001-2024-11-02"
-              title="Delivery Confirmation Code"
-              description="Show this QR code to the delivery rider to confirm receipt of your order"
-            />
-          </div>
+        <div className="max-w-7xl mx-auto">
+          {!hasOrders ? (
+            <Card className="p-8 text-center">
+              <p className="text-lg text-muted-foreground">No orders found</p>
+              <Button onClick={() => navigate("/")} className="mt-4">Start Shopping</Button>
+            </Card>
+          ) : (
+            <div className="space-y-6">
+              <h2 className="text-xl font-semibold">Your Orders</h2>
+              {orders.map((order) => (
+                <Card key={order.id} className="p-6">
+                  <div className="space-y-4">
+                    <div className="flex justify-between items-start flex-wrap gap-4">
+                      <div>
+                        <p className="text-sm text-muted-foreground">Order Number</p>
+                        <p className="text-lg font-semibold" data-testid={`text-order-number-${order.id}`}>
+                          #{order.orderNumber}
+                        </p>
+                      </div>
+                      <div className="text-right">
+                        <p className="text-sm text-muted-foreground">Status</p>
+                        <p className="text-lg font-semibold capitalize" data-testid={`text-status-${order.id}`}>
+                          {order.status}
+                        </p>
+                      </div>
+                    </div>
+                    
+                    <div>
+                      <p className="text-sm text-muted-foreground">Delivery Address</p>
+                      <p data-testid={`text-address-${order.id}`}>{order.deliveryAddress}, {order.deliveryCity}</p>
+                      <p className="text-sm text-muted-foreground mt-1">Phone: {order.deliveryPhone}</p>
+                    </div>
+
+                    <div className="flex justify-between items-start flex-wrap gap-4">
+                      <div>
+                        <p className="text-sm text-muted-foreground">Amount</p>
+                        <p className="text-lg font-semibold" data-testid={`text-amount-${order.id}`}>
+                          GHS {order.totalAmount.toFixed(2)}
+                        </p>
+                      </div>
+                      <div className="text-right">
+                        <p className="text-sm text-muted-foreground">Order Date</p>
+                        <p data-testid={`text-date-${order.id}`}>
+                          {format(new Date(order.createdAt), 'MMM d, yyyy h:mm a')}
+                        </p>
+                      </div>
+                    </div>
+
+                    <div className="pt-4 border-t">
+                      <p className="text-sm font-medium mb-3">Delivery Confirmation QR Code</p>
+                      <div className="flex justify-center bg-muted/30 p-6 rounded-lg">
+                        <div className="text-center">
+                          <QRCodeDisplay
+                            value={order.qrCode}
+                            title=""
+                            description="Show this QR code to the delivery rider to confirm receipt"
+                          />
+                          <p className="text-xs text-muted-foreground mt-2" data-testid={`text-qr-value-${order.id}`}>
+                            {order.qrCode}
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </Card>
+              ))}
+            </div>
+          )}
         </div>
       </main>
     </div>

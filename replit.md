@@ -35,14 +35,17 @@ Preferred communication style: Simple, everyday language.
 - Mobile-first responsive design approach
 - Product-first visual hierarchy inspired by Shopify and modern fashion platforms
 
-**Key Features**
+**Key Features (Production Ready)**
 - Shopping cart with persistent state
 - Product browsing with category filtering
-- Real-time order tracking with map integration
-- Chat interface for customer-seller communication
+- Real-time order tracking with status updates
 - Multi-currency support with real-time conversion
 - QR code generation for delivery confirmation
 - Role-based dashboards (Admin, Seller, Rider)
+- Paystack payment integration
+
+**Phase 2 Features (Backend Complete, Frontend Pending)**
+- Real-time chat interface (Socket.io backend implemented, frontend has render loop issue - temporarily disabled)
 
 ### Backend Architecture
 

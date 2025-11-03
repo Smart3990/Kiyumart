@@ -10,7 +10,7 @@ import AuthPage from "@/pages/AuthPage";
 import AdminDashboard from "@/pages/AdminDashboardConnected";
 import SellerDashboard from "@/pages/SellerDashboardConnected";
 import RiderDashboard from "@/pages/RiderDashboard";
-import ChatPage from "@/pages/ChatPageConnected";
+// import ChatPage from "@/pages/ChatPageConnected"; // TEMPORARILY DISABLED - Phase 2 feature
 import OrderTracking from "@/pages/OrderTracking";
 import Checkout from "@/pages/CheckoutConnected";
 import PaymentPage from "@/pages/PaymentPage";
@@ -28,7 +28,7 @@ function Router() {
       <Route path="/admin" component={AdminDashboard} />
       <Route path="/seller" component={SellerDashboard} />
       <Route path="/rider" component={RiderDashboard} />
-      <Route path="/chat" component={ChatPage} />
+      {/* <Route path="/chat" component={ChatPage} /> */} {/* TEMPORARILY DISABLED - Phase 2 feature */}
       <Route path="/track" component={OrderTracking} />
       <Route component={NotFound} />
     </Switch>
