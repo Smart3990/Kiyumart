@@ -6,6 +6,8 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { AuthProvider } from "@/lib/auth";
 
 import Home from "@/pages/HomeConnected";
+import ProductDetails from "@/pages/ProductDetails";
+import Cart from "@/pages/Cart";
 import AuthPage from "@/pages/AuthPage";
 import AdminDashboard from "@/pages/AdminDashboardConnected";
 import SellerDashboard from "@/pages/SellerDashboardConnected";
@@ -21,6 +23,8 @@ function Router() {
   return (
     <Switch>
       <Route path="/" component={Home} />
+      <Route path="/product/:id" component={ProductDetails} />
+      <Route path="/cart" component={Cart} />
       <Route path="/auth" component={AuthPage} />
       <Route path="/checkout" component={Checkout} />
       <Route path="/payment/:orderId" component={PaymentPage} />

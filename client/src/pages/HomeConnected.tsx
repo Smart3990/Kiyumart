@@ -258,7 +258,7 @@ export default function HomeConnected() {
       
       <Header
         cartItemsCount={cartItems.reduce((sum, item) => sum + item.quantity, 0)}
-        onCartClick={() => isAuthenticated ? setIsCartOpen(true) : navigate("/auth")}
+        onCartClick={() => isAuthenticated ? navigate("/cart") : navigate("/auth")}
         onSearch={handleSearch}
       />
 
