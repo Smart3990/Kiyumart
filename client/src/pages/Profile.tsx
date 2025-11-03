@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { useAuth } from "@/lib/auth";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { useQuery, useMutation } from "@tanstack/react-query";
@@ -12,7 +12,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { User, MapPin, CreditCard, Package, LogOut, Settings } from "lucide-react";
+import { User, MapPin, CreditCard, Package, LogOut, Settings, Camera, Loader2 } from "lucide-react";
 
 interface UserProfile {
   id: string;
@@ -22,6 +22,7 @@ interface UserProfile {
   address?: string;
   city?: string;
   country?: string;
+  profileImage?: string;
 }
 
 export default function Profile() {
@@ -29,6 +30,8 @@ export default function Profile() {
   const { t } = useLanguage();
   const { toast } = useToast();
   const [isEditing, setIsEditing] = useState(false);
+  const [isUploadingImage, setIsUploadingImage] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const { data: profile, isLoading } = useQuery<UserProfile>({
     queryKey: ["/api/profile"],
@@ -63,6 +66,66 @@ export default function Profile() {
 
   const handleLogout = async () => {
     await logout();
+  };
+
+  const handleImageUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    // Validate file type
+    if (!file.type.startsWith('image/')) {
+      toast({
+        title: "Invalid file type",
+        description: "Please upload an image file (JPG, PNG, etc.)",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    // Validate file size (max 5MB)
+    if (file.size > 5 * 1024 * 1024) {
+      toast({
+        title: "File too large",
+        description: "Please upload an image smaller than 5MB",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setIsUploadingImage(true);
+
+    try {
+      const formData = new FormData();
+      formData.append('profileImage', file);
+
+      const response = await fetch('/api/profile/upload-image', {
+        method: 'POST',
+        credentials: 'include',
+        body: formData,
+      });
+
+      if (!response.ok) {
+        throw new Error('Upload failed');
+      }
+
+      const data = await response.json();
+
+      await queryClient.invalidateQueries({ queryKey: ["/api/profile"] });
+      await queryClient.invalidateQueries({ queryKey: ["/api/auth/me"] });
+
+      toast({
+        title: "Profile picture updated",
+        description: "Your profile picture has been updated successfully.",
+      });
+    } catch (error) {
+      toast({
+        title: "Upload failed",
+        description: "Failed to upload profile picture. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsUploadingImage(false);
+    }
   };
 
   const getInitials = (name?: string) => {
@@ -105,10 +168,34 @@ export default function Profile() {
         <div className="max-w-5xl mx-auto px-4 py-8">
           <div className="mb-8">
             <div className="flex items-center gap-6 mb-6">
-              <Avatar className="h-24 w-24">
-                <AvatarImage src={`https://api.dicebear.com/7.x/avataaars/svg?seed=${user?.name || user?.email}`} />
-                <AvatarFallback>{getInitials(user?.name || profile?.username)}</AvatarFallback>
-              </Avatar>
+              <div className="relative">
+                <Avatar className="h-24 w-24">
+                  <AvatarImage src={profile?.profileImage || user?.profileImage || `https://api.dicebear.com/7.x/avataaars/svg?seed=${user?.name || user?.email}`} />
+                  <AvatarFallback>{getInitials(user?.name || profile?.username)}</AvatarFallback>
+                </Avatar>
+                <Button
+                  size="icon"
+                  variant="secondary"
+                  className="absolute bottom-0 right-0 h-8 w-8 rounded-full shadow-lg"
+                  onClick={() => fileInputRef.current?.click()}
+                  disabled={isUploadingImage}
+                  data-testid="button-upload-profile-picture"
+                >
+                  {isUploadingImage ? (
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                  ) : (
+                    <Camera className="h-4 w-4" />
+                  )}
+                </Button>
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept="image/*"
+                  className="hidden"
+                  onChange={handleImageUpload}
+                  data-testid="input-profile-picture"
+                />
+              </div>
               <div className="flex-1">
                 <h1 className="text-3xl font-bold mb-1" data-testid="text-profile-username">
                   {user?.name || profile?.username || "User"}

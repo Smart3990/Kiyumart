@@ -1,4 +1,4 @@
-import { Search, Menu, Globe, User, Bell, Package } from "lucide-react";
+import { Search, Menu, Globe, User, Bell, Package, Heart } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
@@ -113,12 +113,21 @@ export default function Header({
               <Bell className="h-5 w-5" />
               {notificationCount > 0 && (
                 <Badge 
-                  className="absolute -top-1 -right-1 h-5 w-5 flex items-center justify-center p-0 text-xs bg-destructive text-destructive-foreground"
+                  className="absolute -top-1 -right-1 h-5 w-5 flex items-center justify-center p-0 text-xs bg-destructive text-destructive-foreground rounded-full"
                   data-testid="badge-notification-count"
                 >
                   {notificationCount > 9 ? "9+" : notificationCount}
                 </Badge>
               )}
+            </Button>
+
+            <Button 
+              variant="ghost" 
+              size="icon"
+              onClick={() => navigate("/wishlist")}
+              data-testid="button-wishlist"
+            >
+              <Heart className="h-5 w-5" />
             </Button>
 
             <Button 
