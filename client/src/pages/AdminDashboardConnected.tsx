@@ -139,19 +139,24 @@ export default function AdminDashboardConnected() {
 
             <Card>
               <CardHeader className="flex flex-row items-center justify-between">
-                <CardTitle>Platform Mode</CardTitle>
-                <Button variant="outline" data-testid="button-configure">Configure</Button>
+                <CardTitle>Platform Settings</CardTitle>
+                <Button 
+                  variant="outline" 
+                  onClick={() => navigate("/admin/settings")}
+                  data-testid="button-configure"
+                >
+                  Configure
+                </Button>
               </CardHeader>
               <CardContent>
                 <div className="space-y-4">
                   <div className="flex items-center justify-between p-4 bg-muted rounded-lg">
                     <div>
-                      <p className="font-semibold">Current Mode</p>
+                      <p className="font-semibold">Platform Configuration</p>
                       <p className="text-sm text-muted-foreground">
-                        Multi-Vendor Mode
+                        Manage payment settings, contact info, and branding
                       </p>
                     </div>
-                    <Button data-testid="button-switch-mode">Switch to Single Store</Button>
                   </div>
                 </div>
               </CardContent>
