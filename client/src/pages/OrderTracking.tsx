@@ -1,9 +1,13 @@
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
-import { Card } from "@/components/ui/card";
+import { Card, CardContent, CardHeader } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import QRCodeDisplay from "@/components/QRCodeDisplay";
 import ThemeToggle from "@/components/ThemeToggle";
-import { ArrowLeft } from "lucide-react";
+import OrderStatusTimeline from "@/components/OrderStatusTimeline";
+import OrderStatusBadge from "@/components/OrderStatusBadge";
+import { ArrowLeft, Search, Filter, Loader2 } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { useAuth } from "@/lib/auth";
 import { useLocation } from "wouter";
@@ -19,49 +23,67 @@ interface Order {
   deliveryPhone: string;
   qrCode: string;
   createdAt: string;
+  deliveredAt?: string;
+  updatedAt?: string;
 }
 
 export default function OrderTracking() {
   const { user, isAuthenticated, isLoading: authLoading } = useAuth();
   const [, navigate] = useLocation();
+  const [searchQuery, setSearchQuery] = useState("");
+  const [statusFilter, setStatusFilter] = useState<string>("all");
 
   // Redirect to auth if not authenticated
   useEffect(() => {
-    if (!authLoading && !isAuthenticated) {
+    if (!authLoading && !user) {
       navigate("/auth");
     }
-  }, [authLoading, isAuthenticated, navigate]);
+  }, [authLoading, user, navigate]);
 
-  const { data: orders, isLoading, error } = useQuery<Order[]>({
+  const { data: orders = [], isLoading, error } = useQuery<Order[]>({
     queryKey: ["/api/orders"],
-    enabled: isAuthenticated && !!user,
+    enabled: !authLoading && !!user,
   });
 
-  const hasOrders = orders && orders.length > 0;
+  // Filter orders based on search and status
+  const filteredOrders = orders.filter((order) => {
+    const matchesSearch = 
+      searchQuery === "" ||
+      order.orderNumber.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      order.deliveryAddress.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      order.deliveryCity.toLowerCase().includes(searchQuery.toLowerCase());
+
+    const matchesStatus = 
+      statusFilter === "all" || order.status === statusFilter;
+
+    return matchesSearch && matchesStatus;
+  });
+
+  const hasOrders = orders.length > 0;
 
   if (authLoading) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <p data-testid="text-loading">Loading...</p>
+      <div className="min-h-screen flex items-center justify-center bg-background">
+        <Loader2 className="h-8 w-8 animate-spin text-primary" data-testid="loader-auth" />
       </div>
     );
   }
 
-  if (!isAuthenticated) {
+  if (!user) {
     return null;
   }
 
   if (isLoading) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <p data-testid="text-loading">Loading orders...</p>
+      <div className="min-h-screen flex items-center justify-center bg-background">
+        <Loader2 className="h-8 w-8 animate-spin text-primary" data-testid="loader-orders" />
       </div>
     );
   }
 
   if (error) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
+      <div className="min-h-screen flex items-center justify-center bg-background">
         <p className="text-destructive">Error loading orders. Please try again.</p>
       </div>
     );
@@ -74,79 +96,167 @@ export default function OrderTracking() {
           <Button variant="ghost" size="icon" onClick={() => navigate("/")} data-testid="button-back">
             <ArrowLeft className="h-5 w-5" />
           </Button>
-          <h1 className="text-2xl font-bold">Track Your Orders</h1>
+          <h1 className="text-2xl font-bold" data-testid="text-heading">Track Your Orders</h1>
         </div>
         <ThemeToggle />
       </header>
 
       <main className="flex-1 p-6">
-        <div className="max-w-7xl mx-auto">
+        <div className="max-w-7xl mx-auto space-y-6">
           {!hasOrders ? (
-            <Card className="p-8 text-center">
+            <Card className="p-8 text-center" data-testid="card-no-orders">
               <p className="text-lg text-muted-foreground">No orders found</p>
-              <Button onClick={() => navigate("/")} className="mt-4">Start Shopping</Button>
+              <Button onClick={() => navigate("/")} className="mt-4" data-testid="button-start-shopping">
+                Start Shopping
+              </Button>
             </Card>
           ) : (
-            <div className="space-y-6">
-              <h2 className="text-xl font-semibold">Your Orders</h2>
-              {orders.map((order) => (
-                <Card key={order.id} className="p-6">
-                  <div className="space-y-4">
-                    <div className="flex justify-between items-start flex-wrap gap-4">
-                      <div>
-                        <p className="text-sm text-muted-foreground">Order Number</p>
-                        <p className="text-lg font-semibold" data-testid={`text-order-number-${order.id}`}>
-                          #{order.orderNumber}
-                        </p>
-                      </div>
-                      <div className="text-right">
-                        <p className="text-sm text-muted-foreground">Status</p>
-                        <p className="text-lg font-semibold capitalize" data-testid={`text-status-${order.id}`}>
-                          {order.status}
-                        </p>
-                      </div>
-                    </div>
-                    
-                    <div>
-                      <p className="text-sm text-muted-foreground">Delivery Address</p>
-                      <p data-testid={`text-address-${order.id}`}>{order.deliveryAddress}, {order.deliveryCity}</p>
-                      <p className="text-sm text-muted-foreground mt-1">Phone: {order.deliveryPhone}</p>
-                    </div>
-
-                    <div className="flex justify-between items-start flex-wrap gap-4">
-                      <div>
-                        <p className="text-sm text-muted-foreground">Amount</p>
-                        <p className="text-lg font-semibold" data-testid={`text-amount-${order.id}`}>
-                          GHS {order.totalAmount.toFixed(2)}
-                        </p>
-                      </div>
-                      <div className="text-right">
-                        <p className="text-sm text-muted-foreground">Order Date</p>
-                        <p data-testid={`text-date-${order.id}`}>
-                          {format(new Date(order.createdAt), 'MMM d, yyyy h:mm a')}
-                        </p>
-                      </div>
-                    </div>
-
-                    <div className="pt-4 border-t">
-                      <p className="text-sm font-medium mb-3">Delivery Confirmation QR Code</p>
-                      <div className="flex justify-center bg-muted/30 p-6 rounded-lg">
-                        <div className="text-center">
-                          <QRCodeDisplay
-                            value={order.qrCode}
-                            title=""
-                            description="Show this QR code to the delivery rider to confirm receipt"
-                          />
-                          <p className="text-xs text-muted-foreground mt-2" data-testid={`text-qr-value-${order.id}`}>
-                            {order.qrCode}
-                          </p>
-                        </div>
-                      </div>
+            <>
+              {/* Filters Section */}
+              <Card className="p-4" data-testid="card-filters">
+                <div className="flex flex-col md:flex-row gap-4">
+                  <div className="flex-1">
+                    <div className="relative">
+                      <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                      <Input
+                        placeholder="Search by order number or address..."
+                        value={searchQuery}
+                        onChange={(e) => setSearchQuery(e.target.value)}
+                        className="pl-10"
+                        data-testid="input-search"
+                      />
                     </div>
                   </div>
+                  <div className="w-full md:w-48">
+                    <Select value={statusFilter} onValueChange={setStatusFilter}>
+                      <SelectTrigger data-testid="select-status-filter">
+                        <Filter className="h-4 w-4 mr-2" />
+                        <SelectValue placeholder="Filter by status" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="all">All Orders</SelectItem>
+                        <SelectItem value="pending">Pending</SelectItem>
+                        <SelectItem value="processing">Processing</SelectItem>
+                        <SelectItem value="shipped">Shipped</SelectItem>
+                        <SelectItem value="delivered">Delivered</SelectItem>
+                        <SelectItem value="cancelled">Cancelled</SelectItem>
+                        <SelectItem value="disputed">Disputed</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+              </Card>
+
+              {/* Results Count */}
+              <div className="flex items-center justify-between">
+                <p className="text-sm text-muted-foreground" data-testid="text-results-count">
+                  {filteredOrders.length === orders.length 
+                    ? `${orders.length} order${orders.length === 1 ? '' : 's'}`
+                    : `${filteredOrders.length} of ${orders.length} order${orders.length === 1 ? '' : 's'}`
+                  }
+                </p>
+              </div>
+
+              {/* Orders List */}
+              {filteredOrders.length === 0 ? (
+                <Card className="p-8 text-center" data-testid="card-no-results">
+                  <p className="text-lg text-muted-foreground">No orders match your filters</p>
+                  <Button 
+                    variant="outline" 
+                    onClick={() => {
+                      setSearchQuery("");
+                      setStatusFilter("all");
+                    }} 
+                    className="mt-4"
+                    data-testid="button-clear-filters"
+                  >
+                    Clear Filters
+                  </Button>
                 </Card>
-              ))}
-            </div>
+              ) : (
+                <div className="space-y-6">
+                  {filteredOrders.map((order) => (
+                    <Card key={order.id} className="overflow-hidden" data-testid={`card-order-${order.id}`}>
+                      <CardHeader className="bg-muted/30 pb-4">
+                        <div className="flex justify-between items-start flex-wrap gap-4">
+                          <div>
+                            <p className="text-sm text-muted-foreground">Order Number</p>
+                            <p className="text-lg font-semibold" data-testid={`text-order-number-${order.id}`}>
+                              #{order.orderNumber}
+                            </p>
+                          </div>
+                          <OrderStatusBadge status={order.status} />
+                        </div>
+                      </CardHeader>
+
+                      <CardContent className="pt-6 space-y-6">
+                        {/* Order Status Timeline */}
+                        <div>
+                          <h3 className="text-sm font-medium mb-4">Order Progress</h3>
+                          <OrderStatusTimeline 
+                            currentStatus={order.status}
+                            createdAt={order.createdAt}
+                            updatedAt={order.updatedAt}
+                            deliveredAt={order.deliveredAt}
+                          />
+                        </div>
+
+                        {/* Order Details */}
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-4 border-t">
+                          <div>
+                            <p className="text-sm text-muted-foreground">Delivery Address</p>
+                            <p className="font-medium" data-testid={`text-address-${order.id}`}>
+                              {order.deliveryAddress}
+                            </p>
+                            <p className="text-sm">{order.deliveryCity}</p>
+                            <p className="text-sm text-muted-foreground mt-1">
+                              Phone: {order.deliveryPhone}
+                            </p>
+                          </div>
+
+                          <div className="grid grid-cols-2 gap-4">
+                            <div>
+                              <p className="text-sm text-muted-foreground">Total Amount</p>
+                              <p className="text-lg font-semibold" data-testid={`text-amount-${order.id}`}>
+                                GHS {order.totalAmount.toFixed(2)}
+                              </p>
+                            </div>
+                            <div>
+                              <p className="text-sm text-muted-foreground">Order Date</p>
+                              <p className="text-sm" data-testid={`text-date-${order.id}`}>
+                                {format(new Date(order.createdAt), 'MMM d, yyyy')}
+                              </p>
+                              <p className="text-xs text-muted-foreground">
+                                {format(new Date(order.createdAt), 'h:mm a')}
+                              </p>
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* QR Code */}
+                        {order.status !== "cancelled" && (
+                          <div className="pt-4 border-t">
+                            <p className="text-sm font-medium mb-3">Delivery Confirmation QR Code</p>
+                            <div className="flex justify-center bg-muted/30 p-6 rounded-lg">
+                              <div className="text-center">
+                                <QRCodeDisplay
+                                  value={order.qrCode}
+                                  title=""
+                                  description="Show this QR code to the delivery rider to confirm receipt"
+                                />
+                                <p className="text-xs text-muted-foreground mt-2" data-testid={`text-qr-value-${order.id}`}>
+                                  {order.qrCode}
+                                </p>
+                              </div>
+                            </div>
+                          </div>
+                        )}
+                      </CardContent>
+                    </Card>
+                  ))}
+                </div>
+              )}
+            </>
           )}
         </div>
       </main>
