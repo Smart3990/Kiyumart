@@ -21,7 +21,13 @@ const statusConfig = {
     className: "bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-300",
   },
   shipped: {
-    label: "Shipped",
+    label: "Delivering",
+    icon: Truck,
+    variant: "secondary" as const,
+    className: "bg-purple-100 text-purple-700 dark:bg-purple-900 dark:text-purple-300",
+  },
+  delivering: {
+    label: "Delivering",
     icon: Truck,
     variant: "secondary" as const,
     className: "bg-purple-100 text-purple-700 dark:bg-purple-900 dark:text-purple-300",

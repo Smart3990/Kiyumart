@@ -12,11 +12,11 @@ interface OrderStatusTimelineProps {
 const statusSteps = [
   { key: "pending", label: "Order Placed", icon: Clock },
   { key: "processing", label: "Processing", icon: Package },
-  { key: "shipped", label: "Shipped", icon: Truck },
+  { key: "delivering", label: "Delivering", icon: Truck },
   { key: "delivered", label: "Delivered", icon: CheckCircle2 },
 ];
 
-const statusOrder = ["pending", "processing", "shipped", "delivered"];
+const statusOrder = ["pending", "processing", "delivering", "shipped", "delivered"];
 
 export default function OrderStatusTimeline({ 
   currentStatus, 

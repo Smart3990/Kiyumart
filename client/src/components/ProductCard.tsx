@@ -98,31 +98,27 @@ export default function ProductCard({
         )}
       </div>
 
-      <div className="p-4">
+      <div className="p-4 space-y-2">
         <h3 
-          className="font-semibold text-base mb-2 line-clamp-2 min-h-[3rem]"
+          className="font-semibold text-base line-clamp-2"
           data-testid={`text-product-name-${id}`}
         >
           {name}
         </h3>
 
-        {ratingNum > 0 && (
-          <div className="flex items-center gap-2 mb-2">
-            <div className="flex items-center">
-              <Star className="h-4 w-4 fill-primary text-primary" />
-              <span className="text-sm ml-1" data-testid={`text-rating-${id}`}>
-                {ratingNum.toFixed(1)}
-              </span>
-            </div>
-            <span className="text-sm text-muted-foreground" data-testid={`text-reviews-${id}`}>
-              ({reviewCount})
-            </span>
-          </div>
-        )}
+        <div className="flex items-center gap-1.5">
+          <Star className="h-4 w-4 fill-primary text-primary" />
+          <span className="text-sm font-medium" data-testid={`text-rating-${id}`}>
+            {ratingNum.toFixed(1)}
+          </span>
+          <span className="text-sm text-muted-foreground" data-testid={`text-reviews-${id}`}>
+            ({reviewCount})
+          </span>
+        </div>
 
-        <div className="flex items-center gap-2 flex-wrap">
+        <div className="flex items-baseline gap-2">
           <span 
-            className="text-xl font-bold text-primary"
+            className="text-xl font-bold"
             data-testid={`text-selling-price-${id}`}
           >
             {currency} {sellingPrice.toFixed(2)}

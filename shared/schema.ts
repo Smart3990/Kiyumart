@@ -4,7 +4,7 @@ import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
 export const userRoleEnum = pgEnum("user_role", ["admin", "seller", "buyer", "rider", "agent"]);
-export const orderStatusEnum = pgEnum("order_status", ["pending", "processing", "shipped", "delivered", "cancelled", "disputed"]);
+export const orderStatusEnum = pgEnum("order_status", ["pending", "processing", "delivering", "delivered", "cancelled", "disputed"]);
 export const deliveryMethodEnum = pgEnum("delivery_method", ["pickup", "bus", "rider"]);
 export const paymentStatusEnum = pgEnum("payment_status", ["pending", "processing", "completed", "failed", "refunded"]);
 
@@ -30,9 +30,9 @@ export const users = pgTable("users", {
 export const platformSettings = pgTable("platform_settings", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
   isMultiVendor: boolean("is_multi_vendor").default(false),
-  platformName: text("platform_name").default("KiyuMart"),
+  platformName: text("platform_name").default("ModestGlow"),
   logo: text("logo"),
-  primaryColor: text("primary_color").default("#26a896"),
+  primaryColor: text("primary_color").default("#1e7b5f"),
   onboardingImages: text("onboarding_images").array(),
   defaultCurrency: text("default_currency").default("GHS"),
   paystackPublicKey: text("paystack_public_key"),

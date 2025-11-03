@@ -127,9 +127,9 @@ export default function OrderTracking() {
     if (!orders || orders.length === 0) return;
 
     const fetchRiderLocations = async () => {
-      const shippedOrders = orders.filter(order => order.status === "shipped");
+      const deliveringOrders = orders.filter(order => order.status === "delivering" || order.status === "shipped");
       
-      for (const order of shippedOrders) {
+      for (const order of deliveringOrders) {
         try {
           const response = await fetch(`/api/delivery-tracking/${order.id}`, {
             credentials: "include",
@@ -255,7 +255,8 @@ export default function OrderTracking() {
                         <SelectItem value="all">All Orders</SelectItem>
                         <SelectItem value="pending">Pending</SelectItem>
                         <SelectItem value="processing">Processing</SelectItem>
-                        <SelectItem value="shipped">Shipped</SelectItem>
+                        <SelectItem value="delivering">Delivering</SelectItem>
+                        <SelectItem value="shipped">Delivering (Legacy)</SelectItem>
                         <SelectItem value="delivered">Delivered</SelectItem>
                         <SelectItem value="cancelled">Cancelled</SelectItem>
                         <SelectItem value="disputed">Disputed</SelectItem>
@@ -351,8 +352,8 @@ export default function OrderTracking() {
                           </div>
                         </div>
 
-                        {/* Live Delivery Map for Shipped Orders */}
-                        {order.status === "shipped" && order.deliveryLatitude && order.deliveryLongitude && 
+                        {/* Live Delivery Map for Delivering Orders */}
+                        {(order.status === "delivering" || order.status === "shipped") && order.deliveryLatitude && order.deliveryLongitude && 
                          !isNaN(parseFloat(order.deliveryLatitude)) && !isNaN(parseFloat(order.deliveryLongitude)) && (
                           <div className="pt-4 border-t">
                             <DeliveryMap
