@@ -50,6 +50,15 @@ export const platformSettings = pgTable("platform_settings", {
   instagramUrl: text("instagram_url"),
   twitterUrl: text("twitter_url"),
   footerDescription: text("footer_description").default("Your trusted fashion marketplace. Quality products, fast delivery, and excellent service."),
+  adsEnabled: boolean("ads_enabled").default(false),
+  heroBannerAdImage: text("hero_banner_ad_image"),
+  heroBannerAdUrl: text("hero_banner_ad_url"),
+  sidebarAdImage: text("sidebar_ad_image"),
+  sidebarAdUrl: text("sidebar_ad_url"),
+  footerAdImage: text("footer_ad_image"),
+  footerAdUrl: text("footer_ad_url"),
+  productPageAdImage: text("product_page_ad_image"),
+  productPageAdUrl: text("product_page_ad_url"),
   updatedAt: timestamp("updated_at").defaultNow(),
 });
 

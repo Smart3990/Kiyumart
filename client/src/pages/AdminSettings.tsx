@@ -14,7 +14,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Loader2, Save, Settings2, CreditCard, Mail, Palette, DollarSign } from "lucide-react";
+import { Loader2, Save, Settings2, CreditCard, Mail, Palette, DollarSign, Image as ImageIcon } from "lucide-react";
 import {
   Select,
   SelectContent,
@@ -41,6 +41,15 @@ const settingsSchema = z.object({
   instagramUrl: z.string().url().optional().or(z.literal("")),
   twitterUrl: z.string().url().optional().or(z.literal("")),
   footerDescription: z.string().min(1, "Footer description is required"),
+  adsEnabled: z.boolean(),
+  heroBannerAdImage: z.string().url().optional().or(z.literal("")),
+  heroBannerAdUrl: z.string().url().optional().or(z.literal("")),
+  sidebarAdImage: z.string().url().optional().or(z.literal("")),
+  sidebarAdUrl: z.string().url().optional().or(z.literal("")),
+  footerAdImage: z.string().url().optional().or(z.literal("")),
+  footerAdUrl: z.string().url().optional().or(z.literal("")),
+  productPageAdImage: z.string().url().optional().or(z.literal("")),
+  productPageAdUrl: z.string().url().optional().or(z.literal("")),
 });
 
 type SettingsFormData = z.infer<typeof settingsSchema>;
@@ -80,6 +89,15 @@ export default function AdminSettings() {
       instagramUrl: settings.instagramUrl || "",
       twitterUrl: settings.twitterUrl || "",
       footerDescription: settings.footerDescription,
+      adsEnabled: settings.adsEnabled || false,
+      heroBannerAdImage: settings.heroBannerAdImage || "",
+      heroBannerAdUrl: settings.heroBannerAdUrl || "",
+      sidebarAdImage: settings.sidebarAdImage || "",
+      sidebarAdUrl: settings.sidebarAdUrl || "",
+      footerAdImage: settings.footerAdImage || "",
+      footerAdUrl: settings.footerAdUrl || "",
+      productPageAdImage: settings.productPageAdImage || "",
+      productPageAdUrl: settings.productPageAdUrl || "",
     } : undefined,
   });
 
@@ -133,7 +151,7 @@ export default function AdminSettings() {
 
         <form onSubmit={form.handleSubmit(onSubmit)}>
           <Tabs value={activeTab} onValueChange={setActiveTab}>
-            <TabsList className="grid w-full grid-cols-5 mb-6">
+            <TabsList className="grid w-full grid-cols-6 mb-6">
               <TabsTrigger value="general" data-testid="tab-general">
                 <Settings2 className="h-4 w-4 mr-2" />
                 General
@@ -153,6 +171,10 @@ export default function AdminSettings() {
               <TabsTrigger value="currency" data-testid="tab-currency">
                 <DollarSign className="h-4 w-4 mr-2" />
                 Currency
+              </TabsTrigger>
+              <TabsTrigger value="ads" data-testid="tab-ads">
+                <ImageIcon className="h-4 w-4 mr-2" />
+                Ads
               </TabsTrigger>
             </TabsList>
 
@@ -482,6 +504,161 @@ export default function AdminSettings() {
                       </SelectContent>
                     </Select>
                   </div>
+                </CardContent>
+              </Card>
+            </TabsContent>
+
+            <TabsContent value="ads" className="space-y-4">
+              <Card>
+                <CardHeader>
+                  <CardTitle>Advertisement Settings</CardTitle>
+                  <CardDescription>
+                    Control advertisement display and manage ad placements to monetize your platform
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-6">
+                  <div className="flex items-center justify-between p-4 border rounded-lg bg-muted/50">
+                    <div className="space-y-1">
+                      <Label htmlFor="adsEnabled" className="text-base font-semibold">Enable Advertisements</Label>
+                      <p className="text-sm text-muted-foreground">
+                        Display ads across your platform to generate revenue
+                      </p>
+                    </div>
+                    <Switch
+                      id="adsEnabled"
+                      checked={form.watch("adsEnabled")}
+                      onCheckedChange={(checked) => form.setValue("adsEnabled", checked)}
+                      data-testid="switch-ads-enabled"
+                    />
+                  </div>
+
+                  {form.watch("adsEnabled") && (
+                    <div className="space-y-6 pt-4">
+                      <div className="space-y-4 p-4 border rounded-lg">
+                        <h4 className="font-semibold flex items-center gap-2">
+                          <ImageIcon className="h-4 w-4" />
+                          Hero Banner Ad
+                        </h4>
+                        <p className="text-sm text-muted-foreground">
+                          Display an advertisement banner prominently on the homepage hero section
+                        </p>
+                        <div className="space-y-2">
+                          <Label htmlFor="heroBannerAdImage">Image URL</Label>
+                          <Input
+                            id="heroBannerAdImage"
+                            {...form.register("heroBannerAdImage")}
+                            placeholder="https://example.com/ad-banner.jpg"
+                            data-testid="input-hero-ad-image"
+                          />
+                          <p className="text-xs text-muted-foreground">
+                            Recommended size: 1200x400px
+                          </p>
+                        </div>
+                        <div className="space-y-2">
+                          <Label htmlFor="heroBannerAdUrl">Link URL (Optional)</Label>
+                          <Input
+                            id="heroBannerAdUrl"
+                            {...form.register("heroBannerAdUrl")}
+                            placeholder="https://example.com"
+                            data-testid="input-hero-ad-url"
+                          />
+                        </div>
+                      </div>
+
+                      <div className="space-y-4 p-4 border rounded-lg">
+                        <h4 className="font-semibold flex items-center gap-2">
+                          <ImageIcon className="h-4 w-4" />
+                          Sidebar Ad
+                        </h4>
+                        <p className="text-sm text-muted-foreground">
+                          Display an advertisement in the sidebar on product listing pages
+                        </p>
+                        <div className="space-y-2">
+                          <Label htmlFor="sidebarAdImage">Image URL</Label>
+                          <Input
+                            id="sidebarAdImage"
+                            {...form.register("sidebarAdImage")}
+                            placeholder="https://example.com/sidebar-ad.jpg"
+                            data-testid="input-sidebar-ad-image"
+                          />
+                          <p className="text-xs text-muted-foreground">
+                            Recommended size: 300x600px
+                          </p>
+                        </div>
+                        <div className="space-y-2">
+                          <Label htmlFor="sidebarAdUrl">Link URL (Optional)</Label>
+                          <Input
+                            id="sidebarAdUrl"
+                            {...form.register("sidebarAdUrl")}
+                            placeholder="https://example.com"
+                            data-testid="input-sidebar-ad-url"
+                          />
+                        </div>
+                      </div>
+
+                      <div className="space-y-4 p-4 border rounded-lg">
+                        <h4 className="font-semibold flex items-center gap-2">
+                          <ImageIcon className="h-4 w-4" />
+                          Product Page Ad
+                        </h4>
+                        <p className="text-sm text-muted-foreground">
+                          Display an advertisement below product details on individual product pages
+                        </p>
+                        <div className="space-y-2">
+                          <Label htmlFor="productPageAdImage">Image URL</Label>
+                          <Input
+                            id="productPageAdImage"
+                            {...form.register("productPageAdImage")}
+                            placeholder="https://example.com/product-ad.jpg"
+                            data-testid="input-product-ad-image"
+                          />
+                          <p className="text-xs text-muted-foreground">
+                            Recommended size: 728x90px
+                          </p>
+                        </div>
+                        <div className="space-y-2">
+                          <Label htmlFor="productPageAdUrl">Link URL (Optional)</Label>
+                          <Input
+                            id="productPageAdUrl"
+                            {...form.register("productPageAdUrl")}
+                            placeholder="https://example.com"
+                            data-testid="input-product-ad-url"
+                          />
+                        </div>
+                      </div>
+
+                      <div className="space-y-4 p-4 border rounded-lg">
+                        <h4 className="font-semibold flex items-center gap-2">
+                          <ImageIcon className="h-4 w-4" />
+                          Footer Ad
+                        </h4>
+                        <p className="text-sm text-muted-foreground">
+                          Display an advertisement in the footer section across all pages
+                        </p>
+                        <div className="space-y-2">
+                          <Label htmlFor="footerAdImage">Image URL</Label>
+                          <Input
+                            id="footerAdImage"
+                            {...form.register("footerAdImage")}
+                            placeholder="https://example.com/footer-ad.jpg"
+                            data-testid="input-footer-ad-image"
+                          />
+                          <p className="text-xs text-muted-foreground">
+                            Recommended size: 1200x150px
+                          </p>
+                        </div>
+                        <div className="space-y-2">
+                          <Label htmlFor="footerAdUrl">Link URL (Optional)</Label>
+                          <Input
+                            id="footerAdUrl"
+                            {...form.register("footerAdUrl")}
+                            placeholder="https://example.com"
+                            data-testid="input-footer-ad-url"
+                          />
+                        </div>
+                      </div>
+                    </div>
+                  )}
                 </CardContent>
               </Card>
             </TabsContent>

@@ -12,6 +12,7 @@ import ProductCard from "@/components/ProductCard";
 import Footer from "@/components/Footer";
 import CartSidebar from "@/components/CartSidebar";
 import ThemeToggle from "@/components/ThemeToggle";
+import AdBanner from "@/components/AdBanner";
 
 import heroImage from "@assets/generated_images/Diverse_Islamic_fashion_banner_eb13714d.png";
 import abayaCategoryImage from "@assets/generated_images/Abayas_category_collection_image_cbf9978c.png";
@@ -266,6 +267,10 @@ export default function HomeConnected() {
 
       <HeroCarousel />
 
+      <div className="max-w-7xl mx-auto px-4 py-6">
+        <AdBanner position="hero" className="h-32 md:h-48" />
+      </div>
+
       <main className="flex-1">
         <section className="max-w-7xl mx-auto px-4 py-12">
           <h2 className="text-3xl font-bold mb-8">{t("shopByCategory")}</h2>
@@ -324,6 +329,10 @@ export default function HomeConnected() {
           )}
         </section>
       </main>
+
+      <div className="max-w-7xl mx-auto px-4 pb-12">
+        <AdBanner position="footer" className="h-24 md:h-32" />
+      </div>
 
       <Footer />
 
