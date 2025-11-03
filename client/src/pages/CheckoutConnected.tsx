@@ -25,6 +25,7 @@ interface Product {
   price: string;
   images: string[];
   sellerId: string;
+  discount: number | null;
 }
 
 interface DeliveryZone {
@@ -167,8 +168,23 @@ export default function CheckoutConnected() {
     return { ...item, product };
   }).filter(item => item.product);
 
+  const calculateItemPrice = (product: Product) => {
+    const originalPrice = parseFloat(product.price);
+    if (product.discount && product.discount > 0) {
+      return originalPrice * (1 - product.discount / 100);
+    }
+    return originalPrice;
+  };
+
   const subtotal = itemsWithProducts.reduce((sum, item) => {
-    return sum + (parseFloat(item.product!.price) * item.quantity);
+    const discountedPrice = calculateItemPrice(item.product!);
+    return sum + (discountedPrice * item.quantity);
+  }, 0);
+
+  const productSavings = itemsWithProducts.reduce((sum, item) => {
+    const originalPrice = parseFloat(item.product!.price);
+    const discountedPrice = calculateItemPrice(item.product!);
+    return sum + ((originalPrice - discountedPrice) * item.quantity);
   }, 0);
 
   const selectedZone = deliveryZones.find(z => z.id === selectedZoneId);
@@ -249,12 +265,15 @@ export default function CheckoutConnected() {
     const sellerId = itemsWithProducts[0]?.product?.sellerId || user?.id;
 
     const orderData = {
-      items: itemsWithProducts.map(item => ({
-        productId: item.productId,
-        quantity: item.quantity,
-        price: item.product!.price,
-        total: (parseFloat(item.product!.price) * item.quantity).toFixed(2),
-      })),
+      items: itemsWithProducts.map(item => {
+        const discountedPrice = calculateItemPrice(item.product!);
+        return {
+          productId: item.productId,
+          quantity: item.quantity,
+          price: discountedPrice.toFixed(2),
+          total: (discountedPrice * item.quantity).toFixed(2),
+        };
+      }),
       sellerId,
       deliveryMethod,
       deliveryZoneId: selectedZoneId || null,
@@ -435,17 +454,35 @@ export default function CheckoutConnected() {
               </CardHeader>
               <CardContent className="space-y-4">
                 <div className="space-y-3">
-                  {itemsWithProducts.map((item) => (
-                    <div key={item.id} className="flex gap-3" data-testid={`summary-item-${item.id}`}>
-                      <div className="flex-1">
-                        <div className="text-sm font-medium line-clamp-2">{item.product!.name}</div>
-                        <div className="text-sm text-muted-foreground">Qty: {item.quantity}</div>
+                  {itemsWithProducts.map((item) => {
+                    const originalPrice = parseFloat(item.product!.price);
+                    const discountedPrice = calculateItemPrice(item.product!);
+                    const hasDiscount = item.product!.discount && item.product!.discount > 0;
+                    
+                    return (
+                      <div key={item.id} className="flex gap-3" data-testid={`summary-item-${item.id}`}>
+                        <div className="flex-1">
+                          <div className="text-sm font-medium line-clamp-2">{item.product!.name}</div>
+                          <div className="text-sm text-muted-foreground">Qty: {item.quantity}</div>
+                          {hasDiscount && (
+                            <Badge variant="secondary" className="mt-1 bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-100" data-testid={`badge-discount-${item.id}`}>
+                              {item.product!.discount}% OFF
+                            </Badge>
+                          )}
+                        </div>
+                        <div className="text-sm text-right">
+                          {hasDiscount && (
+                            <div className="text-muted-foreground line-through text-xs" data-testid={`text-original-price-${item.id}`}>
+                              GHS {(originalPrice * item.quantity).toFixed(2)}
+                            </div>
+                          )}
+                          <div className={`font-medium ${hasDiscount ? 'text-green-600 dark:text-green-400' : ''}`} data-testid={`text-item-total-${item.id}`}>
+                            GHS {(discountedPrice * item.quantity).toFixed(2)}
+                          </div>
+                        </div>
                       </div>
-                      <div className="text-sm font-medium">
-                        GHS {(parseFloat(item.product!.price) * item.quantity).toFixed(2)}
-                      </div>
-                    </div>
-                  ))}
+                    );
+                  })}
                 </div>
 
                 <Separator />
@@ -455,6 +492,12 @@ export default function CheckoutConnected() {
                     <span className="text-muted-foreground">Subtotal</span>
                     <span data-testid="text-checkout-subtotal">GHS {subtotal.toFixed(2)}</span>
                   </div>
+                  {productSavings > 0 && (
+                    <div className="flex justify-between text-green-600 dark:text-green-400">
+                      <span className="font-medium">Product Discounts</span>
+                      <span data-testid="text-product-discounts">-GHS {productSavings.toFixed(2)}</span>
+                    </div>
+                  )}
                   {couponDiscount > 0 && (
                     <div className="flex justify-between text-green-600 dark:text-green-400">
                       <span className="font-medium">Coupon Discount</span>
