@@ -21,6 +21,7 @@ interface Product {
   id: string;
   name: string;
   price: string;
+  costPrice?: string;
   images: string[];
   discount: number;
   ratings: string;
@@ -187,20 +188,28 @@ export default function HomeConnected() {
             <div className="text-center py-12">Loading products...</div>
           ) : (
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-              {products.slice(0, 8).map((product) => (
-                <ProductCard
-                  key={product.id}
-                  id={product.id}
-                  name={product.name}
-                  price={parseFloat(product.price)}
-                  image={product.images[0] || heroImage}
-                  discount={product.discount}
-                  rating={parseFloat(product.ratings) || 0}
-                  reviewCount={product.totalRatings}
-                  onAddToCart={handleAddToCart}
-                  onToggleWishlist={(id) => console.log('Wishlist toggled:', id)}
-                />
-              ))}
+              {products.slice(0, 8).map((product) => {
+                const sellingPrice = parseFloat(product.price);
+                const originalPrice = product.costPrice ? parseFloat(product.costPrice) : null;
+                const calculatedDiscount = originalPrice && originalPrice > sellingPrice
+                  ? Math.round(((originalPrice - sellingPrice) / originalPrice) * 100)
+                  : 0;
+
+                return (
+                  <ProductCard
+                    key={product.id}
+                    id={product.id}
+                    name={product.name}
+                    price={sellingPrice}
+                    costPrice={originalPrice || undefined}
+                    image={product.images[0] || heroImage}
+                    discount={calculatedDiscount}
+                    rating={parseFloat(product.ratings) || 0}
+                    reviewCount={product.totalRatings}
+                    onToggleWishlist={(id) => console.log('Wishlist toggled:', id)}
+                  />
+                );
+              })}
             </div>
           )}
         </section>
