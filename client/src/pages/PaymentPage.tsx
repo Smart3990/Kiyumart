@@ -51,8 +51,8 @@ export default function PaymentPage() {
       return res.json();
     },
     onSuccess: (data) => {
-      if (data.authorizationUrl) {
-        window.location.href = data.authorizationUrl;
+      if (data.authorization_url) {
+        window.location.href = data.authorization_url;
       }
     },
     onError: (error: any) => {

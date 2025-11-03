@@ -672,13 +672,61 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const { items, ...orderData } = req.body;
       
-      // Re-validate coupon on server-side to prevent tampering
+      if (!items || items.length === 0) {
+        return res.status(400).json({ error: "Order must contain at least one item" });
+      }
+      
+      // Server-side price recalculation to prevent tampering
+      let serverSubtotal = 0;
+      let serverProductSavings = 0;
+      const validatedItems = [];
+      
+      for (const item of items) {
+        const product = await storage.getProduct(item.productId);
+        if (!product) {
+          return res.status(404).json({ error: `Product ${item.productId} not found` });
+        }
+        
+        if (!product.isActive) {
+          return res.status(400).json({ error: `Product ${product.name} is no longer available` });
+        }
+        
+        // Calculate actual price with discount
+        const originalPrice = parseFloat(product.price);
+        const discount = product.discount || 0;
+        const discountedPrice = originalPrice * (1 - discount / 100);
+        const itemTotal = discountedPrice * item.quantity;
+        
+        // Track savings
+        serverProductSavings += (originalPrice - discountedPrice) * item.quantity;
+        serverSubtotal += itemTotal;
+        
+        validatedItems.push({
+          productId: item.productId,
+          quantity: item.quantity,
+          price: discountedPrice.toFixed(2),
+          total: itemTotal.toFixed(2),
+        });
+      }
+      
+      // Verify client-submitted subtotal matches server calculation
+      const clientSubtotal = parseFloat(orderData.subtotal || "0");
+      if (Math.abs(serverSubtotal - clientSubtotal) > 0.01) {
+        return res.status(400).json({ 
+          error: "Price mismatch detected. Please refresh and try again.",
+          serverSubtotal: serverSubtotal.toFixed(2),
+          clientSubtotal: clientSubtotal.toFixed(2)
+        });
+      }
+      
+      // Re-validate coupon on server-side
+      let serverCouponDiscount = 0;
       if (orderData.couponCode && orderData.sellerId) {
         try {
           const validationResult = await storage.validateCoupon(
             orderData.couponCode,
             orderData.sellerId,
-            parseFloat(orderData.subtotal || orderData.total || "0")
+            serverSubtotal
           );
           
           if (!validationResult.valid) {
@@ -687,11 +735,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
             });
           }
           
-          // Verify the discount amount matches server calculation
-          const expectedDiscount = parseFloat(validationResult.discountAmount || "0");
-          const clientDiscount = parseFloat(orderData.couponDiscount || "0");
+          serverCouponDiscount = parseFloat(validationResult.discountAmount || "0");
           
-          if (Math.abs(expectedDiscount - clientDiscount) > 0.01) {
+          // Verify the discount amount matches
+          const clientDiscount = parseFloat(orderData.couponDiscount || "0");
+          if (Math.abs(serverCouponDiscount - clientDiscount) > 0.01) {
             return res.status(400).json({ 
               error: "Coupon discount amount mismatch. Please refresh and try again." 
             });
@@ -703,13 +751,32 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
       }
       
+      // Recalculate total server-side
+      const deliveryFee = parseFloat(orderData.deliveryFee || "0");
+      const serverProcessingFee = (serverSubtotal - serverCouponDiscount + deliveryFee) * 0.0195;
+      const serverTotal = serverSubtotal - serverCouponDiscount + deliveryFee + serverProcessingFee;
+      
+      // Verify total matches
+      const clientTotal = parseFloat(orderData.total || "0");
+      if (Math.abs(serverTotal - clientTotal) > 0.02) {
+        return res.status(400).json({ 
+          error: "Total amount mismatch. Please refresh and try again.",
+          serverTotal: serverTotal.toFixed(2),
+          clientTotal: clientTotal.toFixed(2)
+        });
+      }
+      
       const orderInput = {
         ...orderData,
         buyerId: req.user!.id,
+        subtotal: serverSubtotal.toFixed(2),
+        couponDiscount: serverCouponDiscount > 0 ? serverCouponDiscount.toFixed(2) : null,
+        processingFee: serverProcessingFee.toFixed(2),
+        total: serverTotal.toFixed(2),
       };
 
       const validatedOrder = insertOrderSchema.parse(orderInput);
-      const order = await storage.createOrder(validatedOrder, items);
+      const order = await storage.createOrder(validatedOrder, validatedItems);
       
       res.json(order);
     } catch (error: any) {
