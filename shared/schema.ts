@@ -79,6 +79,10 @@ export const orders = pgTable("orders", {
   deliveryMethod: deliveryMethodEnum("delivery_method").notNull(),
   deliveryZoneId: varchar("delivery_zone_id").references(() => deliveryZones.id),
   deliveryAddress: text("delivery_address"),
+  deliveryCity: text("delivery_city"),
+  deliveryPhone: text("delivery_phone"),
+  deliveryLatitude: decimal("delivery_latitude", { precision: 10, scale: 7 }),
+  deliveryLongitude: decimal("delivery_longitude", { precision: 10, scale: 7 }),
   deliveryFee: decimal("delivery_fee", { precision: 10, scale: 2 }).default("0"),
   subtotal: decimal("subtotal", { precision: 10, scale: 2 }).notNull(),
   processingFee: decimal("processing_fee", { precision: 10, scale: 2 }).notNull(),
@@ -100,6 +104,18 @@ export const orderItems = pgTable("order_items", {
   quantity: integer("quantity").notNull(),
   price: decimal("price", { precision: 10, scale: 2 }).notNull(),
   total: decimal("total", { precision: 10, scale: 2 }).notNull(),
+});
+
+export const deliveryTracking = pgTable("delivery_tracking", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  orderId: varchar("order_id").notNull().references(() => orders.id),
+  riderId: varchar("rider_id").notNull().references(() => users.id),
+  latitude: decimal("latitude", { precision: 10, scale: 7 }).notNull(),
+  longitude: decimal("longitude", { precision: 10, scale: 7 }).notNull(),
+  accuracy: decimal("accuracy", { precision: 10, scale: 2 }),
+  speed: decimal("speed", { precision: 10, scale: 2 }),
+  heading: decimal("heading", { precision: 10, scale: 2 }),
+  timestamp: timestamp("timestamp").defaultNow(),
 });
 
 export const chatMessages = pgTable("chat_messages", {
@@ -196,6 +212,16 @@ export const insertWishlistSchema = createInsertSchema(wishlist).pick({
   productId: true,
 });
 
+export const insertDeliveryTrackingSchema = createInsertSchema(deliveryTracking).pick({
+  orderId: true,
+  riderId: true,
+  latitude: true,
+  longitude: true,
+  accuracy: true,
+  speed: true,
+  heading: true,
+});
+
 // TypeScript types
 export type InsertUser = z.infer<typeof insertUserSchema>;
 export type User = typeof users.$inferSelect;
@@ -222,3 +248,6 @@ export type Cart = typeof cart.$inferSelect;
 
 export type InsertWishlist = z.infer<typeof insertWishlistSchema>;
 export type Wishlist = typeof wishlist.$inferSelect;
+
+export type InsertDeliveryTracking = z.infer<typeof insertDeliveryTrackingSchema>;
+export type DeliveryTracking = typeof deliveryTracking.$inferSelect;

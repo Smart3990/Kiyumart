@@ -456,6 +456,60 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // ============ Delivery Tracking Routes ============
+  app.post("/api/delivery-tracking", requireAuth, requireRole("rider"), async (req: AuthRequest, res) => {
+    try {
+      const trackingData = {
+        orderId: req.body.orderId,
+        riderId: req.user!.id,
+        latitude: req.body.latitude,
+        longitude: req.body.longitude,
+        accuracy: req.body.accuracy,
+        speed: req.body.speed,
+        heading: req.body.heading,
+      };
+
+      const tracking = await storage.createDeliveryTracking(trackingData);
+      
+      // Emit real-time location update to buyer
+      const order = await storage.getOrder(req.body.orderId);
+      if (order) {
+        io.to(order.buyerId).emit("rider_location_updated", {
+          orderId: order.id,
+          orderNumber: order.orderNumber,
+          latitude: tracking.latitude,
+          longitude: tracking.longitude,
+          timestamp: tracking.timestamp,
+        });
+      }
+      
+      res.json(tracking);
+    } catch (error: any) {
+      res.status(400).json({ error: error.message });
+    }
+  });
+
+  app.get("/api/delivery-tracking/:orderId", requireAuth, async (req, res) => {
+    try {
+      const tracking = await storage.getLatestDeliveryLocation(req.params.orderId);
+      if (!tracking) {
+        return res.status(404).json({ error: "No tracking data found" });
+      }
+      res.json(tracking);
+    } catch (error: any) {
+      res.status(400).json({ error: error.message });
+    }
+  });
+
+  app.get("/api/delivery-tracking/:orderId/history", requireAuth, async (req, res) => {
+    try {
+      const history = await storage.getDeliveryTrackingHistory(req.params.orderId);
+      res.json(history);
+    } catch (error: any) {
+      res.status(400).json({ error: error.message });
+    }
+  });
+
   // ============ Chat Routes ============
   app.get("/api/support/contacts", requireAuth, async (req: AuthRequest, res) => {
     try {

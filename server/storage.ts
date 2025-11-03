@@ -1,11 +1,11 @@
 import { db } from "../db/index";
 import { 
-  users, products, orders, orderItems, deliveryZones, 
+  users, products, orders, orderItems, deliveryZones, deliveryTracking,
   chatMessages, transactions, platformSettings, cart, wishlist,
   type User, type InsertUser, type Product, type InsertProduct,
   type Order, type InsertOrder, type DeliveryZone, type InsertDeliveryZone,
   type ChatMessage, type InsertChatMessage, type Transaction, type PlatformSettings,
-  type Cart, type Wishlist
+  type Cart, type Wishlist, type DeliveryTracking, type InsertDeliveryTracking
 } from "@shared/schema";
 import { eq, and, desc, sql } from "drizzle-orm";
 
@@ -61,6 +61,11 @@ export interface IStorage {
   addToWishlist(userId: string, productId: string): Promise<Wishlist>;
   getWishlist(userId: string): Promise<Wishlist[]>;
   removeFromWishlist(userId: string, productId: string): Promise<boolean>;
+  
+  // Delivery Tracking operations
+  createDeliveryTracking(data: InsertDeliveryTracking): Promise<DeliveryTracking>;
+  getLatestDeliveryLocation(orderId: string): Promise<DeliveryTracking | undefined>;
+  getDeliveryTrackingHistory(orderId: string): Promise<DeliveryTracking[]>;
   
   // Analytics
   getAnalytics(userId?: string, role?: string): Promise<any>;
@@ -327,6 +332,28 @@ export class DbStorage implements IStorage {
     const result = await db.delete(wishlist)
       .where(and(eq(wishlist.userId, userId), eq(wishlist.productId, productId)));
     return result.rowCount !== null && result.rowCount > 0;
+  }
+
+  // Delivery Tracking operations
+  async createDeliveryTracking(data: InsertDeliveryTracking): Promise<DeliveryTracking> {
+    const [tracking] = await db.insert(deliveryTracking).values(data).returning();
+    return tracking;
+  }
+
+  async getLatestDeliveryLocation(orderId: string): Promise<DeliveryTracking | undefined> {
+    const result = await db.select()
+      .from(deliveryTracking)
+      .where(eq(deliveryTracking.orderId, orderId))
+      .orderBy(desc(deliveryTracking.timestamp))
+      .limit(1);
+    return result[0];
+  }
+
+  async getDeliveryTrackingHistory(orderId: string): Promise<DeliveryTracking[]> {
+    return db.select()
+      .from(deliveryTracking)
+      .where(eq(deliveryTracking.orderId, orderId))
+      .orderBy(desc(deliveryTracking.timestamp));
   }
 
   // Analytics
