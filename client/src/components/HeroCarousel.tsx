@@ -78,7 +78,6 @@ export default function HeroCarousel() {
                         <Button
                           size="lg"
                           onClick={() => navigate(banner.ctaLink || "/")}
-                          className="bg-white text-primary hover:bg-white/90 shadow-lg"
                           data-testid={`button-hero-cta-${banner.id}`}
                         >
                           {banner.ctaText}
