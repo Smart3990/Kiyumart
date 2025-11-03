@@ -35,6 +35,7 @@ export default function ChatPageConnected() {
   const [selectedContact, setSelectedContact] = useState<User | null>(null);
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const socketRef = useRef<Socket | null>(null);
+  const hasAutoSelected = useRef(false);
 
   useEffect(() => {
     if (!isAuthenticated && !authLoading) {
@@ -42,7 +43,7 @@ export default function ChatPageConnected() {
     }
   }, [isAuthenticated, authLoading, navigate]);
 
-  // Initialize Socket.io connection
+  // Initialize Socket.io connection ONCE per user
   useEffect(() => {
     if (!user) return;
 
@@ -56,9 +57,14 @@ export default function ChatPageConnected() {
     });
 
     socket.on("new_message", (message: ChatMessage) => {
-      if (message.senderId === selectedContact?.id || message.receiverId === selectedContact?.id) {
-        setMessages((prev) => [...prev, message]);
-      }
+      // Update messages if from/to current contact
+      setMessages((prevMessages) => {
+        const currentContact = selectedContact;
+        if (currentContact && (message.senderId === currentContact.id || message.receiverId === currentContact.id)) {
+          return [...prevMessages, message];
+        }
+        return prevMessages;
+      });
       
       if (message.senderId !== user.id) {
         toast({
@@ -68,13 +74,13 @@ export default function ChatPageConnected() {
       }
     });
 
-
     socketRef.current = socket;
 
     return () => {
       socket.disconnect();
     };
-  }, [user, selectedContact, toast]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user?.id]); // Only reconnect when user changes, NOT when contact changes
 
   const { data: contacts = [], isLoading: contactsLoading } = useQuery<User[]>({
     queryKey: ["/api/users", "all", user?.role],
@@ -98,12 +104,13 @@ export default function ChatPageConnected() {
     enabled: isAuthenticated && !!user,
   });
 
-  // Auto-select contact for non-admin users (support chat)
+  // Auto-select first contact for non-admin users (support chat)
   useEffect(() => {
-    if (user?.role !== "admin" && contacts.length > 0 && !selectedContact) {
+    if (user?.role !== "admin" && contacts.length > 0 && !hasAutoSelected.current) {
       setSelectedContact(contacts[0]);
+      hasAutoSelected.current = true;
     }
-  }, [contacts, user?.role]); // Remove selectedContact to prevent infinite loop
+  }, [contacts.length, user?.role]); // Only when contacts count or role changes
 
   const { data: chatMessages = [], refetch: refetchMessages } = useQuery<ChatMessage[]>({
     queryKey: ["/api/messages", selectedContact?.id],
