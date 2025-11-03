@@ -10,19 +10,36 @@ Preferred communication style: Simple, everyday language.
 
 ## Recent Changes (November 2025)
 
-### UI/UX and Profile Improvements (Nov 3, 2025)
-- **Shopping Cart Currency Fix**: Updated CartPopover to use dynamic currencySymbol from LanguageContext instead of hardcoded "GHS"
-- **Perfect Circle Badges**: All notification badges (cart, wishlist, notifications) now display as perfect circles using rounded-full class
-- **Wishlist Icon in Header**: Added Heart icon button to header for quick access to wishlist page
+### UI/UX and Navigation Enhancements (Nov 3, 2025)
+- **Shopping Cart Currency**: Cart and CartPopover use dynamic currencySymbol from LanguageContext (GHS/EUR/USD)
+- **Perfect Circle Badges**: All notification badges (cart, wishlist, notifications) display as perfect circles with rounded-full class
+- **Active State Indicators**: Navigation icons highlight in primary color when on their respective pages
+- **Wishlist Counter Badge**: Heart icon in header shows wishlist item count with perfect circle badge
+- **Settings Page**: Created comprehensive settings page with:
+  - Notification preferences (email, push, order updates, promotions)
+  - Appearance settings (dark mode toggle)
+  - Language and region display
+  - Account security options (2FA setup, password change)
+  - Privacy controls (download data, delete account)
+  - Route: `/settings`
+  - Settings button added to Profile page
 - **Profile Picture Upload**: Complete implementation with:
   - Camera icon button on profile avatar with file upload functionality
   - Frontend validation: file type and 5MB size limit
-  - Server-side validation: MIME type checking, file size enforcement
+  - Server-side validation: MIME type checking (JPEG/PNG/WEBP/GIF), file size enforcement
   - Cloudinary integration for secure image storage in kiyumart/profiles folder
   - Real-time UI updates with proper cache invalidation
   - Loading states and comprehensive error handling
-- **Profile Security**: Enhanced profile update endpoint with field whitelisting (username, phone, address, city, country only) to prevent privilege escalation
+- **Profile Security**: Enhanced profile update endpoint with strict field whitelisting (username, phone, address, city, country only) to prevent privilege escalation
 
+### Product Data Completeness (Nov 3, 2025)
+- **Videos**: All products now have video URLs for product demos/showcases
+- **Variants**: Every product has size and color variants with SKU codes
+  - Abayas: S/M/L/XL sizes with color options (Black, Burgundy, Cream, Pink, Emerald Green)
+  - Hijabs: One Size with multiple color options (Multicolor, Navy Blue, Burgundy)
+  - Accessories: One Size with color variants (Black, Brown, Tortoise)
+  - Dresses: S/M/L/XL sizes with various colors (Beige)
+  
 ### E-commerce Enhancements (Nov 3, 2025)
 - **Payment Flow**: Changed "Place Order" to "Pay" button with direct Paystack integration and callback handling
 - **Product Variants**: 
