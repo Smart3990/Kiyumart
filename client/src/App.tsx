@@ -12,7 +12,7 @@ import AuthPage from "@/pages/AuthPage";
 import AdminDashboard from "@/pages/AdminDashboardConnected";
 import SellerDashboard from "@/pages/SellerDashboardConnected";
 import RiderDashboard from "@/pages/RiderDashboard";
-import ChatPage from "@/pages/ChatPageSimple";
+import ChatPage from "@/pages/ChatPageConnected";
 import OrderTracking from "@/pages/OrderTracking";
 import Checkout from "@/pages/CheckoutConnected";
 import PaymentPage from "@/pages/PaymentPage";

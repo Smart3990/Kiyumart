@@ -37,11 +37,12 @@ export default function ChatPageConnected() {
   const socketRef = useRef<Socket | null>(null);
   const prevContactsLength = useRef(0);
 
+  // Auth guard: only redirect after auth is fully resolved
   useEffect(() => {
-    if (!isAuthenticated && !authLoading) {
+    if (!authLoading && !user) {
       navigate("/auth");
     }
-  }, [isAuthenticated, authLoading, navigate]);
+  }, [authLoading, user, navigate]);
 
   // Initialize Socket.io connection ONCE per user
   useEffect(() => {
@@ -101,7 +102,7 @@ export default function ChatPageConnected() {
         return admins;
       }
     },
-    enabled: isAuthenticated && !!user,
+    enabled: !authLoading && !!user,
   });
 
   // Auto-select disabled to prevent infinite loop - users must manually select contact
@@ -150,7 +151,22 @@ export default function ChatPageConnected() {
     sendMessageMutation.mutate(message);
   };
 
-  if (authLoading || !isAuthenticated) {
+  // Show loading state while auth is resolving
+  if (authLoading) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <Loader2 className="h-8 w-8 animate-spin text-primary" data-testid="loader-chat" />
+      </div>
+    );
+  }
+
+  // Don't render if no user (will redirect via useEffect)
+  if (!user) {
+    return null;
+  }
+
+  // Show loading for contacts
+  if (contactsLoading) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
         <Loader2 className="h-8 w-8 animate-spin text-primary" data-testid="loader-chat" />
