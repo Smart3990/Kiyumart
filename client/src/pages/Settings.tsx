@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useLocation } from "wouter";
 import { useAuth } from "@/lib/auth";
 import { useLanguage } from "@/contexts/LanguageContext";
 import Header from "@/components/Header";
@@ -21,6 +22,7 @@ import {
 import { useToast } from "@/hooks/use-toast";
 
 export default function Settings() {
+  const [, navigate] = useLocation();
   const { user } = useAuth();
   const { language, setLanguage } = useLanguage();
   const { toast } = useToast();
@@ -253,7 +255,7 @@ export default function Settings() {
                   </div>
                   <Button 
                     variant="outline"
-                    onClick={() => window.location.href = "/change-password"}
+                    onClick={() => navigate("/change-password")}
                     data-testid="button-change-password"
                   >
                     Change

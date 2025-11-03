@@ -42,10 +42,10 @@ function Router() {
       <Route path="/cart" component={Cart} />
       <Route path="/auth" component={AuthPage} />
       <Route path="/checkout" component={Checkout} />
+      <Route path="/payment/verify" component={PaymentVerifyPage} />
       <Route path="/payment/success" component={PaymentSuccess} />
       <Route path="/payment/failure" component={PaymentFailure} />
       <Route path="/payment/:orderId" component={PaymentPage} />
-      <Route path="/payment/verify" component={PaymentVerifyPage} />
       <Route path="/notifications" component={Notifications} />
       <Route path="/profile" component={Profile} />
       <Route path="/settings" component={Settings} />
