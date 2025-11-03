@@ -15,19 +15,20 @@ export default function QRCodeDisplay({
   size = 200,
 }: QRCodeDisplayProps) {
   return (
-    <Card className="max-w-sm mx-auto">
-      <CardHeader className="text-center">
-        <CardTitle>{title}</CardTitle>
-        <CardDescription>{description}</CardDescription>
-      </CardHeader>
-      <CardContent className="flex flex-col items-center gap-4">
-        <div className="p-4 bg-white rounded-lg">
+    <div className="w-full">
+      {title && (
+        <div className="text-center mb-2">
+          <h3 className="font-semibold text-sm">{title}</h3>
+          {description && (
+            <p className="text-xs text-muted-foreground">{description}</p>
+          )}
+        </div>
+      )}
+      <div className="flex justify-center items-center">
+        <div className="p-4 !bg-white rounded-lg shadow-sm">
           <QRCode value={value} size={size} data-testid="qr-code" />
         </div>
-        <p className="text-xs text-muted-foreground text-center" data-testid="text-qr-value">
-          Order: {value}
-        </p>
-      </CardContent>
-    </Card>
+      </div>
+    </div>
   );
 }

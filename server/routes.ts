@@ -738,6 +738,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const { orderId } = req.body;
       
+      // Get platform settings for Paystack key
+      const settings = await storage.getPlatformSettings();
+      if (!settings.paystackSecretKey) {
+        return res.status(400).json({ error: "Payment gateway not configured. Please contact support." });
+      }
+      
       // Load and validate the order
       const order = await storage.getOrder(orderId);
       if (!order) {
@@ -760,7 +766,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const response = await fetch("https://api.paystack.co/transaction/initialize", {
         method: "POST",
         headers: {
-          Authorization: `Bearer ${process.env.PAYSTACK_SECRET_KEY}`,
+          Authorization: `Bearer ${settings.paystackSecretKey}`,
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
@@ -796,6 +802,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.get("/api/payments/verify/:reference", requireAuth, async (req: AuthRequest, res) => {
     try {
+      // Get platform settings for Paystack key
+      const settings = await storage.getPlatformSettings();
+      if (!settings.paystackSecretKey) {
+        return res.status(400).json({ error: "Payment gateway not configured. Please contact support." });
+      }
+      
       // Check if transaction already exists (idempotency)
       const existingTransaction = await storage.getTransactionByReference(req.params.reference);
       if (existingTransaction) {
@@ -810,7 +822,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         `https://api.paystack.co/transaction/verify/${req.params.reference}`,
         {
           headers: {
-            Authorization: `Bearer ${process.env.PAYSTACK_SECRET_KEY}`,
+            Authorization: `Bearer ${settings.paystackSecretKey}`,
           },
         }
       );
