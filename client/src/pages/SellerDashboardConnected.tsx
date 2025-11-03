@@ -154,8 +154,6 @@ export default function SellerDashboardConnected() {
                       discount={product.discount || undefined}
                       rating={4.5}
                       reviewCount={0}
-                      onAddToCart={(id) => console.log('Edit product:', id)}
-                      onToggleWishlist={(id) => console.log('Delete product:', id)}
                     />
                   ))}
                 </div>
