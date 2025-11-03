@@ -10,6 +10,8 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import logoLight from "@assets/light_mode_1762169855262.png";
+import logoDark from "@assets/photo_2025-09-24_21-19-48-removebg-preview_1762169855290.png";
 
 interface HeaderProps {
   cartItemsCount?: number;
@@ -44,13 +46,24 @@ export default function Header({
               <Menu className="h-5 w-5" />
             </Button>
             
-            <h1 
-              className="text-2xl font-bold text-primary cursor-pointer" 
-              data-testid="text-logo"
+            <div 
+              className="cursor-pointer" 
+              data-testid="logo-container"
               onClick={() => navigate("/")}
             >
-              KiyuMart
-            </h1>
+              <img 
+                src={logoLight}
+                alt="KiyuMart"
+                className="h-10 w-auto dark:hidden"
+                data-testid="logo-light"
+              />
+              <img 
+                src={logoDark}
+                alt="KiyuMart"
+                className="h-10 w-auto hidden dark:block"
+                data-testid="logo-dark"
+              />
+            </div>
           </div>
 
           <div className="hidden md:flex flex-1 max-w-xl mx-8">

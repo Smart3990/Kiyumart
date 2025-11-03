@@ -20,6 +20,7 @@ import PaymentPage from "@/pages/PaymentPage";
 import PaymentVerifyPage from "@/pages/PaymentVerifyPage";
 import Notifications from "@/pages/Notifications";
 import Profile from "@/pages/Profile";
+import CategoryPage from "@/pages/CategoryPage";
 import NotFound from "@/pages/not-found";
 
 function Router() {
@@ -27,6 +28,7 @@ function Router() {
     <Switch>
       <Route path="/" component={Home} />
       <Route path="/product/:id" component={ProductDetails} />
+      <Route path="/category/:id" component={CategoryPage} />
       <Route path="/cart" component={Cart} />
       <Route path="/auth" component={AuthPage} />
       <Route path="/checkout" component={Checkout} />
