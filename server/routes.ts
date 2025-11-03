@@ -672,6 +672,31 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const { items, ...orderData } = req.body;
       
+      // Re-validate coupon on server-side to prevent tampering
+      if (orderData.couponCode && orderData.sellerId) {
+        try {
+          const validationResult = await storage.validateCoupon(
+            orderData.couponCode,
+            orderData.sellerId,
+            parseFloat(orderData.subtotal || orderData.total || "0")
+          );
+          
+          // Verify the discount amount matches server calculation
+          const expectedDiscount = parseFloat(validationResult.discountAmount);
+          const clientDiscount = parseFloat(orderData.couponDiscount || "0");
+          
+          if (Math.abs(expectedDiscount - clientDiscount) > 0.01) {
+            return res.status(400).json({ 
+              error: "Coupon discount amount mismatch. Please refresh and try again." 
+            });
+          }
+        } catch (validationError: any) {
+          return res.status(400).json({ 
+            error: `Coupon validation failed: ${validationError.message}` 
+          });
+        }
+      }
+      
       const orderInput = {
         ...orderData,
         buyerId: req.user!.id,

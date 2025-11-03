@@ -176,14 +176,11 @@ export class DbStorage implements IStorage {
       });
     }
 
-    // Increment coupon usage count if coupon was applied
+    // Increment coupon usage count atomically if coupon was applied
     if (order.couponCode) {
-      const coupon = await this.getCouponByCode(order.couponCode);
-      if (coupon) {
-        await db.update(coupons)
-          .set({ usedCount: (coupon.usedCount || 0) + 1 })
-          .where(eq(coupons.id, coupon.id));
-      }
+      await db.update(coupons)
+        .set({ usedCount: sql`COALESCE(${coupons.usedCount}, 0) + 1` })
+        .where(eq(coupons.code, order.couponCode));
     }
 
     await this.clearCart(order.buyerId);
