@@ -103,7 +103,7 @@ export default function ChatPageConnected() {
     if (user?.role !== "admin" && contacts.length > 0 && !selectedContact) {
       setSelectedContact(contacts[0]);
     }
-  }, [contacts, selectedContact, user?.role]);
+  }, [contacts, user?.role]); // Remove selectedContact to prevent infinite loop
 
   const { data: chatMessages = [], refetch: refetchMessages } = useQuery<ChatMessage[]>({
     queryKey: ["/api/messages", selectedContact?.id],
