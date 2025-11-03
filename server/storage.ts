@@ -1,11 +1,11 @@
 import { db } from "../db/index";
 import { 
   users, products, orders, orderItems, deliveryZones, 
-  chatMessages, transactions, platformSettings, cart,
+  chatMessages, transactions, platformSettings, cart, wishlist,
   type User, type InsertUser, type Product, type InsertProduct,
   type Order, type InsertOrder, type DeliveryZone, type InsertDeliveryZone,
   type ChatMessage, type InsertChatMessage, type Transaction, type PlatformSettings,
-  type Cart
+  type Cart, type Wishlist
 } from "@shared/schema";
 import { eq, and, desc, sql } from "drizzle-orm";
 
@@ -56,6 +56,11 @@ export interface IStorage {
   updateCartItem(id: string, quantity: number): Promise<Cart | undefined>;
   removeFromCart(id: string): Promise<boolean>;
   clearCart(userId: string): Promise<void>;
+  
+  // Wishlist operations
+  addToWishlist(userId: string, productId: string): Promise<Wishlist>;
+  getWishlist(userId: string): Promise<Wishlist[]>;
+  removeFromWishlist(userId: string, productId: string): Promise<boolean>;
   
   // Analytics
   getAnalytics(userId?: string, role?: string): Promise<any>;
@@ -298,6 +303,30 @@ export class DbStorage implements IStorage {
 
   async clearCart(userId: string): Promise<void> {
     await db.delete(cart).where(eq(cart.userId, userId));
+  }
+
+  // Wishlist operations
+  async addToWishlist(userId: string, productId: string): Promise<Wishlist> {
+    const existing = await db.select().from(wishlist)
+      .where(and(eq(wishlist.userId, userId), eq(wishlist.productId, productId)))
+      .limit(1);
+
+    if (existing.length > 0) {
+      return existing[0];
+    }
+
+    const [newItem] = await db.insert(wishlist).values({ userId, productId }).returning();
+    return newItem;
+  }
+
+  async getWishlist(userId: string): Promise<Wishlist[]> {
+    return db.select().from(wishlist).where(eq(wishlist.userId, userId)).orderBy(desc(wishlist.createdAt));
+  }
+
+  async removeFromWishlist(userId: string, productId: string): Promise<boolean> {
+    const result = await db.delete(wishlist)
+      .where(and(eq(wishlist.userId, userId), eq(wishlist.productId, productId)));
+    return result.rowCount !== null && result.rowCount > 0;
   }
 
   // Analytics

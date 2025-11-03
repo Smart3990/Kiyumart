@@ -13,7 +13,7 @@ import {
 import { uploadToCloudinary } from "./cloudinary";
 import { getExchangeRates, convertCurrency, SUPPORTED_CURRENCIES } from "./currency";
 import multer from "multer";
-import { insertUserSchema, insertProductSchema, insertDeliveryZoneSchema, insertOrderSchema } from "@shared/schema";
+import { insertUserSchema, insertProductSchema, insertDeliveryZoneSchema, insertOrderSchema, insertWishlistSchema } from "@shared/schema";
 
 const upload = multer({ storage: multer.memoryStorage() });
 
@@ -345,6 +345,35 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.delete("/api/cart", requireAuth, async (req: AuthRequest, res) => {
     try {
       await storage.clearCart(req.user!.id);
+      res.json({ success: true });
+    } catch (error: any) {
+      res.status(400).json({ error: error.message });
+    }
+  });
+
+  // ============ Wishlist Routes ============
+  app.post("/api/wishlist", requireAuth, async (req: AuthRequest, res) => {
+    try {
+      const validatedData = insertWishlistSchema.parse(req.body);
+      const wishlistItem = await storage.addToWishlist(req.user!.id, validatedData.productId);
+      res.json(wishlistItem);
+    } catch (error: any) {
+      res.status(400).json({ error: error.message });
+    }
+  });
+
+  app.get("/api/wishlist", requireAuth, async (req: AuthRequest, res) => {
+    try {
+      const wishlist = await storage.getWishlist(req.user!.id);
+      res.json(wishlist);
+    } catch (error: any) {
+      res.status(400).json({ error: error.message });
+    }
+  });
+
+  app.delete("/api/wishlist/:productId", requireAuth, async (req: AuthRequest, res) => {
+    try {
+      await storage.removeFromWishlist(req.user!.id, req.params.productId);
       res.json({ success: true });
     } catch (error: any) {
       res.status(400).json({ error: error.message });

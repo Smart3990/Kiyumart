@@ -1,5 +1,5 @@
 import { sql } from "drizzle-orm";
-import { pgTable, text, varchar, integer, decimal, timestamp, boolean, jsonb, pgEnum } from "drizzle-orm/pg-core";
+import { pgTable, text, varchar, integer, decimal, timestamp, boolean, jsonb, pgEnum, unique } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
@@ -47,6 +47,7 @@ export const products = pgTable("products", {
   name: text("name").notNull(),
   description: text("description").notNull(),
   category: text("category").notNull(),
+  costPrice: decimal("cost_price", { precision: 10, scale: 2 }),
   price: decimal("price", { precision: 10, scale: 2 }).notNull(),
   discount: integer("discount").default(0),
   stock: integer("stock").default(0),
@@ -133,6 +134,15 @@ export const cart = pgTable("cart", {
   updatedAt: timestamp("updated_at").defaultNow(),
 });
 
+export const wishlist = pgTable("wishlist", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  userId: varchar("user_id").notNull().references(() => users.id),
+  productId: varchar("product_id").notNull().references(() => products.id),
+  createdAt: timestamp("created_at").defaultNow(),
+}, (table) => ({
+  uniqueUserProduct: unique("wishlist_user_product_unique").on(table.userId, table.productId),
+}));
+
 // Zod schemas for validation
 export const insertUserSchema = createInsertSchema(users).pick({
   email: true,
@@ -149,6 +159,7 @@ export const insertProductSchema = createInsertSchema(products).pick({
   name: true,
   description: true,
   category: true,
+  costPrice: true,
   price: true,
   discount: true,
   stock: true,
@@ -181,6 +192,10 @@ export const insertChatMessageSchema = createInsertSchema(chatMessages).pick({
   messageType: true,
 });
 
+export const insertWishlistSchema = createInsertSchema(wishlist).pick({
+  productId: true,
+});
+
 // TypeScript types
 export type InsertUser = z.infer<typeof insertUserSchema>;
 export type User = typeof users.$inferSelect;
@@ -204,3 +219,6 @@ export type Transaction = typeof transactions.$inferSelect;
 export type PlatformSettings = typeof platformSettings.$inferSelect;
 
 export type Cart = typeof cart.$inferSelect;
+
+export type InsertWishlist = z.infer<typeof insertWishlistSchema>;
+export type Wishlist = typeof wishlist.$inferSelect;

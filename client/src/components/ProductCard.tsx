@@ -1,20 +1,22 @@
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Heart, ShoppingCart, Star } from "lucide-react";
+import { Heart, Star } from "lucide-react";
 import { useState } from "react";
+import { useLocation } from "wouter";
 
 interface ProductCardProps {
   id: string;
   name: string;
-  price: number;
+  price: number | string;
+  costPrice?: number | string;
   currency?: string;
   image: string;
   discount?: number;
-  rating?: number;
+  rating?: number | string;
   reviewCount?: number;
   inStock?: boolean;
-  onAddToCart?: (id: string) => void;
+  isWishlisted?: boolean;
   onToggleWishlist?: (id: string) => void;
 }
 
@@ -22,26 +24,40 @@ export default function ProductCard({
   id,
   name,
   price,
+  costPrice,
   currency = "GHS",
   image,
-  discount,
+  discount = 0,
   rating = 0,
   reviewCount = 0,
   inStock = true,
-  onAddToCart,
+  isWishlisted: initialWishlisted = false,
   onToggleWishlist,
 }: ProductCardProps) {
-  const [isWishlisted, setIsWishlisted] = useState(false);
+  const [, navigate] = useLocation();
+  const [isWishlisted, setIsWishlisted] = useState(initialWishlisted);
 
-  const discountedPrice = discount ? price * (1 - discount / 100) : price;
+  // Convert decimal strings to numbers for display
+  const sellingPrice = typeof price === 'string' ? parseFloat(price) : price;
+  const originalPrice = costPrice ? (typeof costPrice === 'string' ? parseFloat(costPrice) : costPrice) : null;
+  const ratingNum = typeof rating === 'string' ? parseFloat(rating) : rating;
 
-  const handleWishlistToggle = () => {
+  const handleWishlistToggle = (e: React.MouseEvent) => {
+    e.stopPropagation();
     setIsWishlisted(!isWishlisted);
     onToggleWishlist?.(id);
   };
 
+  const handleCardClick = () => {
+    navigate(`/product/${id}`);
+  };
+
   return (
-    <Card className="group overflow-hidden hover-elevate transition-all duration-300">
+    <Card 
+      className="group overflow-hidden hover-elevate transition-all duration-300 cursor-pointer"
+      onClick={handleCardClick}
+      data-testid={`card-product-${id}`}
+    >
       <div className="relative aspect-[3/4] overflow-hidden bg-muted">
         <img
           src={image}
@@ -49,7 +65,7 @@ export default function ProductCard({
           className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
           data-testid={`img-product-${id}`}
         />
-        {discount && discount > 0 && (
+        {discount > 0 && (
           <Badge 
             className="absolute top-2 left-2 bg-destructive text-destructive-foreground"
             data-testid={`badge-discount-${id}`}
@@ -85,12 +101,12 @@ export default function ProductCard({
           {name}
         </h3>
 
-        {rating > 0 && (
+        {ratingNum > 0 && (
           <div className="flex items-center gap-2 mb-2">
             <div className="flex items-center">
               <Star className="h-4 w-4 fill-primary text-primary" />
               <span className="text-sm ml-1" data-testid={`text-rating-${id}`}>
-                {rating.toFixed(1)}
+                {ratingNum.toFixed(1)}
               </span>
             </div>
             <span className="text-sm text-muted-foreground" data-testid={`text-reviews-${id}`}>
@@ -99,32 +115,22 @@ export default function ProductCard({
           </div>
         )}
 
-        <div className="flex items-center gap-2 mb-3">
+        <div className="flex items-center gap-2 flex-wrap">
           <span 
-            className="text-xl font-bold"
-            data-testid={`text-price-${id}`}
+            className="text-xl font-bold text-primary"
+            data-testid={`text-selling-price-${id}`}
           >
-            {currency} {discountedPrice.toFixed(2)}
+            {currency} {sellingPrice.toFixed(2)}
           </span>
-          {discount && discount > 0 && (
+          {originalPrice && originalPrice > sellingPrice && (
             <span 
               className="text-sm text-muted-foreground line-through"
-              data-testid={`text-original-price-${id}`}
+              data-testid={`text-cost-price-${id}`}
             >
-              {currency} {price.toFixed(2)}
+              {currency} {originalPrice.toFixed(2)}
             </span>
           )}
         </div>
-
-        <Button
-          className="w-full"
-          onClick={() => onAddToCart?.(id)}
-          disabled={!inStock}
-          data-testid={`button-add-to-cart-${id}`}
-        >
-          <ShoppingCart className="h-4 w-4 mr-2" />
-          Add to Cart
-        </Button>
       </div>
     </Card>
   );
