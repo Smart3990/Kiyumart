@@ -34,6 +34,7 @@ export default function Profile() {
   const [isEditing, setIsEditing] = useState(false);
   const [isUploadingImage, setIsUploadingImage] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const [formData, setFormData] = useState<Partial<UserProfile>>({});
 
   const { data: profile, isLoading } = useQuery<UserProfile>({
     queryKey: ["/api/profile"],
@@ -68,6 +69,28 @@ export default function Profile() {
 
   const handleLogout = async () => {
     await logout();
+  };
+
+  const handleEditToggle = () => {
+    if (!isEditing && profile) {
+      setFormData({
+        username: profile.username,
+        email: profile.email,
+        phone: profile.phone || "",
+        address: profile.address || "",
+        city: profile.city || "",
+        country: profile.country || "",
+      });
+    }
+    setIsEditing(!isEditing);
+  };
+
+  const handleInputChange = (field: keyof UserProfile, value: string) => {
+    setFormData(prev => ({ ...prev, [field]: value }));
+  };
+
+  const handleSaveProfile = () => {
+    updateProfileMutation.mutate(formData);
   };
 
   const handleImageUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -255,7 +278,7 @@ export default function Profile() {
                     </div>
                     <Button
                       variant={isEditing ? "outline" : "default"}
-                      onClick={() => setIsEditing(!isEditing)}
+                      onClick={handleEditToggle}
                       data-testid="button-edit-profile"
                     >
                       {isEditing ? "Cancel" : "Edit"}
@@ -268,7 +291,8 @@ export default function Profile() {
                       <Label htmlFor="username">Username</Label>
                       <Input
                         id="username"
-                        value={profile?.username || ""}
+                        value={isEditing ? formData.username || "" : profile?.username || ""}
+                        onChange={(e) => handleInputChange("username", e.target.value)}
                         disabled={!isEditing}
                         data-testid="input-username"
                       />
@@ -278,7 +302,8 @@ export default function Profile() {
                       <Input
                         id="email"
                         type="email"
-                        value={profile?.email || ""}
+                        value={isEditing ? formData.email || "" : profile?.email || ""}
+                        onChange={(e) => handleInputChange("email", e.target.value)}
                         disabled={!isEditing}
                         data-testid="input-email"
                       />
@@ -287,7 +312,8 @@ export default function Profile() {
                       <Label htmlFor="phone">Phone</Label>
                       <Input
                         id="phone"
-                        value={profile?.phone || ""}
+                        value={isEditing ? formData.phone || "" : profile?.phone || ""}
+                        onChange={(e) => handleInputChange("phone", e.target.value)}
                         disabled={!isEditing}
                         placeholder="+1234567890"
                         data-testid="input-phone"
@@ -297,7 +323,8 @@ export default function Profile() {
                       <Label htmlFor="city">City</Label>
                       <Input
                         id="city"
-                        value={profile?.city || ""}
+                        value={isEditing ? formData.city || "" : profile?.city || ""}
+                        onChange={(e) => handleInputChange("city", e.target.value)}
                         disabled={!isEditing}
                         data-testid="input-city"
                       />
@@ -307,7 +334,8 @@ export default function Profile() {
                     <Label htmlFor="address">Address</Label>
                     <Input
                       id="address"
-                      value={profile?.address || ""}
+                      value={isEditing ? formData.address || "" : profile?.address || ""}
+                      onChange={(e) => handleInputChange("address", e.target.value)}
                       disabled={!isEditing}
                       placeholder="Street address"
                       data-testid="input-address"
@@ -316,7 +344,7 @@ export default function Profile() {
                   {isEditing && (
                     <div className="flex justify-end">
                       <Button
-                        onClick={() => updateProfileMutation.mutate(profile || {})}
+                        onClick={handleSaveProfile}
                         disabled={updateProfileMutation.isPending}
                         data-testid="button-save-profile"
                       >
