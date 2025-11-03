@@ -30,6 +30,7 @@ export interface IStorage {
   createOrder(order: InsertOrder, items: Array<{ productId: string; quantity: number; price: string; total: string }>): Promise<Order>;
   getOrder(id: string): Promise<Order | undefined>;
   getOrdersByUser(userId: string, role: "buyer" | "seller" | "rider"): Promise<Order[]>;
+  getOrderItems(orderId: string): Promise<Array<{ productId: string; productName: string; quantity: number; price: string }>>;
   updateOrderStatus(id: string, status: string): Promise<Order | undefined>;
   updateOrder(orderId: string, data: Partial<Order>): Promise<Order | undefined>;
   assignRider(orderId: string, riderId: string): Promise<Order | undefined>;
@@ -182,6 +183,24 @@ export class DbStorage implements IStorage {
     } else {
       return db.select().from(orders).where(eq(orders.riderId, userId as any)).orderBy(desc(orders.createdAt));
     }
+  }
+
+  async getOrderItems(orderId: string): Promise<Array<{ productId: string; productName: string; quantity: number; price: string }>> {
+    const items = await db
+      .select({
+        productId: orderItems.productId,
+        productName: products.name,
+        quantity: orderItems.quantity,
+        price: orderItems.price,
+      })
+      .from(orderItems)
+      .leftJoin(products, eq(orderItems.productId, products.id))
+      .where(eq(orderItems.orderId, orderId));
+    
+    return items.map(item => ({
+      ...item,
+      productName: item.productName || "Unknown Product"
+    }));
   }
 
   async updateOrderStatus(id: string, status: string): Promise<Order | undefined> {

@@ -663,11 +663,11 @@ export default function ProductDetails() {
                         </div>
                         <div className="flex items-center gap-2">
                           <span className="text-lg font-bold text-primary">
-                            {currency} {sellingPrice.toFixed(2)}
+                            {currencySymbol} {sellingPrice.toFixed(2)}
                           </span>
                           {costPrice && costPrice > sellingPrice && (
                             <span className="text-sm text-muted-foreground line-through">
-                              {currency} {costPrice.toFixed(2)}
+                              {currencySymbol} {costPrice.toFixed(2)}
                             </span>
                           )}
                         </div>

@@ -444,7 +444,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const role = req.user!.role as "buyer" | "seller" | "rider";
       const orders = await storage.getOrdersByUser(req.user!.id, role);
-      res.json(orders);
+      
+      // Fetch order items with product names for each order
+      const ordersWithItems = await Promise.all(
+        orders.map(async (order) => {
+          const items = await storage.getOrderItems(order.id);
+          return {
+            ...order,
+            totalAmount: order.total,
+            items,
+          };
+        })
+      );
+      
+      res.json(ordersWithItems);
     } catch (error: any) {
       res.status(400).json({ error: error.message });
     }
