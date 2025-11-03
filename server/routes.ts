@@ -681,8 +681,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
             parseFloat(orderData.subtotal || orderData.total || "0")
           );
           
+          if (!validationResult.valid) {
+            return res.status(400).json({ 
+              error: validationResult.message || "Invalid coupon" 
+            });
+          }
+          
           // Verify the discount amount matches server calculation
-          const expectedDiscount = parseFloat(validationResult.discountAmount);
+          const expectedDiscount = parseFloat(validationResult.discountAmount || "0");
           const clientDiscount = parseFloat(orderData.couponDiscount || "0");
           
           if (Math.abs(expectedDiscount - clientDiscount) > 0.01) {

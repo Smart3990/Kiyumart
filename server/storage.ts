@@ -503,7 +503,7 @@ export class DbStorage implements IStorage {
     return result.rowCount ? result.rowCount > 0 : false;
   }
 
-  async validateCoupon(code: string, sellerId: string, orderTotal: number): Promise<{ valid: boolean; message?: string; coupon?: Coupon }> {
+  async validateCoupon(code: string, sellerId: string, orderTotal: number): Promise<{ valid: boolean; message?: string; coupon?: Coupon; discountAmount?: string }> {
     const coupon = await this.getCouponByCode(code);
     
     if (!coupon) {
@@ -531,7 +531,18 @@ export class DbStorage implements IStorage {
       return { valid: false, message: `Minimum purchase of ${minimumPurchase} required to use this coupon` };
     }
 
-    return { valid: true, coupon };
+    // Calculate discount amount
+    let discountAmount = 0;
+    if (coupon.discountType === "percentage") {
+      discountAmount = (orderTotal * parseFloat(coupon.discountValue)) / 100;
+    } else {
+      discountAmount = parseFloat(coupon.discountValue);
+    }
+
+    // Ensure discount doesn't exceed order total
+    discountAmount = Math.min(discountAmount, orderTotal);
+
+    return { valid: true, coupon, discountAmount: discountAmount.toFixed(2) };
   }
 
   // Analytics
