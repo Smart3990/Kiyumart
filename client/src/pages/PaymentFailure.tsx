@@ -1,3 +1,4 @@
+import { useEffect } from "react";
 import { useLocation } from "wouter";
 import { XCircle, Home, RefreshCw, HelpCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -5,12 +6,26 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
+import { useToast } from "@/hooks/use-toast";
 
 export default function PaymentFailure() {
   const [, navigate] = useLocation();
+  const { toast } = useToast();
   const searchParams = new URLSearchParams(window.location.search);
   const reason = searchParams.get("reason") || "Payment could not be completed";
   const orderId = searchParams.get("orderId");
+
+  useEffect(() => {
+    // Show in-app notification only if there's a meaningful reason
+    if (reason && reason !== "Payment could not be completed") {
+      toast({
+        title: "Payment Failed",
+        description: reason,
+        variant: "destructive",
+        duration: 5000,
+      });
+    }
+  }, [reason, toast]);
 
   const handleRetry = () => {
     if (orderId) {

@@ -10,6 +10,7 @@ import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import QRCodeDisplay from "@/components/QRCodeDisplay";
 import { useLanguage } from "@/contexts/LanguageContext";
+import { useToast } from "@/hooks/use-toast";
 
 interface Order {
   id: string;
@@ -26,6 +27,7 @@ interface Order {
 export default function PaymentSuccess() {
   const [, navigate] = useLocation();
   const { currencySymbol } = useLanguage();
+  const { toast } = useToast();
   const searchParams = new URLSearchParams(window.location.search);
   const orderId = searchParams.get("orderId");
 
@@ -35,8 +37,14 @@ export default function PaymentSuccess() {
   });
 
   useEffect(() => {
-    // Play success sound or animation
     if (order) {
+      // Show in-app notification
+      toast({
+        title: "Payment Successful! 🎉",
+        description: `Order ${order.orderNumber} has been confirmed. You'll receive updates on your order status.`,
+        duration: 5000,
+      });
+
       // Show browser notification if permitted
       if ("Notification" in window && Notification.permission === "granted") {
         new Notification("Payment Successful! 🎉", {
@@ -45,7 +53,7 @@ export default function PaymentSuccess() {
         });
       }
     }
-  }, [order]);
+  }, [order, toast]);
 
   if (!orderId) {
     return (

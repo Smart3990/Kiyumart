@@ -44,6 +44,7 @@ export default function Header({
   
   const { data: wishlist = [] } = useQuery<WishlistItem[]>({
     queryKey: ["/api/wishlist"],
+    enabled: isAuthenticated,
   });
 
   const isActive = (path: string) => location === path;
@@ -130,50 +131,54 @@ export default function Header({
               </DropdownMenuContent>
             </DropdownMenu>
 
-            <Button 
-              variant="ghost" 
-              size="icon"
-              className="relative"
-              onClick={() => navigate("/notifications")}
-              data-testid="button-notifications"
-            >
-              <Bell className={`h-5 w-5 ${isActive("/notifications") ? "text-primary" : ""}`} />
-              {notificationCount > 0 && (
-                <Badge 
-                  className="absolute -top-1 -right-1 h-5 w-5 flex items-center justify-center p-0 text-xs bg-destructive text-destructive-foreground rounded-full"
-                  data-testid="badge-notification-count"
+            {isAuthenticated && (
+              <>
+                <Button 
+                  variant="ghost" 
+                  size="icon"
+                  className="relative"
+                  onClick={() => navigate("/notifications")}
+                  data-testid="button-notifications"
                 >
-                  {notificationCount > 9 ? "9+" : notificationCount}
-                </Badge>
-              )}
-            </Button>
+                  <Bell className={`h-5 w-5 ${isActive("/notifications") ? "text-primary" : ""}`} />
+                  {notificationCount > 0 && (
+                    <Badge 
+                      className="absolute -top-1 -right-1 h-5 w-5 flex items-center justify-center p-0 text-xs bg-destructive text-destructive-foreground rounded-full"
+                      data-testid="badge-notification-count"
+                    >
+                      {notificationCount > 9 ? "9+" : notificationCount}
+                    </Badge>
+                  )}
+                </Button>
 
-            <Button 
-              variant="ghost" 
-              size="icon"
-              className="relative"
-              onClick={() => navigate("/wishlist")}
-              data-testid="button-wishlist"
-            >
-              <Heart className={`h-5 w-5 ${isActive("/wishlist") ? "text-primary fill-primary" : ""}`} />
-              {wishlist.length > 0 && (
-                <Badge 
-                  className="absolute -top-1 -right-1 h-5 w-5 flex items-center justify-center p-0 text-xs bg-primary text-primary-foreground rounded-full"
-                  data-testid="badge-wishlist-count"
+                <Button 
+                  variant="ghost" 
+                  size="icon"
+                  className="relative"
+                  onClick={() => navigate("/wishlist")}
+                  data-testid="button-wishlist"
                 >
-                  {wishlist.length > 9 ? "9+" : wishlist.length}
-                </Badge>
-              )}
-            </Button>
+                  <Heart className={`h-5 w-5 ${isActive("/wishlist") ? "text-primary fill-primary" : ""}`} />
+                  {wishlist.length > 0 && (
+                    <Badge 
+                      className="absolute -top-1 -right-1 h-5 w-5 flex items-center justify-center p-0 text-xs bg-primary text-primary-foreground rounded-full"
+                      data-testid="badge-wishlist-count"
+                    >
+                      {wishlist.length > 9 ? "9+" : wishlist.length}
+                    </Badge>
+                  )}
+                </Button>
 
-            <Button 
-              variant="ghost" 
-              size="icon"
-              onClick={() => navigate("/orders")}
-              data-testid="button-orders"
-            >
-              <Package className={`h-5 w-5 ${isActive("/orders") ? "text-primary" : ""}`} />
-            </Button>
+                <Button 
+                  variant="ghost" 
+                  size="icon"
+                  onClick={() => navigate("/orders")}
+                  data-testid="button-orders"
+                >
+                  <Package className={`h-5 w-5 ${isActive("/orders") ? "text-primary" : ""}`} />
+                </Button>
+              </>
+            )}
 
             {hasDashboard && (
               <DropdownMenu>

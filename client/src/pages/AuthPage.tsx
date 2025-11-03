@@ -4,6 +4,8 @@ import { useAuth } from "@/lib/auth";
 import { useToast } from "@/hooks/use-toast";
 import AuthForm from "@/components/AuthForm";
 import ThemeToggle from "@/components/ThemeToggle";
+import logoLight from "@assets/light_mode_1762169855262.png";
+import logoDark from "@assets/photo_2025-09-24_21-19-48-removebg-preview_1762169855290.png";
 
 export default function AuthPage() {
   const [, navigate] = useLocation();
@@ -23,7 +25,6 @@ export default function AuthPage() {
         title: "Login Successful",
         description: "Welcome back!",
       });
-      navigate("/");
     } catch (error: any) {
       toast({
         title: "Login Failed",
@@ -40,7 +41,6 @@ export default function AuthPage() {
         title: "Account Created",
         description: "Welcome to KiyuMart!",
       });
-      navigate("/");
     } catch (error: any) {
       toast({
         title: "Signup Failed",
@@ -52,14 +52,36 @@ export default function AuthPage() {
 
   return (
     <div className="min-h-screen flex flex-col">
-      <div className="flex items-center justify-end p-4">
-        <ThemeToggle />
+      <div className="sticky top-0 z-50 w-full border-b bg-background">
+        <div className="max-w-7xl mx-auto px-4 py-3">
+          <div className="flex items-center justify-between">
+            <div 
+              className="cursor-pointer" 
+              data-testid="logo-container"
+              onClick={() => navigate("/")}
+            >
+              <img 
+                src={logoLight}
+                alt="KiyuMart"
+                className="h-10 w-auto dark:hidden"
+                data-testid="logo-light"
+              />
+              <img 
+                src={logoDark}
+                alt="KiyuMart"
+                className="h-10 w-auto hidden dark:block"
+                data-testid="logo-dark"
+              />
+            </div>
+            <ThemeToggle />
+          </div>
+        </div>
       </div>
       
       <div className="flex-1 flex items-center justify-center p-6 bg-muted/30">
         <div className="w-full max-w-md">
           <div className="text-center mb-8">
-            <h1 className="text-4xl font-bold text-primary mb-2">KiyuMart</h1>
+            <h1 className="text-4xl font-bold text-primary mb-2">Welcome to KiyuMart</h1>
             <p className="text-muted-foreground">Your Fashion Marketplace</p>
           </div>
           
