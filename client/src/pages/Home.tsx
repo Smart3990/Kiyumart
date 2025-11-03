@@ -152,7 +152,7 @@ export default function Home() {
               <CategoryCard
                 key={category.id}
                 {...category}
-                onClick={(id) => console.log('Category clicked:', id)}
+                onClick={(id) => navigate(`/category/${id}`)}
               />
             ))}
           </div>
