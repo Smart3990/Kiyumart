@@ -4,11 +4,18 @@
 
 KiyuMart is a dual-mode e-commerce platform that operates as both a single-store fashion marketplace and a multi-vendor marketplace. The platform supports dynamic switching between modes through admin controls, allowing for flexible business models. Built with React (Vite) on the frontend and Node.js + Express on the backend, it provides comprehensive e-commerce functionality including product management, order processing, delivery tracking, real-time chat, and payment integration.
 
-## Production Status (Phase 1 - Ready to Deploy)
+## Production Status (Phase 1 - ✅ COMPLETE & PRODUCTION READY)
 
 **✅ Core E-Commerce Features:**
 - Multi-role authentication system (Super Admin, Seller, Buyer, Rider, Agent)
 - Product catalog with categories, search, and filtering
+- **NEW: Cost price display with strike-through styling**
+- **NEW: Auto-calculated discount badges (percentage off)**
+- **NEW: Wishlist system with heart icon toggle and persistence**
+- **NEW: Auto-search with 300ms debounce (filters by name/category)**
+- **NEW: Cart badge counter with real-time updates across all pages**
+- **NEW: ProductDetails page (/product/:id) with full product view**
+- **NEW: Cart page (/cart) with item management and order summary**
 - Shopping cart with persistent state
 - Complete checkout workflow with delivery information
 - Paystack payment integration
@@ -27,6 +34,46 @@ KiyuMart is a dual-mode e-commerce platform that operates as both a single-store
 ## User Preferences
 
 Preferred communication style: Simple, everyday language.
+
+## Recent Changes (Phase 1 MVP - Completed Nov 3, 2025)
+
+**Product Display Enhancements:**
+- Added `costPrice` field to products schema (decimal type)
+- Product cards now display cost price with strike-through when higher than selling price
+- Auto-calculated discount badge shows percentage off in top-left of product cards
+- Calculation: `Math.round(((costPrice - sellingPrice) / costPrice) * 100)`
+
+**Wishlist Functionality:**
+- New `wishlist` table with unique constraint on (userId, productId)
+- API endpoints: POST /api/wishlist, GET /api/wishlist, DELETE /api/wishlist/:productId
+- Heart icon on product cards (filled when wishlisted, empty otherwise)
+- Optimistic UI updates with useEffect sync for server-driven changes
+- Persistence verified across page refreshes
+- Toast notifications for add/remove actions
+- Authentication required (redirects to /auth if not logged in)
+
+**Auto-Search with Debounce:**
+- 300ms debounce using useRef and setTimeout with proper cleanup
+- Case-insensitive filtering across product.name and product.category
+- Dynamic heading: "Search Results (count)" when searching, "Featured Products" when idle
+- Shows all matching products when searching, first 8 products when not searching
+- Empty state with "No products found matching" message
+
+**Cart Badge Counter:**
+- Real-time updates across all pages (Home, ProductDetails, Cart)
+- Calculation: `cartItems.reduce((sum, item) => sum + item.quantity, 0)`
+- Badge shows when count > 0, positioned absolute on top-right of cart icon
+- Query invalidation ensures sync after mutations
+- ProductDetails now fetches cart data to maintain accurate badge
+
+**New Pages:**
+- `/product/:id` - Full product details with images, prices, quantity selector, add to cart, wishlist toggle
+- `/cart` - Complete cart management with quantity controls, remove items, order summary, checkout button
+
+**Query Optimization:**
+- Cart product query key includes sorted product IDs for proper cache invalidation
+- All pages use TanStack Query for efficient data fetching and caching
+- Mutations properly invalidate related queries
 
 ## System Architecture
 
