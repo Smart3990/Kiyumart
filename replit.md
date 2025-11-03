@@ -10,6 +10,27 @@ Preferred communication style: Simple, everyday language.
 
 ## Recent Changes (November 2025)
 
+### Product Reviews System (Nov 3, 2025)
+- Added complete reviews functionality for products
+- Database schema: `reviews` table with productId, userId, rating (1-5), comment, helpful count, timestamps
+- API routes: POST /api/reviews (create), GET /api/products/:productId/reviews (fetch)
+- ProductDetails page displays reviews with avatars, star ratings, user names, and comments
+- Sample data: 5 reviews across products with authentic Islamic fashion feedback
+- Integration with users table for reviewer information
+
+### Diverse Hero Banner (Nov 3, 2025)
+- New hero banner featuring both Arab and Black ladies in Islamic modest fashion
+- Boutique setting showcasing inclusivity and diversity in modest wear
+- Image: Diverse_Islamic_fashion_banner_eb13714d.png
+- Replaces previous single-model banner with more representative imagery
+- Displayed on both Home and HomeConnected pages
+
+### Product Catalog Images Update (Nov 3, 2025)
+- Updated all product images to use authentic Islamic fashion stock photography
+- Stock images stored in /attached_assets/stock_images/ directory
+- Images match product names and descriptions (abayas, modest dresses)
+- Resolved mismatched imagery to ensure consistent Islamic fashion presentation
+
 ### Custom Logo Implementation (Nov 3, 2025)
 - Integrated custom KiyuMart logo with separate assets for light and dark modes
 - Light mode: Dark teal logo (logoLight.png) displayed on white/light backgrounds
@@ -71,7 +92,7 @@ The backend is built with Express.js, leveraging a native HTTP server wrapped wi
 
 ### Database Schema Design
 
-The database schema includes tables for Users (with role-specific fields), Products (with seller association and inventory), Orders (with status tracking and delivery details), Delivery Zones, Chat Messages, Transactions, and Platform Settings for dynamic configuration. It also includes a `delivery_tracking` table for geolocation data and extensions to the `orders` table for delivery coordinates.
+The database schema includes tables for Users (with role-specific fields), Products (with seller association and inventory), Orders (with status tracking and delivery details), Reviews (with product ratings and user comments), Delivery Zones, Chat Messages, Transactions, and Platform Settings for dynamic configuration. It also includes a `delivery_tracking` table for geolocation data and extensions to the `orders` table for delivery coordinates.
 
 ## External Dependencies
 
