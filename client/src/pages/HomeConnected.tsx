@@ -13,7 +13,7 @@ import Footer from "@/components/Footer";
 import CartSidebar from "@/components/CartSidebar";
 import ThemeToggle from "@/components/ThemeToggle";
 
-import heroImage from "@assets/generated_images/Islamic_fashion_hero_banner_6bb20763.png";
+import heroImage from "@assets/generated_images/Diverse_Islamic_fashion_banner_eb13714d.png";
 import abayaCategoryImage from "@assets/generated_images/Abayas_category_collection_image_cbf9978c.png";
 import hijabCategoryImage from "@assets/generated_images/Hijabs_and_accessories_category_09f9b1a2.png";
 import eveningCategoryImage from "@assets/generated_images/Evening_wear_category_image_455c3389.png";

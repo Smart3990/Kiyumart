@@ -12,7 +12,7 @@ import Footer from "@/components/Footer";
 import CartSidebar from "@/components/CartSidebar";
 import ThemeToggle from "@/components/ThemeToggle";
 
-import heroImage from "@assets/generated_images/Islamic_fashion_hero_banner_6bb20763.png";
+import heroImage from "@assets/generated_images/Diverse_Islamic_fashion_banner_eb13714d.png";
 import abaya1 from "@assets/generated_images/Elegant_black_abaya_with_gold_embroidery_cc860cad.png";
 import abaya2 from "@assets/generated_images/Navy_blue_embroidered_modest_dress_aa08f435.png";
 import abaya3 from "@assets/generated_images/Pink_lace_abaya_dress_53759991.png";
