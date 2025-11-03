@@ -1,14 +1,27 @@
 import { useState, useEffect } from "react";
 import { useLocation } from "wouter";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation } from "@tanstack/react-query";
 import { useAuth } from "@/lib/auth";
+import { apiRequest, queryClient } from "@/lib/queryClient";
 import DashboardSidebar from "@/components/DashboardSidebar";
 import MetricCard from "@/components/MetricCard";
 import ProductCard from "@/components/ProductCard";
 import ThemeToggle from "@/components/ThemeToggle";
-import { DollarSign, Package, ShoppingBag, TrendingUp, Loader2, AlertCircle } from "lucide-react";
+import { DollarSign, Package, ShoppingBag, TrendingUp, Loader2, AlertCircle, Plus, Pencil, Trash2, Tag } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from "@/components/ui/dialog";
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
+import { Input } from "@/components/ui/input";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Switch } from "@/components/ui/switch";
+import { Badge } from "@/components/ui/badge";
+import { useToast } from "@/hooks/use-toast";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { z } from "zod";
+import { format } from "date-fns";
 
 interface Analytics {
   totalOrders: number;
@@ -31,10 +44,48 @@ interface Order {
   sellerId: string;
 }
 
+interface Coupon {
+  id: string;
+  code: string;
+  sellerId: string;
+  discountType: "percentage" | "fixed";
+  discountValue: string;
+  minimumPurchase: string;
+  usageLimit: number | null;
+  usedCount: number;
+  expiryDate: string | null;
+  isActive: boolean;
+  createdAt: string;
+}
+
+const couponFormSchema = z.object({
+  code: z.string().min(3, "Code must be at least 3 characters").toUpperCase(),
+  discountType: z.enum(["percentage", "fixed"]),
+  discountValue: z.string().min(1, "Discount value is required"),
+  minimumPurchase: z.string().optional(),
+  usageLimit: z.string().optional(),
+  expiryDate: z.string().optional(),
+  isActive: z.boolean().default(true),
+}).refine((data) => {
+  if (data.discountType === "percentage") {
+    const value = parseFloat(data.discountValue);
+    return value >= 0 && value <= 100;
+  }
+  return true;
+}, {
+  message: "Percentage discount must be between 0 and 100",
+  path: ["discountValue"],
+});
+
+type CouponFormData = z.infer<typeof couponFormSchema>;
+
 export default function SellerDashboardConnected() {
   const [activeItem, setActiveItem] = useState("dashboard");
   const [, navigate] = useLocation();
   const { user, isAuthenticated, isLoading: authLoading } = useAuth();
+  const { toast } = useToast();
+  const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [editingCoupon, setEditingCoupon] = useState<Coupon | null>(null);
 
   useEffect(() => {
     if (!authLoading && (!isAuthenticated || user?.role !== "seller")) {
@@ -60,6 +111,163 @@ export default function SellerDashboardConnected() {
     queryKey: ["/api/orders"],
     enabled: isAuthenticated && user?.role === "seller",
   });
+
+  const { data: coupons = [], isLoading: couponsLoading } = useQuery<Coupon[]>({
+    queryKey: ["/api/coupons"],
+    enabled: isAuthenticated && user?.role === "seller" && activeItem === "coupons",
+  });
+
+  const form = useForm<CouponFormData>({
+    resolver: zodResolver(couponFormSchema),
+    defaultValues: {
+      code: "",
+      discountType: "percentage",
+      discountValue: "",
+      minimumPurchase: "",
+      usageLimit: "",
+      expiryDate: "",
+      isActive: true,
+    },
+  });
+
+  const createCouponMutation = useMutation({
+    mutationFn: async (data: CouponFormData) => {
+      return apiRequest("POST", "/api/coupons", {
+        code: data.code,
+        discountType: data.discountType,
+        discountValue: data.discountValue,
+        minimumPurchase: data.minimumPurchase || "0",
+        usageLimit: data.usageLimit ? parseInt(data.usageLimit) : null,
+        expiryDate: data.expiryDate || null,
+        isActive: data.isActive,
+      });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/coupons"] });
+      toast({
+        title: "Success",
+        description: "Coupon created successfully",
+      });
+      setIsDialogOpen(false);
+      form.reset();
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to create coupon",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const updateCouponMutation = useMutation({
+    mutationFn: async ({ id, data }: { id: string; data: CouponFormData }) => {
+      return apiRequest("PATCH", `/api/coupons/${id}`, {
+        code: data.code,
+        discountType: data.discountType,
+        discountValue: data.discountValue,
+        minimumPurchase: data.minimumPurchase || "0",
+        usageLimit: data.usageLimit ? parseInt(data.usageLimit) : null,
+        expiryDate: data.expiryDate || null,
+        isActive: data.isActive,
+      });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/coupons"] });
+      toast({
+        title: "Success",
+        description: "Coupon updated successfully",
+      });
+      setIsDialogOpen(false);
+      setEditingCoupon(null);
+      form.reset();
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to update coupon",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const deleteCouponMutation = useMutation({
+    mutationFn: async (id: string) => {
+      return apiRequest("DELETE", `/api/coupons/${id}`);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/coupons"] });
+      toast({
+        title: "Success",
+        description: "Coupon deleted successfully",
+      });
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to delete coupon",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const toggleCouponStatusMutation = useMutation({
+    mutationFn: async ({ id, isActive }: { id: string; isActive: boolean }) => {
+      return apiRequest("PATCH", `/api/coupons/${id}`, { isActive });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/coupons"] });
+      toast({
+        title: "Success",
+        description: "Coupon status updated successfully",
+      });
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to update coupon status",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const onSubmit = (data: CouponFormData) => {
+    if (editingCoupon) {
+      updateCouponMutation.mutate({ id: editingCoupon.id, data });
+    } else {
+      createCouponMutation.mutate(data);
+    }
+  };
+
+  const handleEdit = (coupon: Coupon) => {
+    setEditingCoupon(coupon);
+    form.reset({
+      code: coupon.code,
+      discountType: coupon.discountType,
+      discountValue: coupon.discountValue,
+      minimumPurchase: coupon.minimumPurchase || "",
+      usageLimit: coupon.usageLimit?.toString() || "",
+      expiryDate: coupon.expiryDate ? format(new Date(coupon.expiryDate), "yyyy-MM-dd") : "",
+      isActive: coupon.isActive,
+    });
+    setIsDialogOpen(true);
+  };
+
+  const handleDelete = (id: string) => {
+    if (confirm("Are you sure you want to delete this coupon?")) {
+      deleteCouponMutation.mutate(id);
+    }
+  };
+
+  const handleToggleStatus = (id: string, currentStatus: boolean) => {
+    toggleCouponStatusMutation.mutate({ id, isActive: !currentStatus });
+  };
+
+  const handleDialogClose = () => {
+    setIsDialogOpen(false);
+    setEditingCoupon(null);
+    form.reset();
+  };
 
   if (authLoading || !isAuthenticated || user?.role !== "seller") {
     return (
@@ -87,87 +295,382 @@ export default function SellerDashboardConnected() {
 
       <div className="flex-1 flex flex-col overflow-hidden">
         <header className="border-b p-4 flex items-center justify-between">
-          <h1 className="text-2xl font-bold" data-testid="text-dashboard-title">Seller Dashboard</h1>
+          <h1 className="text-2xl font-bold" data-testid="text-dashboard-title">
+            {activeItem === "coupons" ? "Coupon Management" : "Seller Dashboard"}
+          </h1>
           <ThemeToggle />
         </header>
 
         <main className="flex-1 overflow-y-auto p-6">
           <div className="max-w-7xl mx-auto space-y-6">
-            {analyticsLoading ? (
-              <div className="flex justify-center p-8">
-                <Loader2 className="h-8 w-8 animate-spin text-primary" />
-              </div>
-            ) : analytics ? (
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-                <MetricCard
-                  title="Total Sales"
-                  value={`GHS ${parseFloat(analytics.totalRevenue.toString()).toFixed(2)}`}
-                  icon={DollarSign}
-                  change={18.2}
-                />
-                <MetricCard
-                  title="Total Orders"
-                  value={analytics.totalOrders.toString()}
-                  icon={Package}
-                  change={12.5}
-                />
-                <MetricCard
-                  title="Pending Orders"
-                  value={pendingOrders.toString()}
-                  icon={ShoppingBag}
-                />
-                <MetricCard
-                  title="Active Products"
-                  value={activeProducts.toString()}
-                  icon={TrendingUp}
-                  change={5.4}
-                />
-              </div>
-            ) : (
+            {activeItem === "dashboard" && (
+              <>
+                {analyticsLoading ? (
+                  <div className="flex justify-center p-8">
+                    <Loader2 className="h-8 w-8 animate-spin text-primary" />
+                  </div>
+                ) : analytics ? (
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                    <MetricCard
+                      title="Total Sales"
+                      value={`GHS ${parseFloat(analytics.totalRevenue.toString()).toFixed(2)}`}
+                      icon={DollarSign}
+                      change={18.2}
+                    />
+                    <MetricCard
+                      title="Total Orders"
+                      value={analytics.totalOrders.toString()}
+                      icon={Package}
+                      change={12.5}
+                    />
+                    <MetricCard
+                      title="Pending Orders"
+                      value={pendingOrders.toString()}
+                      icon={ShoppingBag}
+                    />
+                    <MetricCard
+                      title="Active Products"
+                      value={activeProducts.toString()}
+                      icon={TrendingUp}
+                      change={5.4}
+                    />
+                  </div>
+                ) : (
+                  <Card>
+                    <CardContent className="p-6 flex items-center gap-3 text-destructive">
+                      <AlertCircle className="h-5 w-5" />
+                      <span>Failed to load analytics</span>
+                    </CardContent>
+                  </Card>
+                )}
+
+                <div>
+                  <div className="flex items-center justify-between mb-4">
+                    <h2 className="text-xl font-bold">My Products</h2>
+                    <Button data-testid="button-add-product">Add New Product</Button>
+                  </div>
+
+                  {productsLoading ? (
+                    <div className="flex justify-center p-8">
+                      <Loader2 className="h-8 w-8 animate-spin text-primary" />
+                    </div>
+                  ) : products.length > 0 ? (
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+                      {products.map((product) => (
+                        <ProductCard
+                          key={product.id}
+                          id={product.id}
+                          name={product.name}
+                          price={parseFloat(product.price)}
+                          image={product.images[0] || ""}
+                          discount={product.discount || undefined}
+                          rating={4.5}
+                          reviewCount={0}
+                        />
+                      ))}
+                    </div>
+                  ) : (
+                    <Card>
+                      <CardContent className="p-8 text-center text-muted-foreground">
+                        <p className="mb-4">No products yet</p>
+                        <Button onClick={() => console.log('Add product')}>
+                          Add Your First Product
+                        </Button>
+                      </CardContent>
+                    </Card>
+                  )}
+                </div>
+              </>
+            )}
+
+            {activeItem === "coupons" && (
               <Card>
-                <CardContent className="p-6 flex items-center gap-3 text-destructive">
-                  <AlertCircle className="h-5 w-5" />
-                  <span>Failed to load analytics</span>
+                <CardHeader>
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <Tag className="h-5 w-5 text-primary" />
+                      <CardTitle>Manage Coupons</CardTitle>
+                    </div>
+                    <Dialog open={isDialogOpen} onOpenChange={handleDialogClose}>
+                      <DialogTrigger asChild>
+                        <Button data-testid="button-create-coupon">
+                          <Plus className="h-4 w-4 mr-2" />
+                          Create Coupon
+                        </Button>
+                      </DialogTrigger>
+                      <DialogContent className="max-w-md" data-testid="dialog-coupon-form">
+                        <DialogHeader>
+                          <DialogTitle>
+                            {editingCoupon ? "Edit Coupon" : "Create New Coupon"}
+                          </DialogTitle>
+                        </DialogHeader>
+                        <Form {...form}>
+                          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+                            <FormField
+                              control={form.control}
+                              name="code"
+                              render={({ field }) => (
+                                <FormItem>
+                                  <FormLabel>Coupon Code</FormLabel>
+                                  <FormControl>
+                                    <Input
+                                      {...field}
+                                      placeholder="SUMMER2024"
+                                      onChange={(e) => field.onChange(e.target.value.toUpperCase())}
+                                      data-testid="input-coupon-code"
+                                    />
+                                  </FormControl>
+                                  <FormMessage />
+                                </FormItem>
+                              )}
+                            />
+
+                            <FormField
+                              control={form.control}
+                              name="discountType"
+                              render={({ field }) => (
+                                <FormItem>
+                                  <FormLabel>Discount Type</FormLabel>
+                                  <Select onValueChange={field.onChange} value={field.value}>
+                                    <FormControl>
+                                      <SelectTrigger data-testid="select-discount-type">
+                                        <SelectValue placeholder="Select discount type" />
+                                      </SelectTrigger>
+                                    </FormControl>
+                                    <SelectContent>
+                                      <SelectItem value="percentage">Percentage (%)</SelectItem>
+                                      <SelectItem value="fixed">Fixed Amount (GHS)</SelectItem>
+                                    </SelectContent>
+                                  </Select>
+                                  <FormMessage />
+                                </FormItem>
+                              )}
+                            />
+
+                            <FormField
+                              control={form.control}
+                              name="discountValue"
+                              render={({ field }) => (
+                                <FormItem>
+                                  <FormLabel>Discount Value</FormLabel>
+                                  <FormControl>
+                                    <Input
+                                      {...field}
+                                      type="number"
+                                      step="0.01"
+                                      placeholder={form.watch("discountType") === "percentage" ? "10" : "50.00"}
+                                      data-testid="input-discount-value"
+                                    />
+                                  </FormControl>
+                                  <FormMessage />
+                                </FormItem>
+                              )}
+                            />
+
+                            <FormField
+                              control={form.control}
+                              name="minimumPurchase"
+                              render={({ field }) => (
+                                <FormItem>
+                                  <FormLabel>Minimum Purchase (Optional)</FormLabel>
+                                  <FormControl>
+                                    <Input
+                                      {...field}
+                                      type="number"
+                                      step="0.01"
+                                      placeholder="0.00"
+                                      data-testid="input-minimum-purchase"
+                                    />
+                                  </FormControl>
+                                  <FormMessage />
+                                </FormItem>
+                              )}
+                            />
+
+                            <FormField
+                              control={form.control}
+                              name="usageLimit"
+                              render={({ field }) => (
+                                <FormItem>
+                                  <FormLabel>Usage Limit (Optional)</FormLabel>
+                                  <FormControl>
+                                    <Input
+                                      {...field}
+                                      type="number"
+                                      placeholder="Unlimited"
+                                      data-testid="input-usage-limit"
+                                    />
+                                  </FormControl>
+                                  <FormMessage />
+                                </FormItem>
+                              )}
+                            />
+
+                            <FormField
+                              control={form.control}
+                              name="expiryDate"
+                              render={({ field }) => (
+                                <FormItem>
+                                  <FormLabel>Expiry Date (Optional)</FormLabel>
+                                  <FormControl>
+                                    <Input
+                                      {...field}
+                                      type="date"
+                                      data-testid="input-expiry-date"
+                                    />
+                                  </FormControl>
+                                  <FormMessage />
+                                </FormItem>
+                              )}
+                            />
+
+                            <FormField
+                              control={form.control}
+                              name="isActive"
+                              render={({ field }) => (
+                                <FormItem className="flex items-center justify-between rounded-lg border p-4">
+                                  <div className="space-y-0.5">
+                                    <FormLabel className="text-base">Active</FormLabel>
+                                    <div className="text-sm text-muted-foreground">
+                                      Enable this coupon for use
+                                    </div>
+                                  </div>
+                                  <FormControl>
+                                    <Switch
+                                      checked={field.value}
+                                      onCheckedChange={field.onChange}
+                                      data-testid="switch-is-active"
+                                    />
+                                  </FormControl>
+                                </FormItem>
+                              )}
+                            />
+
+                            <DialogFooter>
+                              <Button
+                                type="button"
+                                variant="outline"
+                                onClick={handleDialogClose}
+                                data-testid="button-cancel-coupon"
+                              >
+                                Cancel
+                              </Button>
+                              <Button
+                                type="submit"
+                                disabled={createCouponMutation.isPending || updateCouponMutation.isPending}
+                                data-testid="button-submit-coupon"
+                              >
+                                {createCouponMutation.isPending || updateCouponMutation.isPending ? (
+                                  <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                                ) : null}
+                                {editingCoupon ? "Update" : "Create"}
+                              </Button>
+                            </DialogFooter>
+                          </form>
+                        </Form>
+                      </DialogContent>
+                    </Dialog>
+                  </div>
+                </CardHeader>
+                <CardContent>
+                  {couponsLoading ? (
+                    <div className="flex justify-center p-8">
+                      <Loader2 className="h-8 w-8 animate-spin text-primary" />
+                    </div>
+                  ) : coupons.length > 0 ? (
+                    <div className="rounded-md border">
+                      <Table>
+                        <TableHeader>
+                          <TableRow>
+                            <TableHead data-testid="header-code">Code</TableHead>
+                            <TableHead data-testid="header-discount">Discount</TableHead>
+                            <TableHead data-testid="header-min-purchase">Min. Purchase</TableHead>
+                            <TableHead data-testid="header-usage">Usage</TableHead>
+                            <TableHead data-testid="header-expiry">Expiry</TableHead>
+                            <TableHead data-testid="header-status">Status</TableHead>
+                            <TableHead data-testid="header-actions">Actions</TableHead>
+                          </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                          {coupons.map((coupon) => (
+                            <TableRow key={coupon.id} data-testid={`row-coupon-${coupon.id}`}>
+                              <TableCell className="font-mono font-semibold" data-testid={`text-code-${coupon.id}`}>
+                                {coupon.code}
+                              </TableCell>
+                              <TableCell data-testid={`text-discount-${coupon.id}`}>
+                                {coupon.discountType === "percentage"
+                                  ? `${coupon.discountValue}%`
+                                  : `GHS ${parseFloat(coupon.discountValue).toFixed(2)}`}
+                              </TableCell>
+                              <TableCell data-testid={`text-min-purchase-${coupon.id}`}>
+                                {coupon.minimumPurchase && parseFloat(coupon.minimumPurchase) > 0
+                                  ? `GHS ${parseFloat(coupon.minimumPurchase).toFixed(2)}`
+                                  : "-"}
+                              </TableCell>
+                              <TableCell data-testid={`text-usage-${coupon.id}`}>
+                                {coupon.usedCount} / {coupon.usageLimit || "∞"}
+                              </TableCell>
+                              <TableCell data-testid={`text-expiry-${coupon.id}`}>
+                                {coupon.expiryDate
+                                  ? format(new Date(coupon.expiryDate), "MMM dd, yyyy")
+                                  : "No expiry"}
+                              </TableCell>
+                              <TableCell>
+                                <Badge
+                                  variant={coupon.isActive ? "default" : "secondary"}
+                                  data-testid={`badge-status-${coupon.id}`}
+                                >
+                                  {coupon.isActive ? "Active" : "Inactive"}
+                                </Badge>
+                              </TableCell>
+                              <TableCell>
+                                <div className="flex items-center gap-2">
+                                  <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    onClick={() => handleToggleStatus(coupon.id, coupon.isActive)}
+                                    data-testid={`button-toggle-${coupon.id}`}
+                                  >
+                                    {coupon.isActive ? "Deactivate" : "Activate"}
+                                  </Button>
+                                  <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    onClick={() => handleEdit(coupon)}
+                                    data-testid={`button-edit-${coupon.id}`}
+                                  >
+                                    <Pencil className="h-4 w-4" />
+                                  </Button>
+                                  <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    onClick={() => handleDelete(coupon.id)}
+                                    disabled={deleteCouponMutation.isPending}
+                                    data-testid={`button-delete-${coupon.id}`}
+                                  >
+                                    <Trash2 className="h-4 w-4 text-destructive" />
+                                  </Button>
+                                </div>
+                              </TableCell>
+                            </TableRow>
+                          ))}
+                        </TableBody>
+                      </Table>
+                    </div>
+                  ) : (
+                    <div className="text-center p-8 text-muted-foreground">
+                      <Tag className="h-12 w-12 mx-auto mb-4 opacity-50" />
+                      <p className="text-lg font-medium mb-2">No coupons yet</p>
+                      <p className="text-sm mb-4">Create your first coupon to offer discounts to customers</p>
+                      <Button onClick={() => setIsDialogOpen(true)} data-testid="button-create-first-coupon">
+                        <Plus className="h-4 w-4 mr-2" />
+                        Create Your First Coupon
+                      </Button>
+                    </div>
+                  )}
                 </CardContent>
               </Card>
             )}
-
-            <div>
-              <div className="flex items-center justify-between mb-4">
-                <h2 className="text-xl font-bold">My Products</h2>
-                <Button data-testid="button-add-product">Add New Product</Button>
-              </div>
-
-              {productsLoading ? (
-                <div className="flex justify-center p-8">
-                  <Loader2 className="h-8 w-8 animate-spin text-primary" />
-                </div>
-              ) : products.length > 0 ? (
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-                  {products.map((product) => (
-                    <ProductCard
-                      key={product.id}
-                      id={product.id}
-                      name={product.name}
-                      price={parseFloat(product.price)}
-                      image={product.images[0] || ""}
-                      discount={product.discount || undefined}
-                      rating={4.5}
-                      reviewCount={0}
-                    />
-                  ))}
-                </div>
-              ) : (
-                <Card>
-                  <CardContent className="p-8 text-center text-muted-foreground">
-                    <p className="mb-4">No products yet</p>
-                    <Button onClick={() => console.log('Add product')}>
-                      Add Your First Product
-                    </Button>
-                  </CardContent>
-                </Card>
-              )}
-            </div>
           </div>
         </main>
       </div>

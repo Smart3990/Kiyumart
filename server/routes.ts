@@ -433,6 +433,122 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // ============ Coupon Routes ============
+  app.post("/api/coupons", requireAuth, requireRole("admin", "seller"), async (req: AuthRequest, res) => {
+    try {
+      const { code, discountType, discountValue, minimumPurchase, usageLimit, expiryDate, isActive } = req.body;
+      
+      if (!code || !discountType || !discountValue) {
+        return res.status(400).json({ error: "Code, discount type, and discount value are required" });
+      }
+
+      if (discountType === "percentage" && (parseFloat(discountValue) < 0 || parseFloat(discountValue) > 100)) {
+        return res.status(400).json({ error: "Percentage discount must be between 0 and 100" });
+      }
+
+      const coupon = await storage.createCoupon({
+        sellerId: req.user!.id,
+        code,
+        discountType,
+        discountValue,
+        minimumPurchase: minimumPurchase || "0",
+        usageLimit,
+        expiryDate: expiryDate ? new Date(expiryDate) : null,
+        isActive: isActive !== false,
+      });
+
+      res.json(coupon);
+    } catch (error: any) {
+      if (error.message.includes("unique")) {
+        return res.status(400).json({ error: "A coupon with this code already exists" });
+      }
+      res.status(400).json({ error: error.message });
+    }
+  });
+
+  app.get("/api/coupons", requireAuth, requireRole("admin", "seller"), async (req: AuthRequest, res) => {
+    try {
+      const coupons = await storage.getCouponsBySeller(req.user!.id);
+      res.json(coupons);
+    } catch (error: any) {
+      res.status(400).json({ error: error.message });
+    }
+  });
+
+  app.get("/api/coupons/:id", requireAuth, requireRole("admin", "seller"), async (req: AuthRequest, res) => {
+    try {
+      const coupon = await storage.getCoupon(req.params.id);
+      if (!coupon) {
+        return res.status(404).json({ error: "Coupon not found" });
+      }
+      
+      if (coupon.sellerId !== req.user!.id) {
+        return res.status(403).json({ error: "Unauthorized" });
+      }
+
+      res.json(coupon);
+    } catch (error: any) {
+      res.status(400).json({ error: error.message });
+    }
+  });
+
+  app.patch("/api/coupons/:id", requireAuth, requireRole("admin", "seller"), async (req: AuthRequest, res) => {
+    try {
+      const coupon = await storage.getCoupon(req.params.id);
+      if (!coupon) {
+        return res.status(404).json({ error: "Coupon not found" });
+      }
+
+      if (coupon.sellerId !== req.user!.id) {
+        return res.status(403).json({ error: "Unauthorized" });
+      }
+
+      const { discountType, discountValue } = req.body;
+
+      if (discountType === "percentage" && discountValue && (parseFloat(discountValue) < 0 || parseFloat(discountValue) > 100)) {
+        return res.status(400).json({ error: "Percentage discount must be between 0 and 100" });
+      }
+
+      const updated = await storage.updateCoupon(req.params.id, req.body);
+      res.json(updated);
+    } catch (error: any) {
+      res.status(400).json({ error: error.message });
+    }
+  });
+
+  app.delete("/api/coupons/:id", requireAuth, requireRole("admin", "seller"), async (req: AuthRequest, res) => {
+    try {
+      const coupon = await storage.getCoupon(req.params.id);
+      if (!coupon) {
+        return res.status(404).json({ error: "Coupon not found" });
+      }
+
+      if (coupon.sellerId !== req.user!.id) {
+        return res.status(403).json({ error: "Unauthorized" });
+      }
+
+      await storage.deleteCoupon(req.params.id);
+      res.json({ success: true });
+    } catch (error: any) {
+      res.status(400).json({ error: error.message });
+    }
+  });
+
+  app.post("/api/coupons/validate", requireAuth, async (req: AuthRequest, res) => {
+    try {
+      const { code, sellerId, orderTotal } = req.body;
+
+      if (!code || !sellerId || !orderTotal) {
+        return res.status(400).json({ error: "Code, seller ID, and order total are required" });
+      }
+
+      const result = await storage.validateCoupon(code, sellerId, parseFloat(orderTotal));
+      res.json(result);
+    } catch (error: any) {
+      res.status(400).json({ error: error.message });
+    }
+  });
+
   // ============ Cart Routes ============
   app.post("/api/cart", requireAuth, async (req: AuthRequest, res) => {
     try {

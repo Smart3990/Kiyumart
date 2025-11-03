@@ -9,6 +9,7 @@ import {
   BarChart3,
   Store,
   MapPin,
+  Tag,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -43,6 +44,7 @@ const menuItems: Record<string, MenuItem[]> = {
     { icon: LayoutDashboard, label: "Dashboard", id: "dashboard" },
     { icon: Package, label: "My Products", id: "products" },
     { icon: ShoppingBag, label: "Orders", id: "orders", badge: 3 },
+    { icon: Tag, label: "Coupons", id: "coupons" },
     { icon: Truck, label: "Deliveries", id: "deliveries" },
     { icon: MessageSquare, label: "Messages", id: "messages", badge: 2 },
     { icon: BarChart3, label: "Analytics", id: "analytics" },

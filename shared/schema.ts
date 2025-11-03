@@ -8,6 +8,7 @@ export const orderStatusEnum = pgEnum("order_status", ["pending", "processing", 
 export const deliveryMethodEnum = pgEnum("delivery_method", ["pickup", "bus", "rider"]);
 export const paymentStatusEnum = pgEnum("payment_status", ["pending", "processing", "completed", "failed", "refunded"]);
 export const supportStatusEnum = pgEnum("support_status", ["open", "assigned", "resolved"]);
+export const discountTypeEnum = pgEnum("discount_type", ["percentage", "fixed"]);
 
 export const users = pgTable("users", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
@@ -80,6 +81,21 @@ export const deliveryZones = pgTable("delivery_zones", {
   createdAt: timestamp("created_at").defaultNow(),
 });
 
+export const coupons = pgTable("coupons", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  code: text("code").notNull().unique(),
+  sellerId: varchar("seller_id").notNull().references(() => users.id),
+  discountType: discountTypeEnum("discount_type").notNull(),
+  discountValue: decimal("discount_value", { precision: 10, scale: 2 }).notNull(),
+  minimumPurchase: decimal("minimum_purchase", { precision: 10, scale: 2 }).default("0"),
+  usageLimit: integer("usage_limit"),
+  usedCount: integer("used_count").default(0),
+  expiryDate: timestamp("expiry_date"),
+  isActive: boolean("is_active").default(true),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
 export const orders = pgTable("orders", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
   orderNumber: text("order_number").notNull().unique(),
@@ -96,6 +112,8 @@ export const orders = pgTable("orders", {
   deliveryLongitude: decimal("delivery_longitude", { precision: 10, scale: 7 }),
   deliveryFee: decimal("delivery_fee", { precision: 10, scale: 2 }).default("0"),
   subtotal: decimal("subtotal", { precision: 10, scale: 2 }).notNull(),
+  couponCode: text("coupon_code"),
+  couponDiscount: decimal("coupon_discount", { precision: 10, scale: 2 }).default("0"),
   processingFee: decimal("processing_fee", { precision: 10, scale: 2 }).notNull(),
   total: decimal("total", { precision: 10, scale: 2 }).notNull(),
   currency: text("currency").default("GHS"),
@@ -259,6 +277,8 @@ export const insertOrderSchema = createInsertSchema(orders).pick({
   deliveryAddress: true,
   deliveryFee: true,
   subtotal: true,
+  couponCode: true,
+  couponDiscount: true,
   processingFee: true,
   total: true,
   currency: true,
@@ -307,6 +327,16 @@ export const insertHeroBannerSchema = createInsertSchema(heroBanners).pick({
   ctaLink: true,
   isActive: true,
   displayOrder: true,
+});
+
+export const insertCouponSchema = createInsertSchema(coupons).pick({
+  code: true,
+  discountType: true,
+  discountValue: true,
+  minimumPurchase: true,
+  usageLimit: true,
+  expiryDate: true,
+  isActive: true,
 });
 
 // TypeScript types
@@ -362,3 +392,6 @@ export type ProductVariant = typeof productVariants.$inferSelect;
 
 export type InsertHeroBanner = z.infer<typeof insertHeroBannerSchema>;
 export type HeroBanner = typeof heroBanners.$inferSelect;
+
+export type InsertCoupon = z.infer<typeof insertCouponSchema>;
+export type Coupon = typeof coupons.$inferSelect;

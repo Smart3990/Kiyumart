@@ -2,12 +2,13 @@ import { db } from "../db/index";
 import { 
   users, products, orders, orderItems, deliveryZones, deliveryTracking,
   chatMessages, transactions, platformSettings, cart, wishlist, reviews,
-  productVariants, heroBanners,
+  productVariants, heroBanners, coupons,
   type User, type InsertUser, type Product, type InsertProduct,
   type Order, type InsertOrder, type DeliveryZone, type InsertDeliveryZone,
   type ChatMessage, type InsertChatMessage, type Transaction, type PlatformSettings,
   type Cart, type Wishlist, type DeliveryTracking, type InsertDeliveryTracking,
-  type Review, type InsertReview, type ProductVariant, type HeroBanner
+  type Review, type InsertReview, type ProductVariant, type HeroBanner,
+  type Coupon, type InsertCoupon
 } from "@shared/schema";
 import { eq, and, desc, sql } from "drizzle-orm";
 
@@ -80,6 +81,15 @@ export interface IStorage {
   
   // Hero Banner operations
   getHeroBanners(): Promise<HeroBanner[]>;
+  
+  // Coupon operations
+  createCoupon(coupon: InsertCoupon & { sellerId: string }): Promise<Coupon>;
+  getCoupon(id: string): Promise<Coupon | undefined>;
+  getCouponByCode(code: string): Promise<Coupon | undefined>;
+  getCouponsBySeller(sellerId: string): Promise<Coupon[]>;
+  updateCoupon(id: string, data: Partial<Coupon>): Promise<Coupon | undefined>;
+  deleteCoupon(id: string): Promise<boolean>;
+  validateCoupon(code: string, sellerId: string, orderTotal: number): Promise<{ valid: boolean; message?: string; coupon?: Coupon }>;
   
   // Analytics
   getAnalytics(userId?: string, role?: string): Promise<any>;
@@ -164,6 +174,16 @@ export class DbStorage implements IStorage {
         orderId: newOrder.id,
         ...item,
       });
+    }
+
+    // Increment coupon usage count if coupon was applied
+    if (order.couponCode) {
+      const coupon = await this.getCouponByCode(order.couponCode);
+      if (coupon) {
+        await db.update(coupons)
+          .set({ usedCount: (coupon.usedCount || 0) + 1 })
+          .where(eq(coupons.id, coupon.id));
+      }
     }
 
     await this.clearCart(order.buyerId);
@@ -447,6 +467,74 @@ export class DbStorage implements IStorage {
       .from(deliveryTracking)
       .where(eq(deliveryTracking.orderId, orderId))
       .orderBy(desc(deliveryTracking.timestamp));
+  }
+
+  // Coupon operations
+  async createCoupon(coupon: InsertCoupon & { sellerId: string }): Promise<Coupon> {
+    const [newCoupon] = await db.insert(coupons).values({
+      ...coupon,
+      code: coupon.code.toUpperCase(),
+    }).returning();
+    return newCoupon;
+  }
+
+  async getCoupon(id: string): Promise<Coupon | undefined> {
+    const result = await db.select().from(coupons).where(eq(coupons.id, id)).limit(1);
+    return result[0];
+  }
+
+  async getCouponByCode(code: string): Promise<Coupon | undefined> {
+    const result = await db.select().from(coupons).where(eq(coupons.code, code.toUpperCase())).limit(1);
+    return result[0];
+  }
+
+  async getCouponsBySeller(sellerId: string): Promise<Coupon[]> {
+    return db.select().from(coupons).where(eq(coupons.sellerId, sellerId)).orderBy(desc(coupons.createdAt));
+  }
+
+  async updateCoupon(id: string, data: Partial<Coupon>): Promise<Coupon | undefined> {
+    const updateData = { ...data };
+    if (updateData.code) {
+      updateData.code = updateData.code.toUpperCase();
+    }
+    const result = await db.update(coupons).set(updateData).where(eq(coupons.id, id)).returning();
+    return result[0];
+  }
+
+  async deleteCoupon(id: string): Promise<boolean> {
+    const result = await db.delete(coupons).where(eq(coupons.id, id));
+    return result.rowCount ? result.rowCount > 0 : false;
+  }
+
+  async validateCoupon(code: string, sellerId: string, orderTotal: number): Promise<{ valid: boolean; message?: string; coupon?: Coupon }> {
+    const coupon = await this.getCouponByCode(code);
+    
+    if (!coupon) {
+      return { valid: false, message: "Invalid coupon code" };
+    }
+
+    if (!coupon.isActive) {
+      return { valid: false, message: "This coupon is no longer active" };
+    }
+
+    if (coupon.sellerId !== sellerId) {
+      return { valid: false, message: "This coupon is not valid for this seller" };
+    }
+
+    if (coupon.expiryDate && new Date(coupon.expiryDate) < new Date()) {
+      return { valid: false, message: "This coupon has expired" };
+    }
+
+    if (coupon.usageLimit && (coupon.usedCount || 0) >= coupon.usageLimit) {
+      return { valid: false, message: "This coupon has reached its usage limit" };
+    }
+
+    const minimumPurchase = parseFloat(coupon.minimumPurchase || "0");
+    if (orderTotal < minimumPurchase) {
+      return { valid: false, message: `Minimum purchase of ${minimumPurchase} required to use this coupon` };
+    }
+
+    return { valid: true, coupon };
   }
 
   // Analytics

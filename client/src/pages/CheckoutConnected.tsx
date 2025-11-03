@@ -9,7 +9,8 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Separator } from "@/components/ui/separator";
-import { ArrowLeft, Package, Bike, Building2, MapPin } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
+import { ArrowLeft, Package, Bike, Building2, MapPin, Tag, X } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
 interface CartItem {
@@ -32,6 +33,14 @@ interface DeliveryZone {
   fee: string;
 }
 
+interface Coupon {
+  id: string;
+  code: string;
+  discountType: "percentage" | "fixed";
+  discountValue: string;
+  minimumPurchase: string;
+}
+
 export default function CheckoutConnected() {
   const [, navigate] = useLocation();
   const { user, isAuthenticated, isLoading: authLoading } = useAuth();
@@ -39,6 +48,8 @@ export default function CheckoutConnected() {
   const [deliveryMethod, setDeliveryMethod] = useState<"pickup" | "bus" | "rider">("pickup");
   const [deliveryAddress, setDeliveryAddress] = useState("");
   const [selectedZoneId, setSelectedZoneId] = useState("");
+  const [couponCode, setCouponCode] = useState("");
+  const [appliedCoupon, setAppliedCoupon] = useState<Coupon | null>(null);
 
   useEffect(() => {
     if (!isAuthenticated && !authLoading) {
@@ -68,6 +79,35 @@ export default function CheckoutConnected() {
       return productsData;
     },
     enabled: cartItems.length > 0,
+  });
+
+  const validateCouponMutation = useMutation({
+    mutationFn: async (data: { code: string; sellerId: string; orderTotal: string }) => {
+      const res = await apiRequest("POST", "/api/coupons/validate", data);
+      return res.json();
+    },
+    onSuccess: (data) => {
+      if (data.valid && data.coupon) {
+        setAppliedCoupon(data.coupon);
+        toast({
+          title: "Coupon Applied",
+          description: `${data.coupon.discountType === "percentage" ? `${data.coupon.discountValue}%` : `GHS ${data.coupon.discountValue}`} discount applied successfully!`,
+        });
+      } else {
+        toast({
+          title: "Invalid Coupon",
+          description: data.message || "This coupon code is not valid",
+          variant: "destructive",
+        });
+      }
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Validation Failed",
+        description: error.message || "Failed to validate coupon",
+        variant: "destructive",
+      });
+    },
   });
 
   const createOrderMutation = useMutation({
@@ -136,8 +176,56 @@ export default function CheckoutConnected() {
                       deliveryMethod === "bus" ? (selectedZone ? parseFloat(selectedZone.fee) * 0.5 : 5) :
                       selectedZone ? parseFloat(selectedZone.fee) : 10;
 
-  const processingFee = (subtotal + deliveryFee) * 0.0195;
-  const total = subtotal + deliveryFee + processingFee;
+  // Calculate coupon discount
+  const calculateCouponDiscount = () => {
+    if (!appliedCoupon) return 0;
+    
+    if (appliedCoupon.discountType === "percentage") {
+      return (subtotal * parseFloat(appliedCoupon.discountValue)) / 100;
+    } else {
+      return parseFloat(appliedCoupon.discountValue);
+    }
+  };
+
+  const couponDiscount = calculateCouponDiscount();
+  const processingFee = (subtotal - couponDiscount + deliveryFee) * 0.0195;
+  const total = subtotal - couponDiscount + deliveryFee + processingFee;
+
+  const handleApplyCoupon = () => {
+    if (!couponCode.trim()) {
+      toast({
+        title: "Invalid Input",
+        description: "Please enter a coupon code",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    const sellerId = itemsWithProducts[0]?.product?.sellerId || user?.id;
+    if (!sellerId) {
+      toast({
+        title: "Error",
+        description: "Unable to validate coupon at this time",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    validateCouponMutation.mutate({
+      code: couponCode.trim(),
+      sellerId,
+      orderTotal: subtotal.toFixed(2),
+    });
+  };
+
+  const handleRemoveCoupon = () => {
+    setAppliedCoupon(null);
+    setCouponCode("");
+    toast({
+      title: "Coupon Removed",
+      description: "The coupon has been removed from your order",
+    });
+  };
 
   const handlePlaceOrder = async () => {
     if (deliveryMethod !== "pickup" && !deliveryAddress) {
@@ -173,6 +261,8 @@ export default function CheckoutConnected() {
       deliveryAddress: deliveryAddress || null,
       deliveryFee: deliveryFee.toFixed(2),
       subtotal: subtotal.toFixed(2),
+      couponCode: appliedCoupon?.code || null,
+      couponDiscount: couponDiscount > 0 ? couponDiscount.toFixed(2) : null,
       processingFee: processingFee.toFixed(2),
       total: total.toFixed(2),
       currency: "GHS",
@@ -283,6 +373,59 @@ export default function CheckoutConnected() {
                 </CardContent>
               </Card>
             )}
+
+            <Card data-testid="card-coupon">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Tag className="h-5 w-5" />
+                  Coupon Code
+                </CardTitle>
+                <CardDescription>Have a coupon? Apply it to get a discount</CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                {!appliedCoupon ? (
+                  <div className="flex gap-2">
+                    <Input
+                      placeholder="Enter coupon code"
+                      value={couponCode}
+                      onChange={(e) => setCouponCode(e.target.value.toUpperCase())}
+                      onKeyPress={(e) => e.key === 'Enter' && handleApplyCoupon()}
+                      disabled={validateCouponMutation.isPending}
+                      data-testid="input-coupon"
+                    />
+                    <Button
+                      onClick={handleApplyCoupon}
+                      disabled={validateCouponMutation.isPending || !couponCode.trim()}
+                      data-testid="button-apply-coupon"
+                    >
+                      {validateCouponMutation.isPending ? "Validating..." : "Apply"}
+                    </Button>
+                  </div>
+                ) : (
+                  <div className="flex items-center justify-between p-3 bg-green-50 dark:bg-green-950 rounded-lg border border-green-200 dark:border-green-800">
+                    <div className="flex items-center gap-3">
+                      <Badge variant="secondary" className="bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-100" data-testid="badge-coupon-applied">
+                        {appliedCoupon.code}
+                      </Badge>
+                      <span className="text-sm font-medium text-green-700 dark:text-green-300" data-testid="text-coupon-discount">
+                        {appliedCoupon.discountType === "percentage" 
+                          ? `${appliedCoupon.discountValue}% off`
+                          : `GHS ${appliedCoupon.discountValue} off`}
+                      </span>
+                    </div>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={handleRemoveCoupon}
+                      className="h-8 text-red-600 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-950"
+                      data-testid="button-remove-coupon"
+                    >
+                      <X className="h-4 w-4" />
+                    </Button>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
           </div>
 
           <div className="md:col-span-1">
@@ -312,6 +455,12 @@ export default function CheckoutConnected() {
                     <span className="text-muted-foreground">Subtotal</span>
                     <span data-testid="text-checkout-subtotal">GHS {subtotal.toFixed(2)}</span>
                   </div>
+                  {couponDiscount > 0 && (
+                    <div className="flex justify-between text-green-600 dark:text-green-400">
+                      <span className="font-medium">Coupon Discount</span>
+                      <span data-testid="text-checkout-coupon">-GHS {couponDiscount.toFixed(2)}</span>
+                    </div>
+                  )}
                   <div className="flex justify-between">
                     <span className="text-muted-foreground">Delivery Fee</span>
                     <span data-testid="text-checkout-delivery">GHS {deliveryFee.toFixed(2)}</span>
