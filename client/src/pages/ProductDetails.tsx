@@ -300,7 +300,7 @@ export default function ProductDetails() {
                   />
                   {discount > 0 && (
                     <Badge 
-                      className="absolute top-4 left-4 bg-destructive text-destructive-foreground"
+                      className="absolute top-4 left-4 bg-destructive text-destructive-foreground z-10 font-semibold text-xs px-3 py-1 shadow-md rounded-full"
                       data-testid="badge-discount"
                     >
                       -{discount}%
