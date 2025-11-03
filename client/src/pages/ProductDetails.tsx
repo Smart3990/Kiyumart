@@ -4,9 +4,11 @@ import { useQuery, useMutation } from "@tanstack/react-query";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useAuth } from "@/lib/auth";
 import { useToast } from "@/hooks/use-toast";
+import { useLanguage } from "@/contexts/LanguageContext";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Heart, ShoppingCart, Star, ArrowLeft, Minus, Plus } from "lucide-react";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
@@ -33,11 +35,22 @@ interface WishlistItem {
   createdAt: string;
 }
 
+interface Review {
+  id: string;
+  productId: string;
+  userId: string;
+  rating: number;
+  comment: string | null;
+  createdAt: string;
+  userName: string;
+}
+
 export default function ProductDetails() {
   const [, params] = useRoute("/product/:id");
   const [, navigate] = useLocation();
   const { isAuthenticated } = useAuth();
   const { toast } = useToast();
+  const { currency } = useLanguage();
   const [quantity, setQuantity] = useState(1);
   const [selectedImage, setSelectedImage] = useState(0);
 
@@ -60,6 +73,16 @@ export default function ProductDetails() {
   const { data: cartItems = [] } = useQuery<{ id: string; productId: string; quantity: number }[]>({
     queryKey: ["/api/cart"],
     enabled: isAuthenticated,
+  });
+
+  const { data: reviews = [] } = useQuery<Review[]>({
+    queryKey: ["/api/products", productId, "reviews"],
+    queryFn: async () => {
+      const res = await fetch(`/api/products/${productId}/reviews`);
+      if (!res.ok) throw new Error("Failed to fetch reviews");
+      return res.json();
+    },
+    enabled: !!productId,
   });
 
   const isWishlisted = wishlist.some(item => item.productId === productId);
@@ -266,14 +289,14 @@ export default function ProductDetails() {
                     className="text-4xl font-bold text-primary"
                     data-testid="text-selling-price"
                   >
-                    GHS {sellingPrice.toFixed(2)}
+                    {currency} {sellingPrice.toFixed(2)}
                   </span>
                   {originalPrice && originalPrice > sellingPrice && (
                     <span 
-                      className="text-xl text-muted-foreground line-through"
+                      className="text-xl text-muted-foreground line-through decoration-2"
                       data-testid="text-cost-price"
                     >
-                      GHS {originalPrice.toFixed(2)}
+                      {currency} {originalPrice.toFixed(2)}
                     </span>
                   )}
                 </div>
@@ -339,6 +362,60 @@ export default function ProductDetails() {
               </div>
             </div>
           </div>
+
+          {reviews.length > 0 && (
+            <div className="mt-12">
+              <h2 className="text-2xl font-bold mb-6" data-testid="heading-reviews">
+                Customer Reviews ({reviews.length})
+              </h2>
+              <div className="space-y-6">
+                {reviews.map((review) => (
+                  <Card key={review.id} className="p-6" data-testid={`review-${review.id}`}>
+                    <div className="flex items-start gap-4">
+                      <Avatar>
+                        <AvatarFallback className="bg-primary text-primary-foreground">
+                          {review.userName.charAt(0).toUpperCase()}
+                        </AvatarFallback>
+                      </Avatar>
+                      <div className="flex-1">
+                        <div className="flex items-center justify-between mb-2">
+                          <div>
+                            <p className="font-semibold" data-testid={`review-name-${review.id}`}>
+                              {review.userName}
+                            </p>
+                            <p className="text-sm text-muted-foreground">
+                              {new Date(review.createdAt).toLocaleDateString('en-US', { 
+                                year: 'numeric', 
+                                month: 'long', 
+                                day: 'numeric' 
+                              })}
+                            </p>
+                          </div>
+                          <div className="flex items-center gap-1" data-testid={`review-rating-${review.id}`}>
+                            {Array.from({ length: 5 }).map((_, i) => (
+                              <Star
+                                key={i}
+                                className={`h-4 w-4 ${
+                                  i < review.rating
+                                    ? "fill-primary text-primary"
+                                    : "fill-muted text-muted"
+                                }`}
+                              />
+                            ))}
+                          </div>
+                        </div>
+                        {review.comment && (
+                          <p className="text-muted-foreground" data-testid={`review-comment-${review.id}`}>
+                            {review.comment}
+                          </p>
+                        )}
+                      </div>
+                    </div>
+                  </Card>
+                ))}
+              </div>
+            </div>
+          )}
         </div>
       </main>
 

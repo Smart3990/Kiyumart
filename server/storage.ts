@@ -1,11 +1,12 @@
 import { db } from "../db/index";
 import { 
   users, products, orders, orderItems, deliveryZones, deliveryTracking,
-  chatMessages, transactions, platformSettings, cart, wishlist,
+  chatMessages, transactions, platformSettings, cart, wishlist, reviews,
   type User, type InsertUser, type Product, type InsertProduct,
   type Order, type InsertOrder, type DeliveryZone, type InsertDeliveryZone,
   type ChatMessage, type InsertChatMessage, type Transaction, type PlatformSettings,
-  type Cart, type Wishlist, type DeliveryTracking, type InsertDeliveryTracking
+  type Cart, type Wishlist, type DeliveryTracking, type InsertDeliveryTracking,
+  type Review, type InsertReview
 } from "@shared/schema";
 import { eq, and, desc, sql } from "drizzle-orm";
 
@@ -66,6 +67,10 @@ export interface IStorage {
   createDeliveryTracking(data: InsertDeliveryTracking): Promise<DeliveryTracking>;
   getLatestDeliveryLocation(orderId: string): Promise<DeliveryTracking | undefined>;
   getDeliveryTrackingHistory(orderId: string): Promise<DeliveryTracking[]>;
+  
+  // Review operations
+  createReview(review: InsertReview & { userId: string }): Promise<Review>;
+  getProductReviews(productId: string): Promise<Array<Review & { userName: string }>>;
   
   // Analytics
   getAnalytics(userId?: string, role?: string): Promise<any>;
@@ -332,6 +337,29 @@ export class DbStorage implements IStorage {
     const result = await db.delete(wishlist)
       .where(and(eq(wishlist.userId, userId), eq(wishlist.productId, productId)));
     return result.rowCount !== null && result.rowCount > 0;
+  }
+
+  // Review operations
+  async createReview(review: InsertReview & { userId: string }): Promise<Review> {
+    const [newReview] = await db.insert(reviews).values(review).returning();
+    return newReview;
+  }
+
+  async getProductReviews(productId: string): Promise<Array<Review & { userName: string }>> {
+    const result = await db.select({
+      id: reviews.id,
+      productId: reviews.productId,
+      userId: reviews.userId,
+      rating: reviews.rating,
+      comment: reviews.comment,
+      createdAt: reviews.createdAt,
+      userName: users.name,
+    })
+      .from(reviews)
+      .leftJoin(users, eq(reviews.userId, users.id))
+      .where(eq(reviews.productId, productId))
+      .orderBy(desc(reviews.createdAt));
+    return result as Array<Review & { userName: string }>;
   }
 
   // Delivery Tracking operations

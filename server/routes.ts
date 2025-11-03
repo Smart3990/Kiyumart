@@ -13,7 +13,7 @@ import {
 import { uploadToCloudinary } from "./cloudinary";
 import { getExchangeRates, convertCurrency, SUPPORTED_CURRENCIES } from "./currency";
 import multer from "multer";
-import { insertUserSchema, insertProductSchema, insertDeliveryZoneSchema, insertOrderSchema, insertWishlistSchema } from "@shared/schema";
+import { insertUserSchema, insertProductSchema, insertDeliveryZoneSchema, insertOrderSchema, insertWishlistSchema, insertReviewSchema } from "@shared/schema";
 
 const upload = multer({ storage: multer.memoryStorage() });
 
@@ -375,6 +375,29 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       await storage.removeFromWishlist(req.user!.id, req.params.productId);
       res.json({ success: true });
+    } catch (error: any) {
+      res.status(400).json({ error: error.message });
+    }
+  });
+
+  // ============ Review Routes ============
+  app.post("/api/reviews", requireAuth, async (req: AuthRequest, res) => {
+    try {
+      const validatedData = insertReviewSchema.parse(req.body);
+      const review = await storage.createReview({
+        ...validatedData,
+        userId: req.user!.id,
+      });
+      res.json(review);
+    } catch (error: any) {
+      res.status(400).json({ error: error.message });
+    }
+  });
+
+  app.get("/api/products/:productId/reviews", async (req, res) => {
+    try {
+      const reviews = await storage.getProductReviews(req.params.productId);
+      res.json(reviews);
     } catch (error: any) {
       res.status(400).json({ error: error.message });
     }
