@@ -168,6 +168,29 @@ export const reviews = pgTable("reviews", {
   createdAt: timestamp("created_at").defaultNow(),
 });
 
+export const productVariants = pgTable("product_variants", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  productId: varchar("product_id").notNull().references(() => products.id),
+  color: text("color"),
+  size: text("size"),
+  sku: text("sku"),
+  stock: integer("stock").default(0),
+  priceAdjustment: decimal("price_adjustment", { precision: 10, scale: 2 }).default("0"),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+export const heroBanners = pgTable("hero_banners", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  title: text("title").notNull(),
+  subtitle: text("subtitle"),
+  image: text("image").notNull(),
+  ctaText: text("cta_text"),
+  ctaLink: text("cta_link"),
+  isActive: boolean("is_active").default(true),
+  displayOrder: integer("display_order").default(0),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
 // Zod schemas for validation
 export const insertUserSchema = createInsertSchema(users).pick({
   email: true,
@@ -237,6 +260,25 @@ export const insertReviewSchema = createInsertSchema(reviews).pick({
   comment: true,
 });
 
+export const insertProductVariantSchema = createInsertSchema(productVariants).pick({
+  productId: true,
+  color: true,
+  size: true,
+  sku: true,
+  stock: true,
+  priceAdjustment: true,
+});
+
+export const insertHeroBannerSchema = createInsertSchema(heroBanners).pick({
+  title: true,
+  subtitle: true,
+  image: true,
+  ctaText: true,
+  ctaLink: true,
+  isActive: true,
+  displayOrder: true,
+});
+
 // TypeScript types
 export type InsertUser = z.infer<typeof insertUserSchema>;
 export type User = typeof users.$inferSelect;
@@ -269,3 +311,9 @@ export type DeliveryTracking = typeof deliveryTracking.$inferSelect;
 
 export type InsertReview = z.infer<typeof insertReviewSchema>;
 export type Review = typeof reviews.$inferSelect;
+
+export type InsertProductVariant = z.infer<typeof insertProductVariantSchema>;
+export type ProductVariant = typeof productVariants.$inferSelect;
+
+export type InsertHeroBanner = z.infer<typeof insertHeroBannerSchema>;
+export type HeroBanner = typeof heroBanners.$inferSelect;
