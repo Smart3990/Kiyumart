@@ -22,6 +22,7 @@ import Notifications from "@/pages/Notifications";
 import Profile from "@/pages/Profile";
 import CategoryPage from "@/pages/CategoryPage";
 import Wishlist from "@/pages/Wishlist";
+import Orders from "@/pages/Orders";
 import NotFound from "@/pages/not-found";
 
 function Router() {
@@ -38,6 +39,7 @@ function Router() {
       <Route path="/notifications" component={Notifications} />
       <Route path="/profile" component={Profile} />
       <Route path="/wishlist" component={Wishlist} />
+      <Route path="/orders" component={Orders} />
       <Route path="/admin" component={AdminDashboard} />
       <Route path="/seller" component={SellerDashboard} />
       <Route path="/rider" component={RiderDashboard} />

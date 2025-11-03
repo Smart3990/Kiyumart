@@ -52,6 +52,7 @@ export default function PaymentVerifyPage() {
       if (result.verified && result.transaction) {
         queryClient.invalidateQueries({ queryKey: ["/api/orders", result.transaction.orderId] });
         queryClient.invalidateQueries({ queryKey: ["/api/orders"] });
+        queryClient.invalidateQueries({ queryKey: ["/api/cart"] });
       }
       
       return result;

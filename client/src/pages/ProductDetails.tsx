@@ -329,16 +329,24 @@ export default function ProductDetails() {
               )}
 
               {product.video && (
-                <Card className="overflow-hidden mt-4">
-                  <video
-                    controls
-                    className="w-full"
-                    data-testid="video-product"
-                  >
-                    <source src={product.video} type="video/mp4" />
-                    Your browser does not support the video tag.
-                  </video>
-                </Card>
+                <div className="mt-6 space-y-3">
+                  <div>
+                    <h3 className="text-lg font-semibold mb-1">See It in Action</h3>
+                    <p className="text-sm text-muted-foreground">
+                      Watch this video to see the product details, fit, and quality up close
+                    </p>
+                  </div>
+                  <Card className="overflow-hidden">
+                    <video
+                      controls
+                      className="w-full"
+                      data-testid="video-product"
+                    >
+                      <source src={product.video} type="video/mp4" />
+                      Your browser does not support the video tag.
+                    </video>
+                  </Card>
+                </div>
               )}
             </div>
 

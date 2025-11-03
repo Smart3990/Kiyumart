@@ -1,4 +1,4 @@
-import { ShoppingCart, Search, Menu, Globe, User, Bell } from "lucide-react";
+import { ShoppingCart, Search, Menu, Globe, User, Bell, Package } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
@@ -115,6 +115,15 @@ export default function Header({
                   {notificationCount > 9 ? "9+" : notificationCount}
                 </Badge>
               )}
+            </Button>
+
+            <Button 
+              variant="ghost" 
+              size="icon"
+              onClick={() => navigate("/orders")}
+              data-testid="button-orders"
+            >
+              <Package className="h-5 w-5" />
             </Button>
 
             <Button 
