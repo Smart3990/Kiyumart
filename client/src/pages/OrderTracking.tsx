@@ -336,7 +336,7 @@ export default function OrderTracking() {
                             <div>
                               <p className="text-sm text-muted-foreground">Total Amount</p>
                               <p className="text-lg font-semibold" data-testid={`text-amount-${order.id}`}>
-                                GHS {order.totalAmount.toFixed(2)}
+                                GHS {parseFloat(order.totalAmount as any || "0").toFixed(2)}
                               </p>
                             </div>
                             <div>

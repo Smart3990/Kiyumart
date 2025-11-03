@@ -1,4 +1,4 @@
-import { ShoppingCart, Search, Menu, Globe, User, Bell, Package } from "lucide-react";
+import { Search, Menu, Globe, User, Bell, Package } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
@@ -10,6 +10,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import CartPopover from "@/components/CartPopover";
 import logoLight from "@assets/light_mode_1762169855262.png";
 import logoDark from "@assets/photo_2025-09-24_21-19-48-removebg-preview_1762169855290.png";
 
@@ -135,23 +136,7 @@ export default function Header({
               <User className="h-5 w-5" />
             </Button>
 
-            <Button
-              variant="ghost"
-              size="icon"
-              className="relative"
-              onClick={onCartClick || (() => navigate("/cart"))}
-              data-testid="button-cart"
-            >
-              <ShoppingCart className="h-5 w-5" />
-              {cartItemsCount > 0 && (
-                <Badge 
-                  className="absolute -top-1 -right-1 h-5 w-5 flex items-center justify-center p-0 text-xs"
-                  data-testid="badge-cart-count"
-                >
-                  {cartItemsCount}
-                </Badge>
-              )}
-            </Button>
+            <CartPopover />
           </div>
         </div>
 
