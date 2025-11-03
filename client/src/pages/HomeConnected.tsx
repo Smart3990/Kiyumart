@@ -4,6 +4,7 @@ import { useQuery, useMutation } from "@tanstack/react-query";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useAuth } from "@/lib/auth";
 import { useToast } from "@/hooks/use-toast";
+import { useLanguage } from "@/contexts/LanguageContext";
 import Header from "@/components/Header";
 import HeroBanner from "@/components/HeroBanner";
 import CategoryCard from "@/components/CategoryCard";
@@ -47,6 +48,7 @@ export default function HomeConnected() {
   const [, navigate] = useLocation();
   const { isAuthenticated } = useAuth();
   const { toast } = useToast();
+  const { currency, t } = useLanguage();
   const [isCartOpen, setIsCartOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
 
@@ -168,15 +170,15 @@ export default function HomeConnected() {
   const bannerSlides = [
     {
       image: heroImage,
-      title: "New Season Collection",
-      description: "Discover the latest trends in fashion. Shop premium quality at unbeatable prices.",
-      cta: "Shop Now"
+      title: t("newSeasonCollection"),
+      description: t("discoverLatest"),
+      cta: t("shopNow")
     },
     {
       image: heroImage,
-      title: "Up to 50% Off",
-      description: "Limited time offer on selected items. Don't miss out!",
-      cta: "View Deals"
+      title: t("upTo50Off"),
+      description: t("limitedOffer"),
+      cta: t("viewDeals")
     }
   ];
 
@@ -266,7 +268,7 @@ export default function HomeConnected() {
 
       <main className="flex-1">
         <section className="max-w-7xl mx-auto px-4 py-12">
-          <h2 className="text-3xl font-bold mb-8">Shop by Category</h2>
+          <h2 className="text-3xl font-bold mb-8">{t("shopByCategory")}</h2>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {categories.map((category) => (
               <CategoryCard
@@ -281,7 +283,7 @@ export default function HomeConnected() {
         <section className="max-w-7xl mx-auto px-4 py-12">
           <div className="flex items-center justify-between mb-8">
             <h2 className="text-3xl font-bold">
-              {searchQuery ? `Search Results (${filteredProducts.length})` : 'Featured Products'}
+              {searchQuery ? `${t("search").replace("...", "")} (${filteredProducts.length})` : t("featuredProducts")}
             </h2>
           </div>
           {productsLoading ? (
@@ -308,6 +310,7 @@ export default function HomeConnected() {
                     name={product.name}
                     price={sellingPrice}
                     costPrice={originalPrice || undefined}
+                    currency={currency}
                     image={product.images[0] || heroImage}
                     discount={calculatedDiscount}
                     rating={parseFloat(product.ratings) || 0}

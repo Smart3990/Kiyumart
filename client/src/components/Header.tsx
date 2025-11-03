@@ -3,6 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { useLocation } from "wouter";
+import { useLanguage, languages, Language } from "@/contexts/LanguageContext";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -26,6 +27,7 @@ export default function Header({
   onSearch 
 }: HeaderProps) {
   const [, navigate] = useLocation();
+  const { language, currency, setLanguage, t } = useLanguage();
 
   return (
     <header className="sticky top-0 z-50 w-full border-b bg-background">
@@ -55,7 +57,7 @@ export default function Header({
             <div className="relative w-full">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
               <Input
-                placeholder="Search products..."
+                placeholder={t("search")}
                 className="pl-10"
                 data-testid="input-search"
                 onChange={(e) => onSearch?.(e.target.value)}
@@ -71,9 +73,16 @@ export default function Header({
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end">
-                <DropdownMenuItem data-testid="option-english">🇬🇧 English - GHS</DropdownMenuItem>
-                <DropdownMenuItem data-testid="option-french">🇫🇷 Français - EUR</DropdownMenuItem>
-                <DropdownMenuItem data-testid="option-spanish">🇪🇸 Español - USD</DropdownMenuItem>
+                {Object.values(languages).map((lang) => (
+                  <DropdownMenuItem
+                    key={lang.code}
+                    onClick={() => setLanguage(lang.code as Language)}
+                    data-testid={`option-${lang.code}`}
+                    className={language === lang.code ? "bg-accent" : ""}
+                  >
+                    {lang.flag} {lang.name} - {lang.currency}
+                  </DropdownMenuItem>
+                ))}
               </DropdownMenuContent>
             </DropdownMenu>
 
