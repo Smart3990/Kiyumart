@@ -33,9 +33,20 @@ KiyuMart is a dual-mode e-commerce platform that operates as both a single-store
 - **Responsive Design**: Mobile-optimized timeline and card layouts
 - **Toast Notifications**: Real-time alerts when order status changes
 
+**✅ Phase 2 - Live Delivery Tracking (COMPLETE):**
+- **Interactive Map Visualization**: Leaflet.js integration with OpenStreetMap tiles
+- **Dual Location Markers**: Delivery destination (red) and rider location (blue) displayed on map
+- **Route Polyline**: Visual route line connecting rider to destination
+- **Auto-fitting Bounds**: Map automatically adjusts to show both markers
+- **Real-time Location Updates**: Socket.IO events update rider position live
+- **Location Info Cards**: Address and coordinates displayed for both locations
+- **Delivery Tracking APIs**: Full CRUD for delivery location data
+- **Database Schema**: delivery_tracking table with geolocation fields
+- **Rider-Only Access**: POST endpoint restricted to riders only
+- **Automatic Display**: Map shown for orders with "shipped" status
+
 **🔄 Phase 2 - In Progress:**
 - **Chat System**: Backend complete (Socket.IO, APIs, DB schema), frontend auth guard fixed, manual testing pending
-- **Delivery Tracking**: Needs Leaflet.js map integration
 - **Analytics**: Needs charts and advanced dashboards
 
 ## User Preferences
@@ -43,6 +54,48 @@ KiyuMart is a dual-mode e-commerce platform that operates as both a single-store
 Preferred communication style: Simple, everyday language.
 
 ## Recent Changes
+
+### Phase 2 - Live Delivery Tracking with Map Visualization (Completed Nov 3, 2025)
+
+**DeliveryMap Component:**
+- Interactive map using react-leaflet 4.2.1 (React 18 compatible)
+- OpenStreetMap tile layer for map rendering
+- Custom markers with icons for delivery location (MapPin, red) and rider (Navigation, blue)
+- Polyline showing route from rider to destination
+- Auto-fitting bounds using `useMap` hook to show both locations
+- Location info cards displaying addresses and coordinates
+- Responsive design with 400px height
+- Loading states with skeleton UI
+
+**Database Schema Extensions:**
+- `delivery_tracking` table with fields:
+  - orderId (foreign key to orders)
+  - riderId (foreign key to users)
+  - latitude, longitude (decimal precision geolocation)
+  - accuracy, speed, heading (optional tracking metadata)
+  - timestamp (auto-generated)
+- `deliveryLatitude` and `deliveryLongitude` fields added to orders table
+- Proper decimal type for coordinate precision
+
+**Backend API Endpoints:**
+- POST /api/delivery-tracking - Riders submit location updates (rider-only access)
+- GET /api/delivery-tracking/:orderId - Fetch latest rider location
+- GET /api/delivery-tracking/:orderId/history - Get full location history
+- Socket.IO event: `rider_location_updated` emitted on location updates
+- Event payload: orderId, orderNumber, latitude, longitude, timestamp
+
+**OrderTracking Page Integration:**
+- DeliveryMap displayed automatically for orders with "shipped" status
+- Real-time rider location updates via Socket.IO listener
+- Map shows when order has delivery coordinates
+- State management using Map for rider locations indexed by orderId
+- Toast notifications when rider location updates
+- Seamless integration with existing order status timeline
+
+**Storage Layer Methods:**
+- `createDeliveryTracking()` - Save new location data
+- `getLatestDeliveryLocation()` - Get most recent rider position
+- `getDeliveryTrackingHistory()` - Retrieve location timeline
 
 ### Phase 2 - Enhanced Order Tracking (Completed Nov 3, 2025)
 

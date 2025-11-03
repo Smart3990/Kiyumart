@@ -7,6 +7,7 @@ import QRCodeDisplay from "@/components/QRCodeDisplay";
 import ThemeToggle from "@/components/ThemeToggle";
 import OrderStatusTimeline from "@/components/OrderStatusTimeline";
 import OrderStatusBadge from "@/components/OrderStatusBadge";
+import DeliveryMap from "@/components/DeliveryMap";
 import { ArrowLeft, Search, Filter, Loader2 } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { queryClient } from "@/lib/queryClient";
@@ -24,10 +25,19 @@ interface Order {
   deliveryAddress: string;
   deliveryCity: string;
   deliveryPhone: string;
+  deliveryLatitude?: string;
+  deliveryLongitude?: string;
   qrCode: string;
   createdAt: string;
   deliveredAt?: string;
   updatedAt?: string;
+}
+
+interface RiderLocation {
+  orderId: string;
+  latitude: number;
+  longitude: number;
+  timestamp: string;
 }
 
 export default function OrderTracking() {
@@ -36,6 +46,7 @@ export default function OrderTracking() {
   const { toast } = useToast();
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("all");
+  const [riderLocations, setRiderLocations] = useState<Map<string, RiderLocation>>(new Map());
   const socketRef = useRef<Socket | null>(null);
 
   // Redirect to auth if not authenticated
@@ -71,6 +82,34 @@ export default function OrderTracking() {
       });
     });
 
+    // Listen for real-time rider location updates
+    socket.on("rider_location_updated", (data: { orderId: string; orderNumber: string; latitude: string; longitude: string; timestamp: string }) => {
+      console.log("Rider location updated:", data);
+      
+      const lat = parseFloat(data.latitude);
+      const lng = parseFloat(data.longitude);
+      
+      // Only update if coordinates are valid
+      if (!isNaN(lat) && !isNaN(lng)) {
+        setRiderLocations(prev => {
+          const updated = new Map(prev);
+          updated.set(data.orderId, {
+            orderId: data.orderId,
+            latitude: lat,
+            longitude: lng,
+            timestamp: data.timestamp,
+          });
+          return updated;
+        });
+        
+        // Show toast notification
+        toast({
+          title: "Rider Location Updated",
+          description: `Delivery rider for Order #${data.orderNumber} is on the move`,
+        });
+      }
+    });
+
     socketRef.current = socket;
 
     return () => {
@@ -82,6 +121,47 @@ export default function OrderTracking() {
     queryKey: ["/api/orders"],
     enabled: !authLoading && !!user,
   });
+
+  // Fetch initial rider locations for shipped orders
+  useEffect(() => {
+    if (!orders || orders.length === 0) return;
+
+    const fetchRiderLocations = async () => {
+      const shippedOrders = orders.filter(order => order.status === "shipped");
+      
+      for (const order of shippedOrders) {
+        try {
+          const response = await fetch(`/api/delivery-tracking/${order.id}`, {
+            credentials: "include",
+          });
+          
+          if (response.ok) {
+            const data = await response.json();
+            const lat = parseFloat(data.latitude);
+            const lng = parseFloat(data.longitude);
+            
+            // Only update if coordinates are valid
+            if (!isNaN(lat) && !isNaN(lng)) {
+              setRiderLocations(prev => {
+                const updated = new Map(prev);
+                updated.set(order.id, {
+                  orderId: order.id,
+                  latitude: lat,
+                  longitude: lng,
+                  timestamp: data.timestamp,
+                });
+                return updated;
+              });
+            }
+          }
+        } catch (error) {
+          console.error(`Failed to fetch rider location for order ${order.id}:`, error);
+        }
+      }
+    };
+
+    fetchRiderLocations();
+  }, [orders]);
 
   // Filter orders based on search and status
   const filteredOrders = orders.filter((order) => {
@@ -270,6 +350,22 @@ export default function OrderTracking() {
                             </div>
                           </div>
                         </div>
+
+                        {/* Live Delivery Map for Shipped Orders */}
+                        {order.status === "shipped" && order.deliveryLatitude && order.deliveryLongitude && 
+                         !isNaN(parseFloat(order.deliveryLatitude)) && !isNaN(parseFloat(order.deliveryLongitude)) && (
+                          <div className="pt-4 border-t">
+                            <DeliveryMap
+                              deliveryLocation={{
+                                latitude: parseFloat(order.deliveryLatitude),
+                                longitude: parseFloat(order.deliveryLongitude),
+                                address: `${order.deliveryAddress}, ${order.deliveryCity}`,
+                              }}
+                              riderLocation={riderLocations.get(order.id)}
+                              orderNumber={order.orderNumber}
+                            />
+                          </div>
+                        )}
 
                         {/* QR Code */}
                         {order.status !== "cancelled" && (
