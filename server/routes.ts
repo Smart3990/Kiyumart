@@ -791,9 +791,32 @@ export async function registerRoutes(app: Express): Promise<Server> {
           paymentStatus: "completed",
           status: "processing",
         });
+        
+        // Emit payment success notification to buyer
+        io.to(order.buyerId).emit("payment_completed", {
+          orderId: order.id,
+          orderNumber: order.orderNumber,
+          amount: `${order.currency} ${order.total}`,
+          paymentMethod: "Paystack",
+        });
+        
+        // Also emit order status update
+        io.to(order.buyerId).emit("order_status_updated", {
+          orderId: order.id,
+          orderNumber: order.orderNumber,
+          status: "processing",
+          updatedAt: new Date().toISOString(),
+        });
       } else {
         await storage.updateOrder(orderId, {
           paymentStatus: "failed",
+        });
+        
+        // Emit payment failure notification to buyer
+        io.to(order.buyerId).emit("payment_failed", {
+          orderId: order.id,
+          orderNumber: order.orderNumber,
+          reason: data.data.gateway_response || "Payment failed",
         });
       }
 

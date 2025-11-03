@@ -368,7 +368,7 @@ export default function OrderTracking() {
                         )}
 
                         {/* QR Code */}
-                        {order.status !== "cancelled" && (
+                        {order.status !== "cancelled" && order.qrCode && (
                           <div className="pt-4 border-t">
                             <p className="text-sm font-medium mb-3">Delivery Confirmation QR Code</p>
                             <div className="flex justify-center bg-muted/30 p-6 rounded-lg">
