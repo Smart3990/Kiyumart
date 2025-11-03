@@ -148,10 +148,10 @@ export default function ProductDetails() {
   useEffect(() => {
     if (quantity > availableStock && availableStock > 0) {
       setQuantity(availableStock);
-    } else if (availableStock === 0) {
+    } else if (availableStock === 0 && quantity !== 1) {
       setQuantity(1);
     }
-  }, [selectedColor, selectedSize, availableStock]);
+  }, [availableStock, quantity]);
 
   useEffect(() => {
     if (selectedColor && selectedSize && hasSizeVariants && hasColorVariants) {
@@ -160,16 +160,7 @@ export default function ProductDetails() {
         setSelectedSize("");
       }
     }
-  }, [selectedColor, variants, hasSizeVariants, hasColorVariants]);
-
-  useEffect(() => {
-    if (selectedSize && selectedColor && hasSizeVariants && hasColorVariants) {
-      const combination = variants.find(v => v.color === selectedColor && v.size === selectedSize);
-      if (!combination || combination.stock === 0) {
-        setSelectedSize("");
-      }
-    }
-  }, [selectedSize, variants, hasSizeVariants, hasColorVariants]);
+  }, [selectedColor, hasSizeVariants, hasColorVariants, variants]);
 
   const addToCartMutation = useMutation({
     mutationFn: async ({ productId, quantity }: { productId: string; quantity: number }) => {
