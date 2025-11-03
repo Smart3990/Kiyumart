@@ -29,6 +29,7 @@ export interface IStorage {
   getOrder(id: string): Promise<Order | undefined>;
   getOrdersByUser(userId: string, role: "buyer" | "seller" | "rider"): Promise<Order[]>;
   updateOrderStatus(id: string, status: string): Promise<Order | undefined>;
+  updateOrder(orderId: string, data: Partial<Order>): Promise<Order | undefined>;
   assignRider(orderId: string, riderId: string): Promise<Order | undefined>;
   
   // Delivery Zone operations
@@ -42,7 +43,7 @@ export interface IStorage {
   markMessagesAsRead(senderId: string, receiverId: string): Promise<void>;
   
   // Transaction operations
-  createTransaction(transaction: Omit<Transaction, "id" | "createdAt">): Promise<Transaction>;
+  createTransaction(data: any): Promise<Transaction>;
   getTransactionByReference(reference: string): Promise<Transaction | undefined>;
   
   // Platform settings
@@ -168,6 +169,14 @@ export class DbStorage implements IStorage {
     return result[0];
   }
 
+  async updateOrder(orderId: string, data: Partial<Order>): Promise<Order | undefined> {
+    const result = await db.update(orders).set({ 
+      ...data,
+      updatedAt: new Date()
+    }).where(eq(orders.id, orderId)).returning();
+    return result[0];
+  }
+
   async assignRider(orderId: string, riderId: string): Promise<Order | undefined> {
     const result = await db.update(orders).set({ 
       riderId,
@@ -219,8 +228,8 @@ export class DbStorage implements IStorage {
   }
 
   // Transaction operations
-  async createTransaction(transaction: Omit<Transaction, "id" | "createdAt">): Promise<Transaction> {
-    const result = await db.insert(transactions).values(transaction as any).returning();
+  async createTransaction(data: any): Promise<Transaction> {
+    const result = await db.insert(transactions).values(data as any).returning();
     return result[0];
   }
 

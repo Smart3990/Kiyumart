@@ -475,6 +475,153 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // ============ Payment Routes (Paystack) ============
+  app.post("/api/payments/initialize", requireAuth, async (req: AuthRequest, res) => {
+    try {
+      const { orderId } = req.body;
+      
+      // Load and validate the order
+      const order = await storage.getOrder(orderId);
+      if (!order) {
+        return res.status(404).json({ error: "Order not found" });
+      }
+      
+      // Verify the user owns this order
+      if (order.buyerId !== req.user!.id) {
+        return res.status(403).json({ error: "Unauthorized to pay for this order" });
+      }
+      
+      // Prevent double payment
+      if (order.paymentStatus === "completed") {
+        return res.status(400).json({ error: "Order is already paid" });
+      }
+      
+      // Initialize payment with Paystack
+      const response = await fetch("https://api.paystack.co/transaction/initialize", {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${process.env.PAYSTACK_SECRET_KEY}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          email: req.user!.email,
+          amount: Math.round(parseFloat(order.total) * 100),
+          currency: order.currency,
+          metadata: {
+            orderId: order.id,
+            userId: req.user!.id,
+            orderNumber: order.orderNumber,
+          },
+        }),
+      });
+
+      const data = await response.json();
+      
+      if (!data.status) {
+        return res.status(400).json({ error: data.message });
+      }
+
+      // Store the payment reference on the order
+      await storage.updateOrder(orderId, {
+        paymentReference: data.data.reference,
+        paymentStatus: "processing",
+      });
+
+      res.json(data.data);
+    } catch (error: any) {
+      res.status(400).json({ error: error.message });
+    }
+  });
+
+  app.get("/api/payments/verify/:reference", requireAuth, async (req: AuthRequest, res) => {
+    try {
+      // Check if transaction already exists (idempotency)
+      const existingTransaction = await storage.getTransactionByReference(req.params.reference);
+      if (existingTransaction) {
+        return res.json({ 
+          transaction: existingTransaction, 
+          verified: existingTransaction.status === "completed",
+          message: "Transaction already processed"
+        });
+      }
+
+      const response = await fetch(
+        `https://api.paystack.co/transaction/verify/${req.params.reference}`,
+        {
+          headers: {
+            Authorization: `Bearer ${process.env.PAYSTACK_SECRET_KEY}`,
+          },
+        }
+      );
+
+      const data = await response.json();
+      
+      if (!data.status) {
+        return res.status(400).json({ error: data.message });
+      }
+
+      const orderId = data.data.metadata.orderId;
+      const order = await storage.getOrder(orderId);
+      
+      if (!order) {
+        return res.status(404).json({ error: "Order not found" });
+      }
+
+      // Verify the user owns this order
+      if (order.buyerId !== req.user!.id) {
+        return res.status(403).json({ error: "Unauthorized to verify payment for this order" });
+      }
+
+      // Validate the payment reference matches
+      if (order.paymentReference !== req.params.reference) {
+        return res.status(400).json({ error: "Payment reference mismatch" });
+      }
+
+      // Validate the payment amount matches the order total
+      const expectedAmount = Math.round(parseFloat(order.total) * 100);
+      if (data.data.amount !== expectedAmount) {
+        return res.status(400).json({ 
+          error: "Payment amount mismatch",
+          expected: expectedAmount / 100,
+          received: data.data.amount / 100
+        });
+      }
+
+      // Validate currency
+      if (data.data.currency !== order.currency) {
+        return res.status(400).json({ error: "Currency mismatch" });
+      }
+
+      const transactionData = {
+        orderId: orderId,
+        userId: data.data.metadata.userId,
+        amount: (data.data.amount / 100).toString(),
+        currency: data.data.currency,
+        paymentProvider: "paystack",
+        paymentReference: data.data.reference,
+        status: data.data.status === "success" ? "completed" : "failed",
+        metadata: data.data,
+      };
+
+      const transaction = await storage.createTransaction(transactionData);
+      
+      if (data.data.status === "success") {
+        await storage.updateOrder(orderId, {
+          paymentStatus: "completed",
+          status: "processing",
+        });
+      } else {
+        await storage.updateOrder(orderId, {
+          paymentStatus: "failed",
+        });
+      }
+
+      res.json({ transaction, verified: data.data.status === "success" });
+    } catch (error: any) {
+      res.status(400).json({ error: error.message });
+    }
+  });
+
   // ============ Analytics Routes ============
   app.get("/api/analytics", requireAuth, async (req: AuthRequest, res) => {
     try {
