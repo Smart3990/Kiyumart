@@ -4,6 +4,16 @@
 
 KiyuMart is an e-commerce platform dedicated to modest Islamic women's fashion, including abayas, hijabs, and dresses. It functions as both a single-store and a multi-vendor marketplace, with dynamic switching controlled by an admin through a feature flag (`isMultiVendor` in platform settings). The platform offers comprehensive e-commerce features like product and order management, delivery tracking with live map visualization, real-time chat, and Paystack payment integration. Its business vision is to be a leading online destination for modest Islamic fashion, offering a diverse and inclusive range of products to a global market.
 
+### Single-Store Mode (Primary/Default)
+
+The primary mode (`isMultiVendor: false`) displays a curated single-store Islamic fashion experience:
+- **Hero Banner**: Showcases Islamic fashion imagery with women in hijabs and abayas, featuring collections like "New Season Collection"
+- **Product Categories**: Islamic fashion categories including Elegant Abayas, Hijabs & Accessories, and Evening Wear
+- **Product Display**: Grid layout showing product images with cost price (strikethrough) and selling price (green text), ratings, and reviews
+- **Video Showcase**: Each product includes a "See it in Action" video section showing fit, details, and quality
+- **Price Display Format**: Original price with strikethrough + discounted price in primary green color (matching GHS currency format)
+- **Islamic Fashion Focus**: All content, from banners to products, emphasizes modest fashion and Islamic values
+
 ### Multi-Vendor Marketplace Mode
 
 When enabled via the admin settings (`isMultiVendor: true`), the platform transforms into a marketplace with:
