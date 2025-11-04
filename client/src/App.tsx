@@ -27,6 +27,7 @@ import Profile from "@/pages/Profile";
 import Settings from "@/pages/Settings";
 import ChangePassword from "@/pages/ChangePassword";
 import AdminSettings from "@/pages/AdminSettings";
+import AdminBranding from "@/pages/AdminBranding";
 import AdminDeliveryZones from "@/pages/AdminDeliveryZones";
 import AdminBannerManager from "@/pages/AdminBannerManager";
 import AdminCategoryManager from "@/pages/AdminCategoryManager";
@@ -70,6 +71,7 @@ function Router() {
       <Route path="/support" component={CustomerSupport} />
       <Route path="/admin" component={AdminDashboard} />
       <Route path="/admin/settings" component={AdminSettings} />
+      <Route path="/admin/branding" component={AdminBranding} />
       <Route path="/admin/zones" component={AdminDeliveryZones} />
       <Route path="/admin/delivery-zones" component={AdminDeliveryZones} />
       <Route path="/admin/banners" component={AdminBannerManager} />

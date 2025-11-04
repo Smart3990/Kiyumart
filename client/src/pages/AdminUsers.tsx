@@ -3,11 +3,12 @@ import { useQuery } from "@tanstack/react-query";
 import { useLocation } from "wouter";
 import DashboardSidebar from "@/components/DashboardSidebar";
 import { useAuth } from "@/lib/auth";
+import { useToast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Loader2, Search, User, Edit, Ban } from "lucide-react";
+import { Loader2, Search, User, Edit, Ban, ArrowLeft } from "lucide-react";
 
 interface UserData {
   id: string;
@@ -23,6 +24,7 @@ export default function AdminUsers() {
   const [searchQuery, setSearchQuery] = useState("");
   const [, navigate] = useLocation();
   const { user, isAuthenticated, isLoading: authLoading } = useAuth();
+  const { toast } = useToast();
 
   useEffect(() => {
     if (!authLoading && (!isAuthenticated || user?.role !== "admin")) {
@@ -68,6 +70,9 @@ export default function AdminUsers() {
       case "analytics":
         navigate("/admin/analytics");
         break;
+      case "branding":
+        navigate("/admin/branding");
+        break;
       case "settings":
         navigate("/admin/settings");
         break;
@@ -109,8 +114,16 @@ export default function AdminUsers() {
       
       <div className="flex-1 overflow-auto">
         <div className="p-8">
-          <div className="flex justify-between items-center mb-6">
-            <div>
+          <div className="flex items-center gap-4 mb-6">
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() => navigate("/admin")}
+              data-testid="button-back"
+            >
+              <ArrowLeft className="h-5 w-5" />
+            </Button>
+            <div className="flex-1">
               <h1 className="text-3xl font-bold text-foreground" data-testid="heading-users">Users Management</h1>
               <p className="text-muted-foreground mt-1">Manage platform users and roles</p>
             </div>
@@ -163,10 +176,25 @@ export default function AdminUsers() {
                       </div>
                     </div>
                     <div className="flex gap-2">
-                      <Button variant="ghost" size="icon" data-testid={`button-edit-${userData.id}`}>
+                      <Button 
+                        variant="ghost" 
+                        size="icon" 
+                        onClick={() => navigate(`/admin/users/${userData.id}/edit`)}
+                        data-testid={`button-edit-${userData.id}`}
+                      >
                         <Edit className="h-4 w-4" />
                       </Button>
-                      <Button variant="ghost" size="icon" data-testid={`button-ban-${userData.id}`}>
+                      <Button 
+                        variant="ghost" 
+                        size="icon"
+                        onClick={() => {
+                          toast({
+                            title: userData.isActive ? "Ban User" : "Activate User",
+                            description: `User ${userData.isActive ? "ban" : "activation"} feature coming soon`,
+                          });
+                        }}
+                        data-testid={`button-ban-${userData.id}`}
+                      >
                         <Ban className="h-4 w-4" />
                       </Button>
                     </div>

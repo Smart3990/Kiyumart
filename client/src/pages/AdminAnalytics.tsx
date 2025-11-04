@@ -3,8 +3,9 @@ import { useQuery } from "@tanstack/react-query";
 import { useLocation } from "wouter";
 import DashboardSidebar from "@/components/DashboardSidebar";
 import { useAuth } from "@/lib/auth";
+import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Loader2, TrendingUp, DollarSign, ShoppingCart, Users } from "lucide-react";
+import { Loader2, TrendingUp, DollarSign, ShoppingCart, Users, ArrowLeft } from "lucide-react";
 
 interface Analytics {
   totalRevenue: number;
@@ -62,6 +63,9 @@ export default function AdminAnalytics() {
       case "analytics":
         // Already on analytics page
         break;
+      case "branding":
+        navigate("/admin/branding");
+        break;
       case "settings":
         navigate("/admin/settings");
         break;
@@ -87,9 +91,19 @@ export default function AdminAnalytics() {
       
       <div className="flex-1 overflow-auto">
         <div className="p-8">
-          <div className="mb-6">
-            <h1 className="text-3xl font-bold text-foreground" data-testid="heading-analytics">Analytics</h1>
-            <p className="text-muted-foreground mt-1">Platform performance and statistics</p>
+          <div className="flex items-center gap-4 mb-6">
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() => navigate("/admin")}
+              data-testid="button-back"
+            >
+              <ArrowLeft className="h-5 w-5" />
+            </Button>
+            <div className="flex-1">
+              <h1 className="text-3xl font-bold text-foreground" data-testid="heading-analytics">Analytics</h1>
+              <p className="text-muted-foreground mt-1">Platform performance and statistics</p>
+            </div>
           </div>
 
           {isLoading ? (

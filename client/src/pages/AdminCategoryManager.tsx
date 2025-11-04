@@ -1,13 +1,14 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
+import { useLocation } from "wouter";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { insertCategorySchema } from "@shared/schema";
 import { z } from "zod";
-import Header from "@/components/Header";
-import Footer from "@/components/Footer";
+import { useAuth } from "@/lib/auth";
+import DashboardSidebar from "@/components/DashboardSidebar";
 import MediaUploadInput from "@/components/MediaUploadInput";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -18,7 +19,7 @@ import { Switch } from "@/components/ui/switch";
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from "@/components/ui/dialog";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
-import { Plus, Edit, Trash2, ArrowUp, ArrowDown } from "lucide-react";
+import { Plus, Edit, Trash2, ArrowUp, ArrowDown, ArrowLeft, Loader2 } from "lucide-react";
 import type { Category } from "@shared/schema";
 
 const categoryFormSchema = insertCategorySchema.extend({
@@ -29,12 +30,21 @@ type CategoryFormData = z.infer<typeof categoryFormSchema>;
 
 export default function AdminCategoryManager() {
   const { toast } = useToast();
+  const [, navigate] = useLocation();
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingCategory, setEditingCategory] = useState<Category | null>(null);
+  const [activeItem, setActiveItem] = useState("categories");
+  const { user, isAuthenticated, isLoading: authLoading } = useAuth();
 
   const { data: categories = [], isLoading } = useQuery<Category[]>({
     queryKey: ["/api/categories"],
   });
+
+  useEffect(() => {
+    if (!authLoading && (!isAuthenticated || user?.role !== "admin")) {
+      navigate("/auth");
+    }
+  }, [isAuthenticated, authLoading, user, navigate]);
 
   const form = useForm<CategoryFormData>({
     resolver: zodResolver(categoryFormSchema),
@@ -149,259 +159,320 @@ export default function AdminCategoryManager() {
     }
   };
 
+  const handleItemClick = (id: string) => {
+    setActiveItem(id);
+    switch(id) {
+      case "dashboard":
+        navigate("/admin");
+        break;
+      case "mode":
+        navigate("/admin/settings");
+        break;
+      case "branding":
+        navigate("/admin/branding");
+        break;
+      case "categories":
+        // Already on categories
+        break;
+      case "products":
+        navigate("/admin/products");
+        break;
+      case "orders":
+        navigate("/admin/orders");
+        break;
+      case "users":
+        navigate("/admin/users");
+        break;
+      case "riders":
+        navigate("/admin/riders");
+        break;
+      case "zones":
+        navigate("/admin/zones");
+        break;
+      case "messages":
+        navigate("/admin/messages");
+        break;
+      case "analytics":
+        navigate("/admin/analytics");
+        break;
+      case "settings":
+        navigate("/admin/settings");
+        break;
+    }
+  };
+
+  if (authLoading || isLoading || !isAuthenticated || user?.role !== "admin") {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      </div>
+    );
+  }
+
   return (
-    <div className="min-h-screen flex flex-col bg-background">
-      <Header />
+    <div className="flex h-screen bg-background">
+      <DashboardSidebar
+        role="admin"
+        activeItem={activeItem}
+        onItemClick={handleItemClick}
+        userName={user?.name || "Admin"}
+      />
       
-      <main className="flex-1 container mx-auto px-4 py-8">
-        <div className="mb-6 flex justify-between items-center">
-          <div>
-            <h1 className="text-3xl font-bold">Category Management</h1>
-            <p className="text-muted-foreground mt-2">
-              Manage product categories displayed on the homepage
-            </p>
+      <div className="flex-1 overflow-auto">
+        <div className="p-8">
+          <div className="flex items-center gap-4 mb-6">
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() => navigate("/admin")}
+              data-testid="button-back"
+            >
+              <ArrowLeft className="h-5 w-5" />
+            </Button>
+            <div className="flex-1">
+              <h1 className="text-3xl font-bold">Category Management</h1>
+              <p className="text-muted-foreground mt-2">
+                Manage product categories displayed on the homepage
+              </p>
+            </div>
+            <Button onClick={handleOpenDialog} data-testid="button-create-category">
+              <Plus className="h-4 w-4 mr-2" />
+              Add Category
+            </Button>
           </div>
-          <Button onClick={handleOpenDialog} data-testid="button-create-category">
-            <Plus className="h-4 w-4 mr-2" />
-            Add Category
-          </Button>
+
+            {categories.length === 0 ? (
+            <Card>
+              <CardContent className="py-12 text-center">
+                <p className="text-muted-foreground mb-4">No categories yet</p>
+                <Button onClick={handleOpenDialog}>
+                  <Plus className="h-4 w-4 mr-2" />
+                  Create First Category
+                </Button>
+              </CardContent>
+            </Card>
+          ) : (
+            <div className="grid gap-4">
+              {categories.map((category) => (
+                <Card key={category.id} data-testid={`card-category-${category.id}`}>
+                  <CardContent className="p-6">
+                    <div className="flex gap-6 items-start">
+                      <div className="w-32 h-32 flex-shrink-0">
+                        <img
+                          src={category.image}
+                          alt={category.name}
+                          className="w-full h-full object-cover rounded-lg"
+                          data-testid={`img-category-${category.id}`}
+                        />
+                      </div>
+                      
+                      <div className="flex-1">
+                        <div className="flex items-start justify-between mb-2">
+                          <div>
+                            <h3 className="text-xl font-semibold">{category.name}</h3>
+                            <p className="text-sm text-muted-foreground">/{category.slug}</p>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <Badge variant={category.isActive ? "default" : "secondary"}>
+                              {category.isActive ? "Active" : "Inactive"}
+                            </Badge>
+                            <Badge variant="outline">Order: {category.displayOrder}</Badge>
+                          </div>
+                        </div>
+                        
+                        {category.description && (
+                          <p className="text-muted-foreground mb-4">{category.description}</p>
+                        )}
+                        
+                        <div className="flex gap-2">
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => handleEdit(category)}
+                            data-testid={`button-edit-${category.id}`}
+                          >
+                            <Edit className="h-4 w-4 mr-2" />
+                            Edit
+                          </Button>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => handleDelete(category.id)}
+                            data-testid={`button-delete-${category.id}`}
+                          >
+                            <Trash2 className="h-4 w-4 mr-2" />
+                            Delete
+                          </Button>
+                        </div>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          )}
+
+            <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+            <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+              <DialogHeader>
+                <DialogTitle>
+                  {editingCategory ? "Edit Category" : "Create New Category"}
+                </DialogTitle>
+              </DialogHeader>
+
+              <Form {...form}>
+                  <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+                  <FormField
+                    control={form.control}
+                    name="name"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Category Name *</FormLabel>
+                        <FormControl>
+                          <Input
+                            {...field}
+                            placeholder="e.g., Elegant Abayas"
+                            onChange={(e) => {
+                              field.onChange(e);
+                              handleNameChange(e.target.value);
+                            }}
+                            data-testid="input-name"
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
+                  <FormField
+                    control={form.control}
+                    name="slug"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>URL Slug *</FormLabel>
+                        <FormControl>
+                          <Input
+                            {...field}
+                            placeholder="e.g., elegant-abayas"
+                            data-testid="input-slug"
+                          />
+                        </FormControl>
+                        <p className="text-xs text-muted-foreground">
+                          Used in the URL: /category/{field.value || "slug"}
+                        </p>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
+                  <FormField
+                    control={form.control}
+                    name="image"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Category Image *</FormLabel>
+                        <FormControl>
+                          <MediaUploadInput
+                            id="category-image"
+                            label=""
+                            value={field.value}
+                            onChange={field.onChange}
+                            accept="image"
+                            placeholder="https://example.com/category-image.jpg"
+                            description="Upload or enter URL for category image"
+                            required
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
+                  <FormField
+                    control={form.control}
+                    name="description"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Description (Optional)</FormLabel>
+                        <FormControl>
+                          <Textarea
+                            {...field}
+                            value={field.value || ""}
+                            placeholder="Brief description of this category..."
+                            rows={3}
+                            data-testid="input-description"
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
+                  <FormField
+                    control={form.control}
+                    name="displayOrder"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Display Order</FormLabel>
+                        <FormControl>
+                          <Input
+                            {...field}
+                            value={field.value ?? 0}
+                            type="number"
+                            min={0}
+                            onChange={(e) => field.onChange(parseInt(e.target.value))}
+                            data-testid="input-displayOrder"
+                          />
+                        </FormControl>
+                        <p className="text-xs text-muted-foreground">
+                          Lower numbers appear first
+                        </p>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
+                  <FormField
+                    control={form.control}
+                    name="isActive"
+                    render={({ field }) => (
+                      <FormItem className="flex items-center gap-3">
+                        <FormControl>
+                          <Switch
+                            checked={field.value ?? true}
+                            onCheckedChange={field.onChange}
+                            data-testid="switch-isActive"
+                          />
+                        </FormControl>
+                        <FormLabel className="!mt-0">Active</FormLabel>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
+                  <DialogFooter>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      onClick={() => setIsDialogOpen(false)}
+                      data-testid="button-cancel"
+                    >
+                      Cancel
+                    </Button>
+                    <Button
+                      type="submit"
+                      disabled={createMutation.isPending || updateMutation.isPending}
+                      data-testid="button-submit"
+                    >
+                      {editingCategory ? "Update" : "Create"} Category
+                    </Button>
+                  </DialogFooter>
+                </form>
+              </Form>
+            </DialogContent>
+          </Dialog>
         </div>
-
-        {isLoading ? (
-          <div className="text-center py-12">Loading categories...</div>
-        ) : categories.length === 0 ? (
-          <Card>
-            <CardContent className="py-12 text-center">
-              <p className="text-muted-foreground mb-4">No categories yet</p>
-              <Button onClick={handleOpenDialog}>
-                <Plus className="h-4 w-4 mr-2" />
-                Create First Category
-              </Button>
-            </CardContent>
-          </Card>
-        ) : (
-          <div className="grid gap-4">
-            {categories.map((category) => (
-              <Card key={category.id} data-testid={`card-category-${category.id}`}>
-                <CardContent className="p-6">
-                  <div className="flex gap-6 items-start">
-                    <div className="w-32 h-32 flex-shrink-0">
-                      <img
-                        src={category.image}
-                        alt={category.name}
-                        className="w-full h-full object-cover rounded-lg"
-                        data-testid={`img-category-${category.id}`}
-                      />
-                    </div>
-                    
-                    <div className="flex-1">
-                      <div className="flex items-start justify-between mb-2">
-                        <div>
-                          <h3 className="text-xl font-semibold">{category.name}</h3>
-                          <p className="text-sm text-muted-foreground">/{category.slug}</p>
-                        </div>
-                        <div className="flex items-center gap-2">
-                          <Badge variant={category.isActive ? "default" : "secondary"}>
-                            {category.isActive ? "Active" : "Inactive"}
-                          </Badge>
-                          <Badge variant="outline">Order: {category.displayOrder}</Badge>
-                        </div>
-                      </div>
-                      
-                      {category.description && (
-                        <p className="text-muted-foreground mb-4">{category.description}</p>
-                      )}
-                      
-                      <div className="flex gap-2">
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => handleEdit(category)}
-                          data-testid={`button-edit-${category.id}`}
-                        >
-                          <Edit className="h-4 w-4 mr-2" />
-                          Edit
-                        </Button>
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => handleDelete(category.id)}
-                          data-testid={`button-delete-${category.id}`}
-                        >
-                          <Trash2 className="h-4 w-4 mr-2" />
-                          Delete
-                        </Button>
-                      </div>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-            ))}
-          </div>
-        )}
-
-        <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-          <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
-            <DialogHeader>
-              <DialogTitle>
-                {editingCategory ? "Edit Category" : "Create New Category"}
-              </DialogTitle>
-            </DialogHeader>
-
-            <Form {...form}>
-              <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-                <FormField
-                  control={form.control}
-                  name="name"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Category Name *</FormLabel>
-                      <FormControl>
-                        <Input
-                          {...field}
-                          placeholder="e.g., Elegant Abayas"
-                          onChange={(e) => {
-                            field.onChange(e);
-                            handleNameChange(e.target.value);
-                          }}
-                          data-testid="input-name"
-                        />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-
-                <FormField
-                  control={form.control}
-                  name="slug"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>URL Slug *</FormLabel>
-                      <FormControl>
-                        <Input
-                          {...field}
-                          placeholder="e.g., elegant-abayas"
-                          data-testid="input-slug"
-                        />
-                      </FormControl>
-                      <p className="text-xs text-muted-foreground">
-                        Used in the URL: /category/{field.value || "slug"}
-                      </p>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-
-                <FormField
-                  control={form.control}
-                  name="image"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Category Image *</FormLabel>
-                      <FormControl>
-                        <MediaUploadInput
-                          id="category-image"
-                          label=""
-                          value={field.value}
-                          onChange={field.onChange}
-                          accept="image"
-                          placeholder="https://example.com/category-image.jpg"
-                          description="Upload or enter URL for category image"
-                          required
-                        />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-
-                <FormField
-                  control={form.control}
-                  name="description"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Description (Optional)</FormLabel>
-                      <FormControl>
-                        <Textarea
-                          {...field}
-                          value={field.value || ""}
-                          placeholder="Brief description of this category..."
-                          rows={3}
-                          data-testid="input-description"
-                        />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-
-                <FormField
-                  control={form.control}
-                  name="displayOrder"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Display Order</FormLabel>
-                      <FormControl>
-                        <Input
-                          {...field}
-                          value={field.value ?? 0}
-                          type="number"
-                          min={0}
-                          onChange={(e) => field.onChange(parseInt(e.target.value))}
-                          data-testid="input-displayOrder"
-                        />
-                      </FormControl>
-                      <p className="text-xs text-muted-foreground">
-                        Lower numbers appear first
-                      </p>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-
-                <FormField
-                  control={form.control}
-                  name="isActive"
-                  render={({ field }) => (
-                    <FormItem className="flex items-center gap-3">
-                      <FormControl>
-                        <Switch
-                          checked={field.value ?? true}
-                          onCheckedChange={field.onChange}
-                          data-testid="switch-isActive"
-                        />
-                      </FormControl>
-                      <FormLabel className="!mt-0">Active</FormLabel>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-
-                <DialogFooter>
-                  <Button
-                    type="button"
-                    variant="outline"
-                    onClick={() => setIsDialogOpen(false)}
-                    data-testid="button-cancel"
-                  >
-                    Cancel
-                  </Button>
-                  <Button
-                    type="submit"
-                    disabled={createMutation.isPending || updateMutation.isPending}
-                    data-testid="button-submit"
-                  >
-                    {editingCategory ? "Update" : "Create"} Category
-                  </Button>
-                </DialogFooter>
-              </form>
-            </Form>
-          </DialogContent>
-        </Dialog>
-      </main>
-
-      <Footer />
+      </div>
     </div>
   );
 }

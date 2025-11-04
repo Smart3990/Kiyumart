@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Loader2, Search, Eye, Package } from "lucide-react";
+import { Loader2, Search, Eye, Package, ArrowLeft } from "lucide-react";
 
 interface Order {
   id: string;
@@ -69,6 +69,9 @@ export default function AdminOrders() {
       case "analytics":
         navigate("/admin/analytics");
         break;
+      case "branding":
+        navigate("/admin/branding");
+        break;
       case "settings":
         navigate("/admin/settings");
         break;
@@ -110,8 +113,16 @@ export default function AdminOrders() {
       
       <div className="flex-1 overflow-auto">
         <div className="p-8">
-          <div className="flex justify-between items-center mb-6">
-            <div>
+          <div className="flex items-center gap-4 mb-6">
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() => navigate("/admin")}
+              data-testid="button-back"
+            >
+              <ArrowLeft className="h-5 w-5" />
+            </Button>
+            <div className="flex-1">
               <h1 className="text-3xl font-bold text-foreground" data-testid="heading-orders">Orders Management</h1>
               <p className="text-muted-foreground mt-1">Track and manage all orders</p>
             </div>

@@ -3,11 +3,12 @@ import { useQuery } from "@tanstack/react-query";
 import { useLocation } from "wouter";
 import DashboardSidebar from "@/components/DashboardSidebar";
 import { useAuth } from "@/lib/auth";
+import { useToast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Loader2, Search, User, Edit, Plus, Bike } from "lucide-react";
+import { Loader2, Search, User, Edit, Plus, Bike, ArrowLeft } from "lucide-react";
 
 interface Rider {
   id: string;
@@ -22,6 +23,7 @@ export default function AdminRiders() {
   const [searchQuery, setSearchQuery] = useState("");
   const [, navigate] = useLocation();
   const { user, isAuthenticated, isLoading: authLoading } = useAuth();
+  const { toast } = useToast();
 
   useEffect(() => {
     if (!authLoading && (!isAuthenticated || user?.role !== "admin")) {
@@ -71,6 +73,9 @@ export default function AdminRiders() {
       case "analytics":
         navigate("/admin/analytics");
         break;
+      case "branding":
+        navigate("/admin/branding");
+        break;
       case "settings":
         navigate("/admin/settings");
         break;
@@ -101,12 +106,29 @@ export default function AdminRiders() {
       
       <div className="flex-1 overflow-auto">
         <div className="p-8">
-          <div className="flex justify-between items-center mb-6">
-            <div>
+          <div className="flex items-center gap-4 mb-6">
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() => navigate("/admin")}
+              data-testid="button-back"
+            >
+              <ArrowLeft className="h-5 w-5" />
+            </Button>
+            <div className="flex-1">
               <h1 className="text-3xl font-bold text-foreground" data-testid="heading-riders">Riders Management</h1>
               <p className="text-muted-foreground mt-1">Manage delivery riders</p>
             </div>
-            <Button data-testid="button-add-rider" className="gap-2">
+            <Button 
+              onClick={() => {
+                toast({
+                  title: "Add Rider",
+                  description: "Add rider feature coming soon",
+                });
+              }}
+              data-testid="button-add-rider" 
+              className="gap-2"
+            >
               <Plus className="h-4 w-4" />
               Add Rider
             </Button>
@@ -158,7 +180,12 @@ export default function AdminRiders() {
                       </div>
                     </div>
                     <div className="flex gap-2">
-                      <Button variant="ghost" size="icon" data-testid={`button-edit-${rider.id}`}>
+                      <Button 
+                        variant="ghost" 
+                        size="icon"
+                        onClick={() => navigate(`/admin/riders/${rider.id}/edit`)}
+                        data-testid={`button-edit-${rider.id}`}
+                      >
                         <Edit className="h-4 w-4" />
                       </Button>
                     </div>

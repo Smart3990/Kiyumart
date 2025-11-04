@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useLocation } from "wouter";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { useForm } from "react-hook-form";
@@ -6,8 +6,8 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { queryClient, apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
-import Header from "@/components/Header";
-import Footer from "@/components/Footer";
+import DashboardSidebar from "@/components/DashboardSidebar";
+import { useAuth } from "@/lib/auth";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -15,7 +15,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Loader2, Save, Settings2, CreditCard, Mail, Palette, DollarSign, Image as ImageIcon } from "lucide-react";
+import { Loader2, Save, Settings2, CreditCard, Mail, Palette, DollarSign, Image as ImageIcon, ArrowLeft } from "lucide-react";
 import {
   Select,
   SelectContent,
@@ -67,10 +67,60 @@ export default function AdminSettings() {
   const [, navigate] = useLocation();
   const { toast } = useToast();
   const [activeTab, setActiveTab] = useState("general");
+  const [activeItem, setActiveItem] = useState("settings");
+  const { user, isAuthenticated, isLoading: authLoading } = useAuth();
 
   const { data: settings, isLoading } = useQuery<PlatformSettings>({
     queryKey: ["/api/settings"],
   });
+
+  useEffect(() => {
+    if (!authLoading && (!isAuthenticated || user?.role !== "admin")) {
+      navigate("/auth");
+    }
+  }, [isAuthenticated, authLoading, user, navigate]);
+
+  const handleItemClick = (id: string) => {
+    setActiveItem(id);
+    switch(id) {
+      case "dashboard":
+        navigate("/admin");
+        break;
+      case "mode":
+        // Already on settings
+        break;
+      case "branding":
+        navigate("/admin/branding");
+        break;
+      case "categories":
+        navigate("/admin/categories");
+        break;
+      case "products":
+        navigate("/admin/products");
+        break;
+      case "orders":
+        navigate("/admin/orders");
+        break;
+      case "users":
+        navigate("/admin/users");
+        break;
+      case "riders":
+        navigate("/admin/riders");
+        break;
+      case "zones":
+        navigate("/admin/zones");
+        break;
+      case "messages":
+        navigate("/admin/messages");
+        break;
+      case "analytics":
+        navigate("/admin/analytics");
+        break;
+      case "settings":
+        // Already on settings
+        break;
+    }
+  };
 
   const form = useForm<SettingsFormData>({
     resolver: zodResolver(settingsSchema),
@@ -130,30 +180,44 @@ export default function AdminSettings() {
     updateSettingsMutation.mutate(data);
   };
 
-  if (isLoading) {
+  if (authLoading || isLoading || !isAuthenticated || user?.role !== "admin") {
     return (
-      <div className="min-h-screen flex items-center justify-center">
+      <div className="min-h-screen bg-background flex items-center justify-center">
         <Loader2 className="h-8 w-8 animate-spin text-primary" />
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen flex flex-col">
-      <Header />
+    <div className="flex h-screen bg-background">
+      <DashboardSidebar
+        role="admin"
+        activeItem={activeItem}
+        onItemClick={handleItemClick}
+        userName={user?.name || "Admin"}
+      />
       
-      <main className="flex-1 max-w-7xl w-full mx-auto px-4 py-8">
-        <div className="mb-6">
-          <h1 className="text-3xl font-bold flex items-center gap-2" data-testid="heading-admin-settings">
-            <Settings2 className="h-8 w-8" />
-            Platform Settings
-          </h1>
-          <p className="text-muted-foreground mt-2">
-            Manage your platform configuration, payment settings, and contact information
-          </p>
-        </div>
+      <div className="flex-1 overflow-auto">
+        <div className="p-8">
+          <div className="flex items-center gap-4 mb-6">
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() => navigate("/admin")}
+              data-testid="button-back"
+            >
+              <ArrowLeft className="h-5 w-5" />
+            </Button>
+            <div className="flex-1">
+              <h1 className="text-3xl font-bold flex items-center gap-2">
+                <Settings2 className="h-8 w-8" />
+                Platform Settings
+              </h1>
+              <p className="text-muted-foreground mt-1">Configure your platform's core settings and preferences</p>
+            </div>
+          </div>
 
-        <form onSubmit={form.handleSubmit(onSubmit)}>
+          <form onSubmit={form.handleSubmit(onSubmit)}>
           <Tabs value={activeTab} onValueChange={setActiveTab}>
             <TabsList className="grid w-full grid-cols-6 mb-6">
               <TabsTrigger value="general" data-testid="tab-general">
@@ -726,10 +790,9 @@ export default function AdminSettings() {
               )}
             </Button>
           </div>
-        </form>
-      </main>
-
-      <Footer />
+          </form>
+        </div>
+      </div>
     </div>
   );
 }

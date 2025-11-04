@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Loader2, Plus, Search, Edit, Trash2, Eye } from "lucide-react";
+import { Loader2, Plus, Search, Edit, Trash2, Eye, ArrowLeft } from "lucide-react";
 
 interface Product {
   id: string;
@@ -69,6 +69,9 @@ export default function AdminProducts() {
       case "analytics":
         navigate("/admin/analytics");
         break;
+      case "branding":
+        navigate("/admin/branding");
+        break;
       case "settings":
         navigate("/admin/settings");
         break;
@@ -99,8 +102,16 @@ export default function AdminProducts() {
       
       <div className="flex-1 overflow-auto">
         <div className="p-8">
-          <div className="flex justify-between items-center mb-6">
-            <div>
+          <div className="flex items-center gap-4 mb-6">
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() => navigate("/admin")}
+              data-testid="button-back"
+            >
+              <ArrowLeft className="h-5 w-5" />
+            </Button>
+            <div className="flex-1">
               <h1 className="text-3xl font-bold text-foreground" data-testid="heading-products">Products Management</h1>
               <p className="text-muted-foreground mt-1">Manage your product catalog</p>
             </div>

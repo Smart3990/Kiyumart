@@ -13,6 +13,7 @@ import {
   Grid3x3,
   Heart,
   Headphones,
+  Palette,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -34,6 +35,7 @@ const menuItems: Record<string, MenuItem[]> = {
   admin: [
     { icon: LayoutDashboard, label: "Dashboard", id: "dashboard" },
     { icon: Store, label: "Mode Settings", id: "mode" },
+    { icon: Palette, label: "Branding", id: "branding" },
     { icon: Grid3x3, label: "Categories", id: "categories" },
     { icon: Package, label: "Products", id: "products" },
     { icon: ShoppingBag, label: "Orders", id: "orders" },

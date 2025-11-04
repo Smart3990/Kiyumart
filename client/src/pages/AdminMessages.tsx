@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Loader2, Search, MessageSquare, Send } from "lucide-react";
+import { Loader2, Search, MessageSquare, Send, ArrowLeft } from "lucide-react";
 
 export default function AdminMessages() {
   const [activeItem, setActiveItem] = useState("messages");
@@ -53,6 +53,9 @@ export default function AdminMessages() {
       case "analytics":
         navigate("/admin/analytics");
         break;
+      case "branding":
+        navigate("/admin/branding");
+        break;
       case "settings":
         navigate("/admin/settings");
         break;
@@ -78,8 +81,16 @@ export default function AdminMessages() {
       
       <div className="flex-1 overflow-auto">
         <div className="p-8">
-          <div className="flex justify-between items-center mb-6">
-            <div>
+          <div className="flex items-center gap-4 mb-6">
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() => navigate("/admin")}
+              data-testid="button-back"
+            >
+              <ArrowLeft className="h-5 w-5" />
+            </Button>
+            <div className="flex-1">
               <h1 className="text-3xl font-bold text-foreground" data-testid="heading-messages">Messages</h1>
               <p className="text-muted-foreground mt-1">Customer support and communications</p>
             </div>

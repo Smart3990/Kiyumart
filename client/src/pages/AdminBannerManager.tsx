@@ -1,9 +1,10 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
-import Header from "@/components/Header";
-import Footer from "@/components/Footer";
+import { useAuth } from "@/lib/auth";
+import { useLocation } from "wouter";
+import DashboardSidebar from "@/components/DashboardSidebar";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -14,16 +15,25 @@ import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Plus, Edit, Trash2, Image as ImageIcon, Calendar, Eye } from "lucide-react";
+import { Plus, Edit, Trash2, Image as ImageIcon, Calendar, Eye, ArrowLeft, Loader2 } from "lucide-react";
 import type { BannerCollection, MarketplaceBanner } from "@shared/schema";
 
 export default function AdminBannerManager() {
   const { toast } = useToast();
+  const [activeItem, setActiveItem] = useState("banners");
+  const [, navigate] = useLocation();
+  const { user, isAuthenticated, isLoading: authLoading } = useAuth();
   const [selectedCollection, setSelectedCollection] = useState<string | null>(null);
   const [isCollectionDialogOpen, setIsCollectionDialogOpen] = useState(false);
   const [isBannerDialogOpen, setIsBannerDialogOpen] = useState(false);
   const [editingCollection, setEditingCollection] = useState<BannerCollection | null>(null);
   const [editingBanner, setEditingBanner] = useState<MarketplaceBanner | null>(null);
+
+  useEffect(() => {
+    if (!authLoading && (!isAuthenticated || user?.role !== "admin")) {
+      navigate("/auth");
+    }
+  }, [isAuthenticated, authLoading, user, navigate]);
 
   const { data: collections = [] } = useQuery<BannerCollection[]>({
     queryKey: ["/api/admin/banner-collections"],
@@ -99,19 +109,80 @@ export default function AdminBannerManager() {
     createBannerMutation.mutate(formData);
   };
 
+  const handleItemClick = (id: string) => {
+    setActiveItem(id);
+    switch(id) {
+      case "dashboard":
+        navigate("/admin");
+        break;
+      case "mode":
+        navigate("/admin/settings");
+        break;
+      case "branding":
+        navigate("/admin/branding");
+        break;
+      case "categories":
+        navigate("/admin/categories");
+        break;
+      case "products":
+        navigate("/admin/products");
+        break;
+      case "orders":
+        navigate("/admin/orders");
+        break;
+      case "users":
+        navigate("/admin/users");
+        break;
+      case "riders":
+        navigate("/admin/riders");
+        break;
+      case "zones":
+        navigate("/admin/zones");
+        break;
+      case "messages":
+        navigate("/admin/messages");
+        break;
+      case "analytics":
+        navigate("/admin/analytics");
+        break;
+      case "settings":
+        navigate("/admin/settings");
+        break;
+    }
+  };
+
+  if (authLoading || !isAuthenticated || user?.role !== "admin") {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      </div>
+    );
+  }
+
   return (
-    <div className="min-h-screen flex flex-col bg-background">
-      <Header />
+    <div className="flex h-screen bg-background">
+      <DashboardSidebar
+        role="admin"
+        activeItem={activeItem}
+        onItemClick={handleItemClick}
+        userName={user?.name || "Admin"}
+      />
       
-      <main className="flex-1">
-        <div className="container max-w-7xl mx-auto px-4 py-8">
-          <div className="mb-8">
-            <h1 className="text-3xl font-bold mb-2" data-testid="heading-banner-manager">
-              Banner Manager
-            </h1>
-            <p className="text-muted-foreground">
-              Manage marketplace banners and collections
-            </p>
+      <div className="flex-1 overflow-auto">
+        <div className="p-8">
+          <div className="flex items-center gap-4 mb-6">
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() => navigate("/admin")}
+              data-testid="button-back"
+            >
+              <ArrowLeft className="h-5 w-5" />
+            </Button>
+            <div className="flex-1">
+              <h1 className="text-3xl font-bold">Banner Management</h1>
+              <p className="text-muted-foreground mt-1">Manage marketplace banners and collections</p>
+            </div>
           </div>
 
           <Tabs defaultValue="banners" className="space-y-6">
@@ -311,9 +382,7 @@ export default function AdminBannerManager() {
             </TabsContent>
           </Tabs>
         </div>
-      </main>
-
-      <Footer />
+      </div>
     </div>
   );
 }
