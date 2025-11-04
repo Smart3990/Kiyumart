@@ -3,6 +3,7 @@ import DashboardSidebar from "@/components/DashboardSidebar";
 import MetricCard from "@/components/MetricCard";
 import OrderCard from "@/components/OrderCard";
 import ThemeToggle from "@/components/ThemeToggle";
+import StoreModeToggle from "@/components/StoreModeToggle";
 import { DollarSign, ShoppingBag, Users, Truck } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -52,7 +53,10 @@ export default function AdminDashboard() {
       <div className="flex-1 flex flex-col overflow-hidden">
         <header className="border-b p-4 flex items-center justify-between">
           <h1 className="text-2xl font-bold">Admin Dashboard</h1>
-          <ThemeToggle />
+          <div className="flex items-center gap-4">
+            <StoreModeToggle role="admin" />
+            <ThemeToggle />
+          </div>
         </header>
 
         <main className="flex-1 overflow-y-auto p-6">
@@ -83,26 +87,6 @@ export default function AdminDashboard() {
                 change={15.3}
               />
             </div>
-
-            <Card>
-              <CardHeader className="flex flex-row items-center justify-between">
-                <CardTitle>Platform Mode</CardTitle>
-                <Button variant="outline">Configure</Button>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-4">
-                  <div className="flex items-center justify-between p-4 bg-muted rounded-lg">
-                    <div>
-                      <p className="font-semibold">Current Mode</p>
-                      <p className="text-sm text-muted-foreground">
-                        Single Store Mode
-                      </p>
-                    </div>
-                    <Button>Switch to Multi-Vendor</Button>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
 
             <div>
               <div className="flex items-center justify-between mb-4">

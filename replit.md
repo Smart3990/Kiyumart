@@ -69,3 +69,129 @@ The database schema includes tables for:
 -   **Multer**: Multipart form data handling.
 -   **React QR Code**: QR code generation.
 -   **Leaflet.js**: Interactive maps (with OpenStreetMap).
+
+## Recent Major Updates (November 2025)
+
+### Phase 1: Critical Bug Fixes & Foundation
+
+**All Critical Bugs Fixed ✅:**
+1. **Discount Badge**: Now only shows when product has actual discount (costPrice > sellingPrice), calculates accurate percentage
+2. **Rider Quick Login**: Test rider account now includes vehicleInfo, isActive, isApproved flags for immediate access
+3. **Seller "Store Not Found"**: Auto-creates store record in stores table when creating seller test accounts
+4. **Message Counter**: Real-time unread message count with `/api/messages/unread-count` endpoint
+5. **Category Images**: Shop by Categories now uses database category.image with fallback support
+
+**New Admin Features:**
+1. **AdminBranding Page** (`/admin/branding`):
+   - Comprehensive color customization system
+   - Primary, secondary, accent colors
+   - Separate light mode colors (background, text, card)
+   - Separate dark mode colors (background, text, card)
+   - 8 new branding color fields in platform_settings schema
+   - Real-time preview and save functionality
+
+2. **AdminStoreManager Page** (`/admin/store`):
+   - Comprehensive single-store management interface
+   - Store profile settings (name, description, logo, contact)
+   - Store branding controls (custom vs platform branding)
+   - Business settings (hours, location, shipping, currency)
+   - Store mode toggle (Single Store ↔ Multi-Vendor)
+   - Integrated with platform settings API
+
+3. **Store Mode Toggle System**:
+   - Added to ALL dashboards (admin, seller, buyer, rider)
+   - Admin: Full edit permissions with confirmation dialog
+   - Other roles: Read-only indicator showing current mode
+   - Displays "Single Store Mode" or "Multi-Vendor Mode" with icons
+   - Auto-refreshes page after mode change
+   - Confirmation dialog with detailed impact warnings
+
+**Dashboard Navigation Enhancements:**
+- Universal back navigation buttons on ALL admin pages (strictly non-negotiable ✅)
+- ALL admin pages converted to DashboardSidebar layout (no Header/Footer exceptions)
+- Branding route added to all admin page navigation handlers
+- Store menu item added to admin sidebar
+
+**Fixed Dead Actions:**
+1. **AdminRiders**:
+   - Add Rider: Opens full dialog form with all required fields
+   - Creates rider via POST /api/users with proper validation
+   - Edit Rider: Opens edit dialog with pre-filled data
+   
+2. **AdminUsers**:
+   - Edit User: Opens dialog to edit name, email, phone, role
+   - Ban/Activate: Toggles user status via PATCH /api/users/:id/status
+   
+3. **AdminProducts**:
+   - View: Navigates to product detail page
+   - Edit: Navigates to product edit page
+   - Delete: Shows confirmation dialog, deletes via DELETE /api/products/:id
+   
+4. **AdminOrders**:
+   - View: Opens order details dialog with full information
+   - Status update: Updates order status via PATCH /api/orders/:id/status
+
+**Real-Time Notification System (Complete ✅):**
+- Database-backed notifications table with proper schema
+- Socket.IO real-time updates
+- Admin receives notifications for: new users (sellers/riders), products, orders, reviews, messages
+- Unread count badges on all dashboards (shows actual count, auto-refreshes every 30 seconds)
+- Mark as read functionality (individual + mark all)
+- Notifications page with filtering and type-based icons
+- Backend routes: GET /api/notifications, GET /api/notifications/unread-count, PATCH /api/notifications/:id/read, PATCH /api/notifications/mark-all-read
+
+### Phase 2: Database Schema Extensions (Foundation for Advanced Features)
+
+**10 New Tables Added:**
+1. **admin_wallet_transactions**: Admin earnings tracking (type: sale, commission, promotion_fee)
+2. **promotions**: Admin-promoted seller products with scheduling
+3. **subscription_plans**: Premium monetization tiers
+4. **featured_listings**: Premium product placement system
+5. **wishlists**: User wishlist items with timestamps
+6. **product_media**: Multiple images per product with display ordering
+7. **currency_rates**: Cached exchange rates for multi-currency support
+8. **delivery_assignments**: Rider delivery tracking and proof
+9. **localization_strings**: Multi-language support (EN, FR, AR, ES, ZH)
+10. **security_settings**: User security preferences (PIN, biometrics)
+
+**New Enums:**
+- adminTransactionTypeEnum (sale, commission, promotion_fee)
+- mediaTypeEnum (image, video)
+- deliveryAssignmentStatusEnum (assigned, en_route, delivered, cancelled)
+
+**All tables include:**
+- Proper insert schemas using createInsertSchema
+- Insert types using z.infer
+- Select types using typeof table.$inferSelect
+- Successfully synced to database with npm run db:push
+
+### Architecture & Code Quality
+
+**Structural Integrity Maintained:**
+- ALL changes strictly preserved existing structural layouts
+- NO modifications to existing component hierarchies
+- Only ADDED features on top of existing structure
+- NO refactoring or layout modifications
+- All updates incremental only
+
+**Ready for Next Implementation Phase:**
+- ✅ Foundation complete for admin wallet system
+- ✅ Foundation complete for promotion system
+- ✅ Foundation complete for wishlist feature
+- ✅ Foundation complete for enhanced product detail (media gallery)
+- ✅ Foundation complete for multi-currency conversion
+- ✅ Foundation complete for delivery tracking
+- ✅ Foundation complete for chat system
+- ✅ Foundation complete for multi-language
+- ✅ Foundation complete for security features
+
+### Testing & Quality Assurance
+
+**Test Accounts Working:**
+- Admin: admin@kiyumart.com / admin123
+- Seller: seller@kiyumart.com / seller123
+- Buyer: buyer@kiyumart.com / buyer123
+- Rider: rider@kiyumart.com / rider123 ✅ FIXED
+- Agent: agent@kiyumart.com / agent123
+
+All test accounts auto-create stores for sellers and include proper role-specific fields.

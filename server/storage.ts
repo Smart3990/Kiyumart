@@ -49,6 +49,7 @@ export interface IStorage {
   createMessage(message: InsertChatMessage & { senderId: string }): Promise<ChatMessage>;
   getMessages(userId1: string, userId2: string): Promise<ChatMessage[]>;
   markMessagesAsRead(senderId: string, receiverId: string): Promise<void>;
+  getUnreadMessageCount(userId: string): Promise<number>;
   
   // Transaction operations
   createTransaction(data: any): Promise<Transaction>;
@@ -345,6 +346,17 @@ export class DbStorage implements IStorage {
           eq(chatMessages.receiverId, receiverId)
         )
       );
+  }
+
+  async getUnreadMessageCount(userId: string): Promise<number> {
+    const result = await db.select().from(chatMessages)
+      .where(
+        and(
+          eq(chatMessages.receiverId, userId),
+          eq(chatMessages.isRead, false)
+        )
+      );
+    return result.length;
   }
 
   // Transaction operations

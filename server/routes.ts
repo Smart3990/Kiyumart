@@ -1074,7 +1074,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
           email: "rider@kiyumart.com",
           password: await bcrypt.hash("rider123", 10),
           name: "Test Rider",
-          role: "rider"
+          role: "rider",
+          vehicleInfo: { type: "motorcycle", number: "TEST-001", license: "LIC-001" },
+          isActive: true,
+          isApproved: true,
+          phone: "+233501234567"
         },
         {
           email: "agent@kiyumart.com",
@@ -1089,6 +1093,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
         try {
           const newUser = await storage.createUser(user as any);
           created.push({ email: user.email, role: user.role });
+          
+          // Check if store exists for seller and create one if it doesn't
+          if (user.role === "seller") {
+            const existingStore = await storage.getStoreByPrimarySeller(newUser.id);
+            if (!existingStore) {
+              await storage.createStore({
+                primarySellerId: newUser.id,
+                name: user.storeName || "Test Store",
+                description: "Test store description",
+                logo: user.storeBanner || "",
+                isActive: true,
+                isApproved: true
+              });
+            }
+          }
         } catch (error: any) {
           if (error.message.includes("duplicate")) {
             created.push({ email: user.email, role: user.role, status: "already exists" });
@@ -1921,6 +1940,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       await storage.markMessagesAsRead(req.params.userId, req.user!.id);
       res.json({ success: true });
+    } catch (error: any) {
+      res.status(400).json({ error: error.message });
+    }
+  });
+
+  app.get("/api/messages/unread-count", requireAuth, async (req: AuthRequest, res) => {
+    try {
+      const count = await storage.getUnreadMessageCount(req.user!.id);
+      res.json({ count });
     } catch (error: any) {
       res.status(400).json({ error: error.message });
     }

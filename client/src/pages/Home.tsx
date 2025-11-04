@@ -37,6 +37,22 @@ export default function Home() {
     }
   ]);
 
+  const { data: dbCategories = [] } = useQuery<Array<{id: string; name: string; slug: string; image: string; isActive: boolean}>>({
+    queryKey: ["/api/categories"],
+    queryFn: async () => {
+      const res = await fetch("/api/categories?isActive=true");
+      return res.json();
+    },
+  });
+
+  const { data: dbProducts = [] } = useQuery<Array<{id: string; category: string}>>({
+    queryKey: ["/api/products"],
+    queryFn: async () => {
+      const res = await fetch("/api/products?isActive=true");
+      return res.json();
+    },
+  });
+
   const bannerSlides = [
     {
       image: heroImage,
@@ -52,11 +68,18 @@ export default function Home() {
     }
   ];
 
-  const categories = [
-    { id: "abayas", name: "Elegant Abayas", image: abayaCategoryImage, productCount: 245 },
-    { id: "hijabs", name: "Hijabs & Accessories", image: hijabCategoryImage, productCount: 318 },
-    { id: "evening", name: "Evening Wear", image: eveningCategoryImage, productCount: 156 },
-  ];
+  const categories = dbCategories.length > 0 
+    ? dbCategories.map(cat => ({
+        id: cat.slug,
+        name: cat.name,
+        image: cat.image || abayaCategoryImage,
+        productCount: dbProducts.filter(p => p.category === cat.slug).length
+      }))
+    : [
+        { id: "abayas", name: "Elegant Abayas", image: abayaCategoryImage, productCount: 245 },
+        { id: "hijabs", name: "Hijabs & Accessories", image: hijabCategoryImage, productCount: 318 },
+        { id: "evening", name: "Evening Wear", image: eveningCategoryImage, productCount: 156 },
+      ];
 
   const products = [
     {

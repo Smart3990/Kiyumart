@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { useLocation } from "wouter";
+import { useQuery } from "@tanstack/react-query";
 import DashboardSidebar from "@/components/DashboardSidebar";
 import { useAuth } from "@/lib/auth";
 import { Button } from "@/components/ui/button";
@@ -13,6 +14,12 @@ export default function AdminMessages() {
   const [searchQuery, setSearchQuery] = useState("");
   const [, navigate] = useLocation();
   const { user, isAuthenticated, isLoading: authLoading } = useAuth();
+  
+  const { data: unreadData } = useQuery<{ count: number }>({
+    queryKey: ["/api/messages/unread-count"],
+    enabled: isAuthenticated && user?.role === "admin",
+    refetchInterval: 5000,
+  });
 
   useEffect(() => {
     if (!authLoading && (!isAuthenticated || user?.role !== "admin")) {
@@ -111,7 +118,14 @@ export default function AdminMessages() {
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             <Card className="md:col-span-1 p-4">
-              <h3 className="font-semibold mb-4">Conversations</h3>
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="font-semibold">Conversations</h3>
+                {unreadData && unreadData.count > 0 && (
+                  <Badge variant="destructive" data-testid="badge-unread-count">
+                    {unreadData.count} unread
+                  </Badge>
+                )}
+              </div>
               <div className="text-center py-12">
                 <MessageSquare className="h-12 w-12 mx-auto text-muted-foreground mb-3" />
                 <p className="text-sm text-muted-foreground" data-testid="text-no-conversations">

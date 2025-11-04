@@ -1,5 +1,5 @@
 import { sql } from "drizzle-orm";
-import { pgTable, text, varchar, integer, decimal, timestamp, boolean, jsonb, pgEnum, unique } from "drizzle-orm/pg-core";
+import { pgTable, text, varchar, integer, decimal, timestamp, boolean, jsonb, pgEnum, unique, serial } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
@@ -10,6 +10,9 @@ export const paymentStatusEnum = pgEnum("payment_status", ["pending", "processin
 export const supportStatusEnum = pgEnum("support_status", ["open", "assigned", "resolved"]);
 export const discountTypeEnum = pgEnum("discount_type", ["percentage", "fixed"]);
 export const notificationTypeEnum = pgEnum("notification_type", ["order", "user", "product", "review", "message", "system"]);
+export const adminTransactionTypeEnum = pgEnum("admin_transaction_type", ["sale", "commission", "promotion_fee"]);
+export const mediaTypeEnum = pgEnum("media_type", ["image", "video"]);
+export const deliveryAssignmentStatusEnum = pgEnum("delivery_assignment_status", ["assigned", "en_route", "delivered", "cancelled"]);
 
 export const users = pgTable("users", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
@@ -343,6 +346,110 @@ export const marketplaceBanners = pgTable("marketplace_banners", {
   createdAt: timestamp("created_at").defaultNow(),
 });
 
+// New tables for comprehensive feature list
+export const adminWalletTransactions = pgTable("admin_wallet_transactions", {
+  id: serial("id").primaryKey(),
+  adminId: varchar("admin_id").notNull().references(() => users.id),
+  type: adminTransactionTypeEnum("type").notNull(),
+  amount: decimal("amount", { precision: 10, scale: 2 }).notNull(),
+  productId: varchar("product_id").references(() => products.id),
+  description: text("description"),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+export const promotions = pgTable("promotions", {
+  id: serial("id").primaryKey(),
+  productId: varchar("product_id").notNull().references(() => products.id),
+  sellerId: varchar("seller_id").notNull().references(() => users.id),
+  promotedBy: varchar("promoted_by").notNull().references(() => users.id),
+  startDate: timestamp("start_date").notNull(),
+  endDate: timestamp("end_date").notNull(),
+  position: integer("position").default(0),
+  price: decimal("price", { precision: 10, scale: 2 }).notNull(),
+  isActive: boolean("is_active").default(true),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+export const subscriptionPlans = pgTable("subscription_plans", {
+  id: serial("id").primaryKey(),
+  name: varchar("name").notNull(),
+  description: text("description"),
+  price: decimal("price", { precision: 10, scale: 2 }).notNull(),
+  features: jsonb("features").$type<Array<string>>(),
+  duration: integer("duration").notNull(),
+  isActive: boolean("is_active").default(true),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+export const featuredListings = pgTable("featured_listings", {
+  id: serial("id").primaryKey(),
+  productId: varchar("product_id").notNull().references(() => products.id),
+  sellerId: varchar("seller_id").notNull().references(() => users.id),
+  planId: integer("plan_id").notNull().references(() => subscriptionPlans.id),
+  startDate: timestamp("start_date").notNull(),
+  endDate: timestamp("end_date").notNull(),
+  position: integer("position").default(0),
+  isActive: boolean("is_active").default(true),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+export const wishlists = pgTable("wishlists", {
+  id: serial("id").primaryKey(),
+  userId: varchar("user_id").notNull().references(() => users.id),
+  productId: varchar("product_id").notNull().references(() => products.id),
+  addedAt: timestamp("added_at").defaultNow(),
+});
+
+export const productMedia = pgTable("product_media", {
+  id: serial("id").primaryKey(),
+  productId: varchar("product_id").notNull().references(() => products.id),
+  mediaUrl: varchar("media_url").notNull(),
+  mediaType: mediaTypeEnum("media_type").notNull(),
+  displayOrder: integer("display_order").default(0),
+  isActive: boolean("is_active").default(true),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+export const currencyRates = pgTable("currency_rates", {
+  id: serial("id").primaryKey(),
+  fromCurrency: varchar("from_currency").notNull(),
+  toCurrency: varchar("to_currency").notNull(),
+  rate: decimal("rate", { precision: 10, scale: 6 }).notNull(),
+  lastUpdated: timestamp("last_updated").defaultNow(),
+});
+
+export const deliveryAssignments = pgTable("delivery_assignments", {
+  id: serial("id").primaryKey(),
+  orderId: varchar("order_id").notNull().references(() => orders.id),
+  riderId: varchar("rider_id").notNull().references(() => users.id),
+  status: deliveryAssignmentStatusEnum("status").notNull().default("assigned"),
+  assignedAt: timestamp("assigned_at").defaultNow(),
+  deliveredAt: timestamp("delivered_at"),
+  deliveryProof: varchar("delivery_proof"),
+});
+
+export const localizationStrings = pgTable("localization_strings", {
+  id: serial("id").primaryKey(),
+  key: varchar("key").notNull().unique(),
+  en: text("en"),
+  fr: text("fr"),
+  ar: text("ar"),
+  es: text("es"),
+  zh: text("zh"),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+export const securitySettings = pgTable("security_settings", {
+  id: serial("id").primaryKey(),
+  userId: varchar("user_id").notNull().unique().references(() => users.id),
+  pinEnabled: boolean("pin_enabled").default(false),
+  pinHash: varchar("pin_hash"),
+  fingerprintEnabled: boolean("fingerprint_enabled").default(false),
+  faceIdEnabled: boolean("face_id_enabled").default(false),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
 // Zod schemas for validation
 export const insertUserSchema = createInsertSchema(users).pick({
   email: true,
@@ -480,6 +587,17 @@ export const insertMarketplaceBannerSchema = createInsertSchema(marketplaceBanne
   metadata: true,
 });
 
+export const insertAdminWalletTransactionSchema = createInsertSchema(adminWalletTransactions).omit({ id: true, createdAt: true });
+export const insertPromotionSchema = createInsertSchema(promotions).omit({ id: true, createdAt: true });
+export const insertSubscriptionPlanSchema = createInsertSchema(subscriptionPlans).omit({ id: true, createdAt: true });
+export const insertFeaturedListingSchema = createInsertSchema(featuredListings).omit({ id: true, createdAt: true });
+export const insertWishlistsSchema = createInsertSchema(wishlists).omit({ id: true, addedAt: true });
+export const insertProductMediaSchema = createInsertSchema(productMedia).omit({ id: true, createdAt: true });
+export const insertCurrencyRateSchema = createInsertSchema(currencyRates).omit({ id: true, lastUpdated: true });
+export const insertDeliveryAssignmentSchema = createInsertSchema(deliveryAssignments).omit({ id: true, assignedAt: true });
+export const insertLocalizationStringSchema = createInsertSchema(localizationStrings).omit({ id: true, createdAt: true });
+export const insertSecuritySettingSchema = createInsertSchema(securitySettings).omit({ id: true, createdAt: true, updatedAt: true });
+
 // TypeScript types
 export type InsertUser = z.infer<typeof insertUserSchema>;
 export type User = typeof users.$inferSelect;
@@ -545,6 +663,36 @@ export type BannerCollection = typeof bannerCollections.$inferSelect;
 
 export type InsertMarketplaceBanner = z.infer<typeof insertMarketplaceBannerSchema>;
 export type MarketplaceBanner = typeof marketplaceBanners.$inferSelect;
+
+export type InsertAdminWalletTransaction = z.infer<typeof insertAdminWalletTransactionSchema>;
+export type AdminWalletTransaction = typeof adminWalletTransactions.$inferSelect;
+
+export type InsertPromotion = z.infer<typeof insertPromotionSchema>;
+export type Promotion = typeof promotions.$inferSelect;
+
+export type InsertSubscriptionPlan = z.infer<typeof insertSubscriptionPlanSchema>;
+export type SubscriptionPlan = typeof subscriptionPlans.$inferSelect;
+
+export type InsertFeaturedListing = z.infer<typeof insertFeaturedListingSchema>;
+export type FeaturedListing = typeof featuredListings.$inferSelect;
+
+export type InsertWishlists = z.infer<typeof insertWishlistsSchema>;
+export type Wishlists = typeof wishlists.$inferSelect;
+
+export type InsertProductMedia = z.infer<typeof insertProductMediaSchema>;
+export type ProductMedia = typeof productMedia.$inferSelect;
+
+export type InsertCurrencyRate = z.infer<typeof insertCurrencyRateSchema>;
+export type CurrencyRate = typeof currencyRates.$inferSelect;
+
+export type InsertDeliveryAssignment = z.infer<typeof insertDeliveryAssignmentSchema>;
+export type DeliveryAssignment = typeof deliveryAssignments.$inferSelect;
+
+export type InsertLocalizationString = z.infer<typeof insertLocalizationStringSchema>;
+export type LocalizationString = typeof localizationStrings.$inferSelect;
+
+export type InsertSecuritySetting = z.infer<typeof insertSecuritySettingSchema>;
+export type SecuritySetting = typeof securitySettings.$inferSelect;
 
 // Category Fields for dynamic admin-created categories
 export const categoryFields = pgTable("category_fields", {

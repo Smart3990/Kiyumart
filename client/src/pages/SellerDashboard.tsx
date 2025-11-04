@@ -3,6 +3,7 @@ import DashboardSidebar from "@/components/DashboardSidebar";
 import MetricCard from "@/components/MetricCard";
 import ProductCard from "@/components/ProductCard";
 import ThemeToggle from "@/components/ThemeToggle";
+import StoreModeToggle from "@/components/StoreModeToggle";
 import { DollarSign, Package, ShoppingBag, TrendingUp } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
@@ -54,7 +55,10 @@ export default function SellerDashboard() {
       <div className="flex-1 flex flex-col overflow-hidden">
         <header className="border-b p-4 flex items-center justify-between">
           <h1 className="text-2xl font-bold">Seller Dashboard</h1>
-          <ThemeToggle />
+          <div className="flex items-center gap-4">
+            <StoreModeToggle role="seller" />
+            <ThemeToggle />
+          </div>
         </header>
 
         <main className="flex-1 overflow-y-auto p-6">
