@@ -164,19 +164,19 @@ export default function AdminDashboardConnected() {
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
                 <MetricCard
                   title="Total Revenue"
-                  value={`GHS ${parseFloat(analytics.totalRevenue.toString()).toFixed(2)}`}
+                  value={`GHS ${parseFloat((analytics.totalRevenue || 0).toString()).toFixed(2)}`}
                   icon={DollarSign}
                   change={12.5}
                 />
                 <MetricCard
                   title="Total Orders"
-                  value={analytics.totalOrders.toString()}
+                  value={(analytics.totalOrders || 0).toString()}
                   icon={ShoppingBag}
                   change={8.2}
                 />
                 <MetricCard
                   title="Total Users"
-                  value={analytics.totalUsers.toString()}
+                  value={(analytics.totalUsers || 0).toString()}
                   icon={Users}
                   change={-3.1}
                 />

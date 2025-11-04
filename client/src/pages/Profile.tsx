@@ -11,19 +11,26 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Textarea } from "@/components/ui/textarea";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { User, MapPin, CreditCard, Package, LogOut, Settings, Camera, Loader2 } from "lucide-react";
+import { User, MapPin, CreditCard, Package, LogOut, Settings, Camera, Loader2, Truck, Store } from "lucide-react";
 import { useLocation } from "wouter";
 
 interface UserProfile {
   id: string;
-  username: string;
+  name: string;
   email: string;
   phone?: string;
-  address?: string;
-  city?: string;
-  country?: string;
+  role: string;
   profileImage?: string;
+  storeName?: string;
+  storeDescription?: string;
+  storeBanner?: string;
+  vehicleInfo?: {
+    type: string;
+    plateNumber: string;
+    license: string;
+  };
 }
 
 export default function Profile() {
@@ -37,7 +44,7 @@ export default function Profile() {
   const [formData, setFormData] = useState<Partial<UserProfile>>({});
 
   const { data: profile, isLoading } = useQuery<UserProfile>({
-    queryKey: ["/api/profile"],
+    queryKey: ["/api/auth/me"],
     enabled: !!user,
   });
 
@@ -48,9 +55,11 @@ export default function Profile() {
 
   const updateProfileMutation = useMutation({
     mutationFn: async (data: Partial<UserProfile>) => {
-      return await apiRequest("PATCH", "/api/profile", data);
+      if (!user?.id) throw new Error("User ID not found");
+      return await apiRequest("PATCH", `/api/users/${user.id}`, data);
     },
     onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/auth/me"] });
       queryClient.invalidateQueries({ queryKey: ["/api/profile"] });
       toast({
         title: "Profile updated",
@@ -58,10 +67,10 @@ export default function Profile() {
       });
       setIsEditing(false);
     },
-    onError: () => {
+    onError: (error: any) => {
       toast({
         title: "Error",
-        description: "Failed to update profile. Please try again.",
+        description: error.message || "Failed to update profile. Please try again.",
         variant: "destructive",
       });
     },
@@ -74,19 +83,29 @@ export default function Profile() {
   const handleEditToggle = () => {
     if (!isEditing && profile) {
       setFormData({
-        username: profile.username,
+        name: profile.name,
         email: profile.email,
         phone: profile.phone || "",
-        address: profile.address || "",
-        city: profile.city || "",
-        country: profile.country || "",
+        storeName: profile.storeName || "",
+        storeDescription: profile.storeDescription || "",
+        vehicleInfo: profile.vehicleInfo || { type: "", plateNumber: "", license: "" },
       });
     }
     setIsEditing(!isEditing);
   };
 
-  const handleInputChange = (field: keyof UserProfile, value: string) => {
+  const handleInputChange = (field: keyof UserProfile, value: string | any) => {
     setFormData(prev => ({ ...prev, [field]: value }));
+  };
+
+  const handleVehicleInfoChange = (field: string, value: string) => {
+    setFormData(prev => ({
+      ...prev,
+      vehicleInfo: {
+        ...(prev.vehicleInfo || { type: "", plateNumber: "", license: "" }),
+        [field]: value,
+      },
+    }));
   };
 
   const handleSaveProfile = () => {
@@ -135,7 +154,6 @@ export default function Profile() {
 
       const data = await response.json();
 
-      await queryClient.invalidateQueries({ queryKey: ["/api/profile"] });
       await queryClient.invalidateQueries({ queryKey: ["/api/auth/me"] });
 
       toast({
@@ -223,10 +241,13 @@ export default function Profile() {
               </div>
               <div className="flex-1">
                 <h1 className="text-3xl font-bold mb-1" data-testid="text-profile-username">
-                  {user?.name || profile?.username || "User"}
+                  {profile?.name || user?.name || "User"}
                 </h1>
                 <p className="text-muted-foreground" data-testid="text-profile-email">
                   {profile?.email}
+                </p>
+                <p className="text-xs text-muted-foreground capitalize mt-1">
+                  {profile?.role || user?.role} Account
                 </p>
               </div>
               <div className="flex gap-2">
@@ -288,13 +309,13 @@ export default function Profile() {
                 <CardContent className="space-y-4">
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
-                      <Label htmlFor="username">Username</Label>
+                      <Label htmlFor="name">Full Name</Label>
                       <Input
-                        id="username"
-                        value={isEditing ? formData.username || "" : profile?.username || ""}
-                        onChange={(e) => handleInputChange("username", e.target.value)}
+                        id="name"
+                        value={isEditing ? formData.name || "" : profile?.name || ""}
+                        onChange={(e) => handleInputChange("name", e.target.value)}
                         disabled={!isEditing}
-                        data-testid="input-username"
+                        data-testid="input-name"
                       />
                     </div>
                     <div>
@@ -315,32 +336,102 @@ export default function Profile() {
                         value={isEditing ? formData.phone || "" : profile?.phone || ""}
                         onChange={(e) => handleInputChange("phone", e.target.value)}
                         disabled={!isEditing}
-                        placeholder="+1234567890"
+                        placeholder="+233 XX XXX XXXX"
                         data-testid="input-phone"
                       />
                     </div>
-                    <div>
-                      <Label htmlFor="city">City</Label>
-                      <Input
-                        id="city"
-                        value={isEditing ? formData.city || "" : profile?.city || ""}
-                        onChange={(e) => handleInputChange("city", e.target.value)}
-                        disabled={!isEditing}
-                        data-testid="input-city"
-                      />
-                    </div>
                   </div>
-                  <div>
-                    <Label htmlFor="address">Address</Label>
-                    <Input
-                      id="address"
-                      value={isEditing ? formData.address || "" : profile?.address || ""}
-                      onChange={(e) => handleInputChange("address", e.target.value)}
-                      disabled={!isEditing}
-                      placeholder="Street address"
-                      data-testid="input-address"
-                    />
-                  </div>
+
+                  {/* Seller-specific fields */}
+                  {profile?.role === "seller" && (
+                    <>
+                      <div className="border-t pt-4 mt-4">
+                        <h3 className="font-semibold mb-3 flex items-center gap-2">
+                          <Store className="h-4 w-4" />
+                          Store Information
+                        </h3>
+                        <div className="space-y-4">
+                          <div>
+                            <Label htmlFor="storeName">Store Name</Label>
+                            <Input
+                              id="storeName"
+                              value={isEditing ? formData.storeName || "" : profile?.storeName || ""}
+                              onChange={(e) => handleInputChange("storeName", e.target.value)}
+                              disabled={!isEditing}
+                              placeholder="Your store name"
+                              data-testid="input-store-name"
+                            />
+                          </div>
+                          <div>
+                            <Label htmlFor="storeDescription">Store Description</Label>
+                            <Textarea
+                              id="storeDescription"
+                              value={isEditing ? formData.storeDescription || "" : profile?.storeDescription || ""}
+                              onChange={(e) => handleInputChange("storeDescription", e.target.value)}
+                              disabled={!isEditing}
+                              placeholder="Describe your store and products"
+                              data-testid="input-store-description"
+                              rows={3}
+                            />
+                          </div>
+                        </div>
+                      </div>
+                    </>
+                  )}
+
+                  {/* Rider-specific fields */}
+                  {profile?.role === "rider" && (
+                    <>
+                      <div className="border-t pt-4 mt-4">
+                        <h3 className="font-semibold mb-3 flex items-center gap-2">
+                          <Truck className="h-4 w-4" />
+                          Vehicle Information
+                        </h3>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                          <div>
+                            <Label htmlFor="vehicleType">Vehicle Type</Label>
+                            <Input
+                              id="vehicleType"
+                              value={isEditing 
+                                ? formData.vehicleInfo?.type || "" 
+                                : profile?.vehicleInfo?.type || ""}
+                              onChange={(e) => handleVehicleInfoChange("type", e.target.value)}
+                              disabled={!isEditing}
+                              placeholder="e.g., Motorcycle, Bicycle"
+                              data-testid="input-vehicle-type"
+                            />
+                          </div>
+                          <div>
+                            <Label htmlFor="plateNumber">Plate Number</Label>
+                            <Input
+                              id="plateNumber"
+                              value={isEditing 
+                                ? formData.vehicleInfo?.plateNumber || "" 
+                                : profile?.vehicleInfo?.plateNumber || ""}
+                              onChange={(e) => handleVehicleInfoChange("plateNumber", e.target.value)}
+                              disabled={!isEditing}
+                              placeholder="Vehicle plate number"
+                              data-testid="input-plate-number"
+                            />
+                          </div>
+                          <div className="md:col-span-2">
+                            <Label htmlFor="license">Driver's License</Label>
+                            <Input
+                              id="license"
+                              value={isEditing 
+                                ? formData.vehicleInfo?.license || "" 
+                                : profile?.vehicleInfo?.license || ""}
+                              onChange={(e) => handleVehicleInfoChange("license", e.target.value)}
+                              disabled={!isEditing}
+                              placeholder="License number"
+                              data-testid="input-license"
+                            />
+                          </div>
+                        </div>
+                      </div>
+                    </>
+                  )}
+
                   {isEditing && (
                     <div className="flex justify-end">
                       <Button
