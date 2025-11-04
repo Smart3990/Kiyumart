@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useLocation } from "wouter";
 import DashboardSidebar from "@/components/DashboardSidebar";
 import { useAuth } from "@/lib/auth";
@@ -12,7 +12,13 @@ export default function AdminMessages() {
   const [activeItem, setActiveItem] = useState("messages");
   const [searchQuery, setSearchQuery] = useState("");
   const [, navigate] = useLocation();
-  const { user, isAuthenticated } = useAuth();
+  const { user, isAuthenticated, isLoading: authLoading } = useAuth();
+
+  useEffect(() => {
+    if (!authLoading && (!isAuthenticated || user?.role !== "admin")) {
+      navigate("/auth");
+    }
+  }, [isAuthenticated, authLoading, user, navigate]);
 
   const handleItemClick = (id: string) => {
     setActiveItem(id);
@@ -53,7 +59,7 @@ export default function AdminMessages() {
     }
   };
 
-  if (!isAuthenticated || user?.role !== "admin") {
+  if (authLoading || !isAuthenticated || user?.role !== "admin") {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
         <Loader2 className="h-8 w-8 animate-spin text-primary" />

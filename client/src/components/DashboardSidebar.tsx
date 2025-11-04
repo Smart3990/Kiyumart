@@ -74,7 +74,7 @@ export default function DashboardSidebar({
     <div className="flex flex-col h-full w-64 bg-card border-r">
       <div className="p-6 border-b">
         <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-lg bg-primary flex items-center justify-center text-white font-bold text-xl">
+          <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-primary to-green-600 flex items-center justify-center text-white font-bold text-2xl shadow-lg">
             K
           </div>
           <div>

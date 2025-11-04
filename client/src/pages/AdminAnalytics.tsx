@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useLocation } from "wouter";
 import DashboardSidebar from "@/components/DashboardSidebar";
@@ -16,7 +16,13 @@ interface Analytics {
 export default function AdminAnalytics() {
   const [activeItem, setActiveItem] = useState("analytics");
   const [, navigate] = useLocation();
-  const { user, isAuthenticated } = useAuth();
+  const { user, isAuthenticated, isLoading: authLoading } = useAuth();
+
+  useEffect(() => {
+    if (!authLoading && (!isAuthenticated || user?.role !== "admin")) {
+      navigate("/auth");
+    }
+  }, [isAuthenticated, authLoading, user, navigate]);
 
   const { data: analytics, isLoading } = useQuery<Analytics>({
     queryKey: ["/api/analytics"],
@@ -62,7 +68,7 @@ export default function AdminAnalytics() {
     }
   };
 
-  if (!isAuthenticated || user?.role !== "admin") {
+  if (authLoading || !isAuthenticated || user?.role !== "admin") {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
         <Loader2 className="h-8 w-8 animate-spin text-primary" />
@@ -99,7 +105,7 @@ export default function AdminAnalytics() {
                 </CardHeader>
                 <CardContent>
                   <div className="text-2xl font-bold" data-testid="text-revenue">
-                    GHS {analytics?.totalRevenue.toFixed(2) || "0.00"}
+                    GHS {analytics ? analytics.totalRevenue.toFixed(2) : "0.00"}
                   </div>
                   <p className="text-xs text-muted-foreground mt-1">
                     <TrendingUp className="inline h-3 w-3 mr-1" />
@@ -115,7 +121,7 @@ export default function AdminAnalytics() {
                 </CardHeader>
                 <CardContent>
                   <div className="text-2xl font-bold" data-testid="text-orders">
-                    {analytics?.totalOrders || "0"}
+                    {analytics ? analytics.totalOrders : "0"}
                   </div>
                   <p className="text-xs text-muted-foreground mt-1">
                     Orders placed
@@ -130,7 +136,7 @@ export default function AdminAnalytics() {
                 </CardHeader>
                 <CardContent>
                   <div className="text-2xl font-bold" data-testid="text-users">
-                    {analytics?.totalUsers || "0"}
+                    {analytics ? analytics.totalUsers : "0"}
                   </div>
                   <p className="text-xs text-muted-foreground mt-1">
                     Registered users
@@ -145,7 +151,7 @@ export default function AdminAnalytics() {
                 </CardHeader>
                 <CardContent>
                   <div className="text-2xl font-bold" data-testid="text-products">
-                    {analytics?.totalProducts || "0"}
+                    {analytics ? analytics.totalProducts : "0"}
                   </div>
                   <p className="text-xs text-muted-foreground mt-1">
                     Products listed

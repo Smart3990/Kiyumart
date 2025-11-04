@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useLocation } from "wouter";
 import DashboardSidebar from "@/components/DashboardSidebar";
@@ -23,7 +23,13 @@ export default function AdminProducts() {
   const [activeItem, setActiveItem] = useState("products");
   const [searchQuery, setSearchQuery] = useState("");
   const [, navigate] = useLocation();
-  const { user, isAuthenticated } = useAuth();
+  const { user, isAuthenticated, isLoading: authLoading } = useAuth();
+
+  useEffect(() => {
+    if (!authLoading && (!isAuthenticated || user?.role !== "admin")) {
+      navigate("/auth");
+    }
+  }, [isAuthenticated, authLoading, user, navigate]);
 
   const { data: products = [], isLoading } = useQuery<Product[]>({
     queryKey: ["/api/products"],
@@ -74,7 +80,7 @@ export default function AdminProducts() {
     p.category.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
-  if (!isAuthenticated || user?.role !== "admin") {
+  if (authLoading || !isAuthenticated || user?.role !== "admin") {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
         <Loader2 className="h-8 w-8 animate-spin text-primary" />
