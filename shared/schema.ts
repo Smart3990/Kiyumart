@@ -50,6 +50,12 @@ export const platformSettings = pgTable("platform_settings", {
   instagramUrl: text("instagram_url"),
   twitterUrl: text("twitter_url"),
   footerDescription: text("footer_description").default("Your trusted fashion marketplace. Quality products, fast delivery, and excellent service."),
+  footerLinks: jsonb("footer_links").$type<Array<{title: string; url: string}>>().default([]),
+  footerPaymentIcons: text("footer_payment_icons").array(),
+  activeBannerCollectionId: varchar("active_banner_collection_id"),
+  categoryDisplayStyle: text("category_display_style").default("grid"),
+  bannerAutoplayEnabled: boolean("banner_autoplay_enabled").default(true),
+  bannerAutoplayDuration: integer("banner_autoplay_duration").default(5000),
   adsEnabled: boolean("ads_enabled").default(false),
   heroBannerAdImage: text("hero_banner_ad_image"),
   heroBannerAdUrl: text("hero_banner_ad_url"),
@@ -248,6 +254,33 @@ export const heroBanners = pgTable("hero_banners", {
   createdAt: timestamp("created_at").defaultNow(),
 });
 
+export const bannerCollections = pgTable("banner_collections", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  name: text("name").notNull(),
+  description: text("description"),
+  type: text("type"),
+  isActive: boolean("is_active").default(false),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+export const marketplaceBanners = pgTable("marketplace_banners", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  collectionId: varchar("collection_id").references(() => bannerCollections.id),
+  title: text("title"),
+  subtitle: text("subtitle"),
+  imageUrl: text("image_url").notNull(),
+  productRef: varchar("product_ref"),
+  storeRef: varchar("store_ref"),
+  ctaText: text("cta_text"),
+  ctaUrl: text("cta_url"),
+  displayOrder: integer("display_order").default(0),
+  startAt: timestamp("start_at"),
+  endAt: timestamp("end_at"),
+  isActive: boolean("is_active").default(true),
+  metadata: jsonb("metadata").$type<Record<string, any>>().default({}),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
 // Zod schemas for validation
 export const insertUserSchema = createInsertSchema(users).pick({
   email: true,
@@ -348,6 +381,29 @@ export const insertCouponSchema = createInsertSchema(coupons).pick({
   isActive: true,
 });
 
+export const insertBannerCollectionSchema = createInsertSchema(bannerCollections).pick({
+  name: true,
+  description: true,
+  type: true,
+  isActive: true,
+});
+
+export const insertMarketplaceBannerSchema = createInsertSchema(marketplaceBanners).pick({
+  collectionId: true,
+  title: true,
+  subtitle: true,
+  imageUrl: true,
+  productRef: true,
+  storeRef: true,
+  ctaText: true,
+  ctaUrl: true,
+  displayOrder: true,
+  startAt: true,
+  endAt: true,
+  isActive: true,
+  metadata: true,
+});
+
 // TypeScript types
 export type InsertUser = z.infer<typeof insertUserSchema>;
 export type User = typeof users.$inferSelect;
@@ -404,3 +460,9 @@ export type HeroBanner = typeof heroBanners.$inferSelect;
 
 export type InsertCoupon = z.infer<typeof insertCouponSchema>;
 export type Coupon = typeof coupons.$inferSelect;
+
+export type InsertBannerCollection = z.infer<typeof insertBannerCollectionSchema>;
+export type BannerCollection = typeof bannerCollections.$inferSelect;
+
+export type InsertMarketplaceBanner = z.infer<typeof insertMarketplaceBannerSchema>;
+export type MarketplaceBanner = typeof marketplaceBanners.$inferSelect;

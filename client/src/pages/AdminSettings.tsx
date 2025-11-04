@@ -216,6 +216,26 @@ export default function AdminSettings() {
                       data-testid="switch-multi-vendor"
                     />
                   </div>
+
+                  {form.watch("isMultiVendor") && (
+                    <div className="p-4 border rounded-lg bg-muted/50">
+                      <div className="space-y-2">
+                        <Label>Multi-Vendor Features</Label>
+                        <p className="text-sm text-muted-foreground mb-3">
+                          Manage marketplace banners, collections, and homepage layout
+                        </p>
+                        <Button
+                          type="button"
+                          variant="outline"
+                          onClick={() => window.location.href = "/admin/banners"}
+                          data-testid="button-banner-manager"
+                        >
+                          <ImageIcon className="w-4 h-4 mr-2" />
+                          Manage Banners
+                        </Button>
+                      </div>
+                    </div>
+                  )}
                 </CardContent>
               </Card>
             </TabsContent>

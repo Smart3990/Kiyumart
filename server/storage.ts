@@ -2,15 +2,16 @@ import { db } from "../db/index";
 import { 
   users, products, orders, orderItems, deliveryZones, deliveryTracking,
   chatMessages, transactions, platformSettings, cart, wishlist, reviews,
-  productVariants, heroBanners, coupons,
+  productVariants, heroBanners, coupons, bannerCollections, marketplaceBanners,
   type User, type InsertUser, type Product, type InsertProduct,
   type Order, type InsertOrder, type DeliveryZone, type InsertDeliveryZone,
   type ChatMessage, type InsertChatMessage, type Transaction, type PlatformSettings,
   type Cart, type Wishlist, type DeliveryTracking, type InsertDeliveryTracking,
   type Review, type InsertReview, type ProductVariant, type HeroBanner,
-  type Coupon, type InsertCoupon
+  type Coupon, type InsertCoupon, type BannerCollection, type InsertBannerCollection,
+  type MarketplaceBanner, type InsertMarketplaceBanner
 } from "@shared/schema";
-import { eq, and, desc, sql } from "drizzle-orm";
+import { eq, and, desc, sql, lte, gte, or, isNull } from "drizzle-orm";
 
 export interface IStorage {
   // User operations
@@ -93,6 +94,26 @@ export interface IStorage {
   
   // Analytics
   getAnalytics(userId?: string, role?: string): Promise<any>;
+  
+  // Banner Collection operations
+  createBannerCollection(collection: InsertBannerCollection): Promise<BannerCollection>;
+  getBannerCollection(id: string): Promise<BannerCollection | undefined>;
+  getBannerCollections(): Promise<BannerCollection[]>;
+  updateBannerCollection(id: string, data: Partial<BannerCollection>): Promise<BannerCollection | undefined>;
+  deleteBannerCollection(id: string): Promise<boolean>;
+  
+  // Marketplace Banner operations
+  createMarketplaceBanner(banner: InsertMarketplaceBanner): Promise<MarketplaceBanner>;
+  getMarketplaceBanner(id: string): Promise<MarketplaceBanner | undefined>;
+  getMarketplaceBanners(collectionId?: string): Promise<MarketplaceBanner[]>;
+  getActiveMarketplaceBanners(): Promise<MarketplaceBanner[]>;
+  updateMarketplaceBanner(id: string, data: Partial<MarketplaceBanner>): Promise<MarketplaceBanner | undefined>;
+  deleteMarketplaceBanner(id: string): Promise<boolean>;
+  reorderMarketplaceBanners(bannerIds: string[]): Promise<void>;
+  
+  // Multi-vendor homepage data
+  getApprovedSellers(): Promise<User[]>;
+  getFeaturedProducts(limit?: number): Promise<Product[]>;
 }
 
 export class DbStorage implements IStorage {
@@ -571,6 +592,109 @@ export class DbStorage implements IStorage {
     }
     
     return result;
+  }
+
+  // Banner Collection operations
+  async createBannerCollection(collection: InsertBannerCollection): Promise<BannerCollection> {
+    const [newCollection] = await db.insert(bannerCollections).values(collection).returning();
+    return newCollection;
+  }
+
+  async getBannerCollection(id: string): Promise<BannerCollection | undefined> {
+    const result = await db.select().from(bannerCollections).where(eq(bannerCollections.id, id)).limit(1);
+    return result[0];
+  }
+
+  async getBannerCollections(): Promise<BannerCollection[]> {
+    return db.select().from(bannerCollections).orderBy(desc(bannerCollections.createdAt));
+  }
+
+  async updateBannerCollection(id: string, data: Partial<BannerCollection>): Promise<BannerCollection | undefined> {
+    const [updated] = await db.update(bannerCollections).set(data).where(eq(bannerCollections.id, id)).returning();
+    return updated;
+  }
+
+  async deleteBannerCollection(id: string): Promise<boolean> {
+    await db.delete(bannerCollections).where(eq(bannerCollections.id, id));
+    return true;
+  }
+
+  // Marketplace Banner operations
+  async createMarketplaceBanner(banner: InsertMarketplaceBanner): Promise<MarketplaceBanner> {
+    const [newBanner] = await db.insert(marketplaceBanners).values(banner).returning();
+    return newBanner;
+  }
+
+  async getMarketplaceBanner(id: string): Promise<MarketplaceBanner | undefined> {
+    const result = await db.select().from(marketplaceBanners).where(eq(marketplaceBanners.id, id)).limit(1);
+    return result[0];
+  }
+
+  async getMarketplaceBanners(collectionId?: string): Promise<MarketplaceBanner[]> {
+    if (collectionId) {
+      return db.select().from(marketplaceBanners)
+        .where(eq(marketplaceBanners.collectionId, collectionId))
+        .orderBy(marketplaceBanners.displayOrder, desc(marketplaceBanners.createdAt));
+    }
+    return db.select().from(marketplaceBanners)
+      .orderBy(marketplaceBanners.displayOrder, desc(marketplaceBanners.createdAt));
+  }
+
+  async getActiveMarketplaceBanners(): Promise<MarketplaceBanner[]> {
+    const now = new Date();
+    return db.select().from(marketplaceBanners)
+      .where(
+        and(
+          eq(marketplaceBanners.isActive, true),
+          or(
+            isNull(marketplaceBanners.startAt),
+            lte(marketplaceBanners.startAt, now)
+          ),
+          or(
+            isNull(marketplaceBanners.endAt),
+            gte(marketplaceBanners.endAt, now)
+          )
+        )
+      )
+      .orderBy(marketplaceBanners.displayOrder);
+  }
+
+  async updateMarketplaceBanner(id: string, data: Partial<MarketplaceBanner>): Promise<MarketplaceBanner | undefined> {
+    const [updated] = await db.update(marketplaceBanners).set(data).where(eq(marketplaceBanners.id, id)).returning();
+    return updated;
+  }
+
+  async deleteMarketplaceBanner(id: string): Promise<boolean> {
+    await db.delete(marketplaceBanners).where(eq(marketplaceBanners.id, id));
+    return true;
+  }
+
+  async reorderMarketplaceBanners(bannerIds: string[]): Promise<void> {
+    for (let i = 0; i < bannerIds.length; i++) {
+      await db.update(marketplaceBanners)
+        .set({ displayOrder: i })
+        .where(eq(marketplaceBanners.id, bannerIds[i]));
+    }
+  }
+
+  // Multi-vendor homepage data
+  async getApprovedSellers(): Promise<User[]> {
+    return db.select().from(users)
+      .where(
+        and(
+          eq(users.role, "seller"),
+          eq(users.isApproved, true),
+          eq(users.isActive, true)
+        )
+      )
+      .orderBy(desc(users.createdAt));
+  }
+
+  async getFeaturedProducts(limit: number = 12): Promise<Product[]> {
+    return db.select().from(products)
+      .where(eq(products.isActive, true))
+      .orderBy(desc(products.ratings), desc(products.createdAt))
+      .limit(limit);
   }
 }
 

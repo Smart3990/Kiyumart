@@ -13,7 +13,7 @@ import {
 import { uploadToCloudinary } from "./cloudinary";
 import { getExchangeRates, convertCurrency, SUPPORTED_CURRENCIES } from "./currency";
 import multer from "multer";
-import { insertUserSchema, insertProductSchema, insertDeliveryZoneSchema, insertOrderSchema, insertWishlistSchema, insertReviewSchema } from "@shared/schema";
+import { insertUserSchema, insertProductSchema, insertDeliveryZoneSchema, insertOrderSchema, insertWishlistSchema, insertReviewSchema, insertBannerCollectionSchema, insertMarketplaceBannerSchema } from "@shared/schema";
 
 const upload = multer({ storage: multer.memoryStorage() });
 
@@ -662,6 +662,198 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const banners = await storage.getHeroBanners();
       res.json(banners);
+    } catch (error: any) {
+      res.status(400).json({ error: error.message });
+    }
+  });
+
+  // ============ Multi-Vendor Banner Management ============
+  // Banner Collections (Admin only)
+  app.post("/api/admin/banner-collections", requireAuth, requireRole("admin"), async (req, res) => {
+    try {
+      const validatedData = insertBannerCollectionSchema.parse(req.body);
+      const collection = await storage.createBannerCollection(validatedData);
+      res.json(collection);
+    } catch (error: any) {
+      res.status(400).json({ error: error.message });
+    }
+  });
+
+  app.get("/api/admin/banner-collections", requireAuth, requireRole("admin"), async (req, res) => {
+    try {
+      const collections = await storage.getBannerCollections();
+      res.json(collections);
+    } catch (error: any) {
+      res.status(400).json({ error: error.message });
+    }
+  });
+
+  app.get("/api/admin/banner-collections/:id", requireAuth, requireRole("admin"), async (req, res) => {
+    try {
+      const collection = await storage.getBannerCollection(req.params.id);
+      if (!collection) {
+        return res.status(404).json({ error: "Collection not found" });
+      }
+      res.json(collection);
+    } catch (error: any) {
+      res.status(400).json({ error: error.message });
+    }
+  });
+
+  app.patch("/api/admin/banner-collections/:id", requireAuth, requireRole("admin"), async (req, res) => {
+    try {
+      const updated = await storage.updateBannerCollection(req.params.id, req.body);
+      if (!updated) {
+        return res.status(404).json({ error: "Collection not found" });
+      }
+      res.json(updated);
+    } catch (error: any) {
+      res.status(400).json({ error: error.message });
+    }
+  });
+
+  app.delete("/api/admin/banner-collections/:id", requireAuth, requireRole("admin"), async (req, res) => {
+    try {
+      await storage.deleteBannerCollection(req.params.id);
+      res.json({ success: true });
+    } catch (error: any) {
+      res.status(400).json({ error: error.message });
+    }
+  });
+
+  // Marketplace Banners (Admin only)
+  app.post("/api/admin/marketplace-banners", requireAuth, requireRole("admin"), upload.single("image"), async (req, res) => {
+    try {
+      let imageUrl = req.body.imageUrl;
+      
+      if (req.file) {
+        imageUrl = await uploadToCloudinary(req.file.buffer, "kiyumart/banners");
+      }
+
+      if (!imageUrl) {
+        return res.status(400).json({ error: "Image is required" });
+      }
+
+      const bannerData = {
+        collectionId: req.body.collectionId || null,
+        title: req.body.title || null,
+        subtitle: req.body.subtitle || null,
+        imageUrl,
+        productRef: req.body.productRef || null,
+        storeRef: req.body.storeRef || null,
+        ctaText: req.body.ctaText || null,
+        ctaUrl: req.body.ctaUrl || null,
+        displayOrder: req.body.displayOrder ? parseInt(req.body.displayOrder) : 0,
+        startAt: req.body.startAt ? new Date(req.body.startAt) : null,
+        endAt: req.body.endAt ? new Date(req.body.endAt) : null,
+        isActive: req.body.isActive === "true" || req.body.isActive === true,
+        metadata: req.body.metadata ? (typeof req.body.metadata === 'string' ? JSON.parse(req.body.metadata) : req.body.metadata) : {},
+      };
+
+      const validatedData = insertMarketplaceBannerSchema.parse(bannerData);
+      const banner = await storage.createMarketplaceBanner(validatedData);
+      res.json(banner);
+    } catch (error: any) {
+      res.status(400).json({ error: error.message });
+    }
+  });
+
+  app.get("/api/admin/marketplace-banners", requireAuth, requireRole("admin"), async (req, res) => {
+    try {
+      const { collectionId } = req.query;
+      const banners = await storage.getMarketplaceBanners(collectionId as string);
+      res.json(banners);
+    } catch (error: any) {
+      res.status(400).json({ error: error.message });
+    }
+  });
+
+  app.get("/api/admin/marketplace-banners/:id", requireAuth, requireRole("admin"), async (req, res) => {
+    try {
+      const banner = await storage.getMarketplaceBanner(req.params.id);
+      if (!banner) {
+        return res.status(404).json({ error: "Banner not found" });
+      }
+      res.json(banner);
+    } catch (error: any) {
+      res.status(400).json({ error: error.message });
+    }
+  });
+
+  app.patch("/api/admin/marketplace-banners/:id", requireAuth, requireRole("admin"), upload.single("image"), async (req, res) => {
+    try {
+      const updateData: any = { ...req.body };
+      
+      if (req.file) {
+        updateData.imageUrl = await uploadToCloudinary(req.file.buffer, "kiyumart/banners");
+      }
+
+      if (req.body.startAt) {
+        updateData.startAt = new Date(req.body.startAt);
+      }
+      if (req.body.endAt) {
+        updateData.endAt = new Date(req.body.endAt);
+      }
+      if (req.body.metadata && typeof req.body.metadata === 'string') {
+        updateData.metadata = JSON.parse(req.body.metadata);
+      }
+
+      const updated = await storage.updateMarketplaceBanner(req.params.id, updateData);
+      if (!updated) {
+        return res.status(404).json({ error: "Banner not found" });
+      }
+      res.json(updated);
+    } catch (error: any) {
+      res.status(400).json({ error: error.message });
+    }
+  });
+
+  app.delete("/api/admin/marketplace-banners/:id", requireAuth, requireRole("admin"), async (req, res) => {
+    try {
+      await storage.deleteMarketplaceBanner(req.params.id);
+      res.json({ success: true });
+    } catch (error: any) {
+      res.status(400).json({ error: error.message });
+    }
+  });
+
+  app.post("/api/admin/marketplace-banners/reorder", requireAuth, requireRole("admin"), async (req, res) => {
+    try {
+      const { bannerIds } = req.body;
+      if (!Array.isArray(bannerIds)) {
+        return res.status(400).json({ error: "bannerIds must be an array" });
+      }
+      await storage.reorderMarketplaceBanners(bannerIds);
+      res.json({ success: true });
+    } catch (error: any) {
+      res.status(400).json({ error: error.message });
+    }
+  });
+
+  // Public Homepage APIs
+  app.get("/api/homepage/banners", async (req, res) => {
+    try {
+      const banners = await storage.getActiveMarketplaceBanners();
+      res.json(banners);
+    } catch (error: any) {
+      res.status(400).json({ error: error.message });
+    }
+  });
+
+  app.get("/api/homepage/sellers", async (req, res) => {
+    try {
+      const sellers = await storage.getApprovedSellers();
+      res.json(sellers);
+    } catch (error: any) {
+      res.status(400).json({ error: error.message });
+    }
+  });
+
+  app.get("/api/homepage/featured-products", async (req, res) => {
+    try {
+      const limit = req.query.limit ? parseInt(req.query.limit as string) : 12;
+      const products = await storage.getFeaturedProducts(limit);
+      res.json(products);
     } catch (error: any) {
       res.status(400).json({ error: error.message });
     }

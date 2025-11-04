@@ -13,6 +13,8 @@ import Footer from "@/components/Footer";
 import CartSidebar from "@/components/CartSidebar";
 import ThemeToggle from "@/components/ThemeToggle";
 import AdBanner from "@/components/AdBanner";
+import MultiVendorHome from "./MultiVendorHome";
+import type { PlatformSettings } from "@shared/schema";
 
 import heroImage from "@assets/generated_images/Diverse_Islamic_fashion_banner_eb13714d.png";
 import abayaCategoryImage from "@assets/generated_images/Abayas_category_collection_image_cbf9978c.png";
@@ -52,6 +54,10 @@ export default function HomeConnected() {
   const { currency, currencySymbol, t } = useLanguage();
   const [isCartOpen, setIsCartOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
+
+  const { data: platformSettings, isLoading: settingsLoading } = useQuery<PlatformSettings>({
+    queryKey: ["/api/platform-settings"],
+  });
 
   const { data: products = [], isLoading: productsLoading } = useQuery<Product[]>({
     queryKey: ["/api/products"],
@@ -252,6 +258,18 @@ export default function HomeConnected() {
         product.category.toLowerCase().includes(searchQuery)
       )
     : products;
+
+  if (settingsLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-background">
+        <div className="animate-pulse text-muted-foreground">Loading...</div>
+      </div>
+    );
+  }
+
+  if (platformSettings?.isMultiVendor) {
+    return <MultiVendorHome />;
+  }
 
   return (
     <div className="min-h-screen flex flex-col">

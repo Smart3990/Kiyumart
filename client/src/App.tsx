@@ -27,6 +27,7 @@ import Settings from "@/pages/Settings";
 import ChangePassword from "@/pages/ChangePassword";
 import AdminSettings from "@/pages/AdminSettings";
 import AdminDeliveryZones from "@/pages/AdminDeliveryZones";
+import AdminBannerManager from "@/pages/AdminBannerManager";
 import CategoryPage from "@/pages/CategoryPage";
 import Wishlist from "@/pages/Wishlist";
 import Orders from "@/pages/Orders";
@@ -56,6 +57,7 @@ function Router() {
       <Route path="/admin" component={AdminDashboard} />
       <Route path="/admin/settings" component={AdminSettings} />
       <Route path="/admin/delivery-zones" component={AdminDeliveryZones} />
+      <Route path="/admin/banners" component={AdminBannerManager} />
       <Route path="/seller" component={SellerDashboard} />
       <Route path="/rider" component={RiderDashboard} />
       <Route path="/chat" component={ChatPage} />
