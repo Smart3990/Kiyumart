@@ -859,6 +859,225 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Admin seed for marketplace setup (Development only)
+  app.post("/api/seed/marketplace-setup", requireAuth, requireRole("admin"), async (req: AuthRequest, res) => {
+    try {
+      // Create sample banner collection
+      const collection = await storage.createBannerCollection({
+        name: "Homepage Promotions",
+        description: "Main homepage promotional banners",
+        type: "homepage",
+        isActive: true
+      });
+
+      // Create sample marketplace banners
+      const banners = [
+        {
+          collectionId: collection.id,
+          title: "New Season Collection",
+          subtitle: "Discover our latest modest fashion arrivals with exclusive designs",
+          imageUrl: "https://images.unsplash.com/photo-1490481651871-ab68de25d43d?w=1200",
+          ctaText: "Shop Now",
+          ctaUrl: "/products",
+          displayOrder: 1,
+          isActive: true,
+          metadata: { discount: 25 }
+        },
+        {
+          collectionId: collection.id,
+          title: "Premium Abayas",
+          subtitle: "Elegant and comfortable abayas for every occasion",
+          imageUrl: "https://images.unsplash.com/photo-1483985988355-763728e1935b?w=1200",
+          ctaText: "Explore Collection",
+          ctaUrl: "/category/Abayas",
+          displayOrder: 2,
+          isActive: true,
+          metadata: { discount: 15 }
+        },
+        {
+          collectionId: collection.id,
+          title: "Designer Hijabs",
+          subtitle: "Premium quality hijabs in beautiful colors and fabrics",
+          imageUrl: "https://images.unsplash.com/photo-1487222477894-8943e31ef7b2?w=1200",
+          ctaText: "View Collection",
+          ctaUrl: "/category/Hijabs",
+          displayOrder: 3,
+          isActive: true,
+          metadata: {}
+        }
+      ];
+
+      const createdBanners = [];
+      for (const banner of banners) {
+        const created = await storage.createMarketplaceBanner(banner as any);
+        createdBanners.push(created);
+      }
+
+      res.json({
+        success: true,
+        message: "Marketplace setup complete",
+        collection,
+        banners: createdBanners
+      });
+    } catch (error: any) {
+      res.status(400).json({ error: error.message });
+    }
+  });
+
+  // Seller seed for products (Development only)
+  app.post("/api/seed/sample-data", requireAuth, requireRole("seller"), async (req: AuthRequest, res) => {
+    try {
+      const sellerId = req.user!.id;
+      
+      const sampleProducts = [
+        {
+          name: "Elegant Black Abaya",
+          description: "Beautiful flowing black abaya with delicate embroidery",
+          price: "150.00",
+          costPrice: "80.00",
+          category: "Abayas",
+          images: ["https://images.unsplash.com/photo-1601924994987-69e26d50dc26?w=500"],
+          stock: 25,
+          discount: 15,
+          isFeatured: true,
+          isActive: true,
+          sellerId
+        },
+        {
+          name: "Premium Silk Hijab - Navy",
+          description: "Soft premium silk hijab in elegant navy color",
+          price: "35.00",
+          costPrice: "15.00",
+          category: "Hijabs",
+          images: ["https://images.unsplash.com/photo-1583292650898-7d22cd27ca6f?w=500"],
+          stock: 50,
+          discount: 10,
+          isFeatured: true,
+          isActive: true,
+          sellerId
+        },
+        {
+          name: "Floral Maxi Dress",
+          description: "Modest floral maxi dress perfect for any occasion",
+          price: "120.00",
+          costPrice: "65.00",
+          category: "Dresses",
+          images: ["https://images.unsplash.com/photo-1595777457583-95e059d581b8?w=500"],
+          stock: 18,
+          discount: 20,
+          isFeatured: true,
+          isActive: true,
+          sellerId
+        },
+        {
+          name: "Beige Everyday Abaya",
+          description: "Comfortable beige abaya for everyday wear",
+          price: "95.00",
+          costPrice: "50.00",
+          category: "Abayas",
+          images: ["https://images.unsplash.com/photo-1550639524-72e1a2f61eb7?w=500"],
+          stock: 30,
+          discount: 0,
+          isFeatured: false,
+          isActive: true,
+          sellerId
+        },
+        {
+          name: "Chiffon Hijab Set - Pastels",
+          description: "Set of 3 pastel colored chiffon hijabs",
+          price: "45.00",
+          costPrice: "20.00",
+          category: "Hijabs",
+          images: ["https://images.unsplash.com/photo-1591085686350-798c0f9faa7f?w=500"],
+          stock: 40,
+          discount: 5,
+          isFeatured: true,
+          isActive: true,
+          sellerId
+        },
+        {
+          name: "Embroidered Evening Abaya",
+          description: "Luxurious evening abaya with gold embroidery",
+          price: "220.00",
+          costPrice: "120.00",
+          category: "Abayas",
+          images: ["https://images.unsplash.com/photo-1609840114035-3c981a782dfe?w=500"],
+          stock: 12,
+          discount: 25,
+          isFeatured: true,
+          isActive: true,
+          sellerId
+        },
+        {
+          name: "Cotton Jersey Hijab - Black",
+          description: "Comfortable cotton jersey hijab in classic black",
+          price: "25.00",
+          costPrice: "12.00",
+          category: "Hijabs",
+          images: ["https://images.unsplash.com/photo-1611652022419-a9419f74343a?w=500"],
+          stock: 60,
+          discount: 0,
+          isFeatured: false,
+          isActive: true,
+          sellerId
+        },
+        {
+          name: "Modest Summer Dress",
+          description: "Light and airy summer dress with long sleeves",
+          price: "85.00",
+          costPrice: "45.00",
+          category: "Dresses",
+          images: ["https://images.unsplash.com/photo-1572804013309-59a88b7e92f1?w=500"],
+          stock: 22,
+          discount: 15,
+          isFeatured: false,
+          isActive: true,
+          sellerId
+        },
+        {
+          name: "Butterfly Abaya - Burgundy",
+          description: "Flowing butterfly abaya in rich burgundy",
+          price: "135.00",
+          costPrice: "70.00",
+          category: "Abayas",
+          images: ["https://images.unsplash.com/photo-1602810319250-a1fa9b04b76c?w=500"],
+          stock: 20,
+          discount: 10,
+          isFeatured: true,
+          isActive: true,
+          sellerId
+        },
+        {
+          name: "Premium Georgette Hijab",
+          description: "Elegant georgette hijab with beautiful drape",
+          price: "40.00",
+          costPrice: "18.00",
+          category: "Hijabs",
+          images: ["https://images.unsplash.com/photo-1618932260643-eee4a2f652a6?w=500"],
+          stock: 35,
+          discount: 0,
+          isFeatured: true,
+          isActive: true,
+          sellerId
+        }
+      ];
+
+      const createdProducts = [];
+      for (const product of sampleProducts) {
+        const created = await storage.createProduct(product as any);
+        createdProducts.push(created);
+      }
+
+      res.json({ 
+        success: true, 
+        message: `${createdProducts.length} products created successfully`,
+        products: createdProducts 
+      });
+    } catch (error: any) {
+      res.status(400).json({ error: error.message });
+    }
+  });
+
   // ============ Order Routes ============
   app.post("/api/orders", requireAuth, async (req: AuthRequest, res) => {
     try {

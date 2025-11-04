@@ -22,7 +22,7 @@ export default function SellerCategoryCard({ seller, productCount = 0 }: SellerC
       onClick={handleClick}
       data-testid={`card-seller-${seller.id}`}
     >
-      <div className="relative aspect-[16/10]">
+      <div className="relative aspect-[4/3]">
         {seller.storeBanner ? (
           <img
             src={seller.storeBanner}

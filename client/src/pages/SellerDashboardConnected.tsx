@@ -231,6 +231,26 @@ export default function SellerDashboardConnected() {
     },
   });
 
+  const seedProductsMutation = useMutation({
+    mutationFn: async () => {
+      return apiRequest("POST", "/api/seed/sample-data");
+    },
+    onSuccess: (data: any) => {
+      queryClient.invalidateQueries({ queryKey: ["/api/products"] });
+      toast({
+        title: "Success",
+        description: data.message || "Sample products added successfully",
+      });
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to seed products",
+        variant: "destructive",
+      });
+    },
+  });
+
   const onSubmit = (data: CouponFormData) => {
     if (editingCoupon) {
       updateCouponMutation.mutate({ id: editingCoupon.id, data });
@@ -347,7 +367,32 @@ export default function SellerDashboardConnected() {
                 <div>
                   <div className="flex items-center justify-between mb-4">
                     <h2 className="text-xl font-bold">My Products</h2>
-                    <Button data-testid="button-add-product">Add New Product</Button>
+                    <div className="flex gap-2">
+                      {products.length === 0 && (
+                        <Button
+                          variant="outline"
+                          onClick={() => seedProductsMutation.mutate()}
+                          disabled={seedProductsMutation.isPending}
+                          data-testid="button-seed-products"
+                        >
+                          {seedProductsMutation.isPending ? (
+                            <>
+                              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                              Seeding...
+                            </>
+                          ) : (
+                            <>
+                              <Package className="mr-2 h-4 w-4" />
+                              Add 10 Sample Products
+                            </>
+                          )}
+                        </Button>
+                      )}
+                      <Button data-testid="button-add-product">
+                        <Plus className="mr-2 h-4 w-4" />
+                        Add New Product
+                      </Button>
+                    </div>
                   </div>
 
                   {productsLoading ? (
