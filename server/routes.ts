@@ -1,6 +1,7 @@
 import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { Server as SocketIOServer } from "socket.io";
+import bcrypt from "bcryptjs";
 import { storage } from "./storage";
 import { 
   hashPassword, 
@@ -854,6 +855,126 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const limit = req.query.limit ? parseInt(req.query.limit as string) : 12;
       const products = await storage.getFeaturedProducts(limit);
       res.json(products);
+    } catch (error: any) {
+      res.status(400).json({ error: error.message });
+    }
+  });
+
+  // Complete marketplace seed - creates sellers, products, and banners (Development only - No auth required)
+  app.post("/api/seed/complete-marketplace", async (req, res) => {
+    try {
+      const results = {
+        sellers: [] as any[],
+        products: [] as any[],
+        banners: [] as any[]
+      };
+
+      // Create 3 seller accounts
+      const sellers = [
+        {
+          email: "seller1@kiyumart.com",
+          password: await bcrypt.hash("password123", 10),
+          name: "Fatima's Modest Fashion",
+          role: "seller",
+          storeName: "Fatima's Boutique",
+          storeBanner: "https://images.unsplash.com/photo-1441986300917-64674bd600d8?w=800",
+          ratings: "4.8"
+        },
+        {
+          email: "seller2@kiyumart.com",
+          password: await bcrypt.hash("password123", 10),
+          name: "Aisha's Elegant Wear",
+          role: "seller",
+          storeName: "Aisha's Collection",
+          storeBanner: "https://images.unsplash.com/photo-1445205170230-053b83016050?w=800",
+          ratings: "4.6"
+        },
+        {
+          email: "seller3@kiyumart.com",
+          password: await bcrypt.hash("password123", 10),
+          name: "Zainab's Fashion House",
+          role: "seller",
+          storeName: "Zainab's Designs",
+          storeBanner: "https://images.unsplash.com/photo-1441984904996-e0b6ba687e04?w=800",
+          ratings: "4.9"
+        }
+      ];
+
+      for (const seller of sellers) {
+        const created = await storage.createUser(seller as any);
+        results.sellers.push(created);
+      }
+
+      // Create products for each seller
+      const productTemplates = [
+        { name: "Elegant Black Abaya", category: "Abayas", price: "150.00", costPrice: "80.00", image: "https://images.unsplash.com/photo-1601924994987-69e26d50dc26?w=500", stock: 25, discount: 15, isFeatured: true },
+        { name: "Premium Silk Hijab - Navy", category: "Hijabs", price: "35.00", costPrice: "15.00", image: "https://images.unsplash.com/photo-1583292650898-7d22cd27ca6f?w=500", stock: 50, discount: 10, isFeatured: true },
+        { name: "Floral Maxi Dress", category: "Dresses", price: "120.00", costPrice: "65.00", image: "https://images.unsplash.com/photo-1595777457583-95e059d581b8?w=500", stock: 18, discount: 20, isFeatured: true },
+        { name: "Beige Everyday Abaya", category: "Abayas", price: "95.00", costPrice: "50.00", image: "https://images.unsplash.com/photo-1550639524-72e1a2f61eb7?w=500", stock: 30, discount: 0, isFeatured: false },
+        { name: "Chiffon Hijab Set", category: "Hijabs", price: "45.00", costPrice: "20.00", image: "https://images.unsplash.com/photo-1591085686350-798c0f9faa7f?w=500", stock: 40, discount: 5, isFeatured: true },
+      ];
+
+      for (const seller of results.sellers) {
+        for (const template of productTemplates) {
+          const product = await storage.createProduct({
+            ...template,
+            description: `Beautiful ${template.name.toLowerCase()} from ${seller.storeName}`,
+            images: [template.image],
+            sellerId: seller.id,
+            isActive: true
+          } as any);
+          results.products.push(product);
+        }
+      }
+
+      // Create marketplace banners
+      const collection = await storage.createBannerCollection({
+        name: "Homepage Promotions",
+        description: "Main homepage promotional banners",
+        type: "homepage",
+        isActive: true
+      });
+
+      const banners = [
+        {
+          collectionId: collection.id,
+          title: "New Season Collection",
+          subtitle: "Discover our latest modest fashion arrivals",
+          imageUrl: "https://images.unsplash.com/photo-1490481651871-ab68de25d43d?w=1200",
+          ctaText: "Shop Now",
+          ctaUrl: "/products",
+          displayOrder: 1,
+          isActive: true,
+          metadata: { discount: 25 }
+        },
+        {
+          collectionId: collection.id,
+          title: "Premium Abayas",
+          subtitle: "Elegant and comfortable abayas for every occasion",
+          imageUrl: "https://images.unsplash.com/photo-1483985988355-763728e1935b?w=1200",
+          ctaText: "Explore Collection",
+          ctaUrl: "/products",
+          displayOrder: 2,
+          isActive: true,
+          metadata: { discount: 15 }
+        }
+      ];
+
+      for (const banner of banners) {
+        const created = await storage.createMarketplaceBanner(banner as any);
+        results.banners.push(created);
+      }
+
+      res.json({
+        success: true,
+        message: "Complete marketplace seeded successfully!",
+        stats: {
+          sellers: results.sellers.length,
+          products: results.products.length,
+          banners: results.banners.length
+        },
+        credentials: "All sellers: password123"
+      });
     } catch (error: any) {
       res.status(400).json({ error: error.message });
     }
