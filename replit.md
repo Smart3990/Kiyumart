@@ -139,6 +139,17 @@ The database schema includes tables for:
 - Real-time order status updates via Socket.IO
 - Live delivery map with rider location tracking
 
+**Dynamic Category Management (Nov 4, 2025):**
+- `categories` table added with name, slug, image, description, displayOrder, isActive fields
+- Category CRUD API: `GET/POST/PATCH/DELETE /api/categories` (admin-only create/update/delete)
+- Admin category manager UI at `/admin/categories` with MediaUploadInput integration
+- Homepage now fetches categories from database instead of hardcoded data
+- Admins can create, edit, and delete categories with direct image/video uploads
+- Categories display in order specified by displayOrder field
+- Inactive categories are hidden from homepage
+- Fallback to hardcoded categories if database is empty (backward compatible)
+- Sidebar menu item added to admin dashboard for easy access
+
 #### Multi-Vendor Schema Extensions (Nov 2025)
 - `banner_collections`: Groups of themed marketplace banners with activation controls
 - `marketplace_banners`: Scheduled promotional banners with product/store references, display ordering, and metadata for the marketplace carousel
