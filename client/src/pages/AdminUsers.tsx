@@ -8,13 +8,10 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Loader2, Search, User, Edit, Ban, ArrowLeft } from "lucide-react";
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
+import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { useForm } from "react-hook-form";
-import { zodResolver } from "@hookform/resolvers/zod";
-import { z } from "zod";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
+import { Loader2, Search, User, Edit, Ban, MessageSquare, Trash2, ArrowLeft, CheckCircle, XCircle } from "lucide-react";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 
 interface UserData {
@@ -25,182 +22,21 @@ interface UserData {
   role: string;
   phone: string | null;
   isActive: boolean;
+  isApproved: boolean;
   createdAt: string;
-}
-
-const editUserSchema = z.object({
-  name: z.string().min(2, "Name must be at least 2 characters"),
-  email: z.string().email("Invalid email address"),
-  phone: z.string().optional(),
-  role: z.enum(["buyer", "seller", "rider", "admin"]),
-});
-
-type EditUserFormData = z.infer<typeof editUserSchema>;
-
-function EditUserDialog({ userData }: { userData: UserData }) {
-  const [open, setOpen] = useState(false);
-  const { toast } = useToast();
-
-  const form = useForm<EditUserFormData>({
-    resolver: zodResolver(editUserSchema),
-    defaultValues: {
-      name: userData.name || userData.username,
-      email: userData.email,
-      phone: userData.phone || "",
-      role: userData.role as any,
-    },
-  });
-
-  const editUserMutation = useMutation({
-    mutationFn: async (data: EditUserFormData) => {
-      return apiRequest(`/api/users/${userData.id}`, {
-        method: "PATCH",
-        body: JSON.stringify(data),
-        headers: {
-          "Content-Type": "application/json",
-        },
-      });
-    },
-    onSuccess: () => {
-      toast({
-        title: "Success",
-        description: "User updated successfully",
-      });
-      queryClient.invalidateQueries({ queryKey: ["/api/users"] });
-      setOpen(false);
-    },
-    onError: (error: any) => {
-      toast({
-        title: "Error",
-        description: error.message || "Failed to update user",
-        variant: "destructive",
-      });
-    },
-  });
-
-  const onSubmit = (data: EditUserFormData) => {
-    editUserMutation.mutate(data);
-  };
-
-  return (
-    <Dialog open={open} onOpenChange={setOpen}>
-      <DialogTrigger asChild>
-        <Button 
-          variant="ghost" 
-          size="icon"
-          data-testid={`button-edit-${userData.id}`}
-        >
-          <Edit className="h-4 w-4" />
-        </Button>
-      </DialogTrigger>
-      <DialogContent className="max-w-md">
-        <DialogHeader>
-          <DialogTitle>Edit User</DialogTitle>
-          <DialogDescription>
-            Update user information and role
-          </DialogDescription>
-        </DialogHeader>
-        <Form {...form}>
-          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-            <FormField
-              control={form.control}
-              name="name"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Name</FormLabel>
-                  <FormControl>
-                    <Input placeholder="John Doe" {...field} data-testid="input-edit-name" />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-
-            <FormField
-              control={form.control}
-              name="email"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Email</FormLabel>
-                  <FormControl>
-                    <Input type="email" placeholder="user@example.com" {...field} data-testid="input-edit-email" />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-
-            <FormField
-              control={form.control}
-              name="phone"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Phone (Optional)</FormLabel>
-                  <FormControl>
-                    <Input placeholder="+233 XX XXX XXXX" {...field} data-testid="input-edit-phone" />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-
-            <FormField
-              control={form.control}
-              name="role"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Role</FormLabel>
-                  <Select onValueChange={field.onChange} defaultValue={field.value}>
-                    <FormControl>
-                      <SelectTrigger data-testid="select-edit-role">
-                        <SelectValue placeholder="Select role" />
-                      </SelectTrigger>
-                    </FormControl>
-                    <SelectContent>
-                      <SelectItem value="buyer">Buyer</SelectItem>
-                      <SelectItem value="seller">Seller</SelectItem>
-                      <SelectItem value="rider">Rider</SelectItem>
-                      <SelectItem value="admin">Admin</SelectItem>
-                    </SelectContent>
-                  </Select>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-
-            <div className="flex justify-end gap-3 pt-4">
-              <Button
-                type="button"
-                variant="outline"
-                onClick={() => setOpen(false)}
-                data-testid="button-cancel-edit"
-              >
-                Cancel
-              </Button>
-              <Button
-                type="submit"
-                disabled={editUserMutation.isPending}
-                data-testid="button-submit-edit"
-              >
-                {editUserMutation.isPending && (
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                )}
-                Update User
-              </Button>
-            </div>
-          </form>
-        </Form>
-      </DialogContent>
-    </Dialog>
-  );
 }
 
 export default function AdminUsers() {
   const [activeItem, setActiveItem] = useState("users");
   const [searchQuery, setSearchQuery] = useState("");
+  const [selectedRole, setSelectedRole] = useState<string>("all");
+  const [selectedStatus, setSelectedStatus] = useState<string>("all");
   const [, navigate] = useLocation();
   const { user, isAuthenticated, isLoading: authLoading } = useAuth();
   const { toast } = useToast();
+  
+  const [confirmBanUser, setConfirmBanUser] = useState<{ id: string; name: string; isActive: boolean } | null>(null);
+  const [confirmDeleteUser, setConfirmDeleteUser] = useState<{ id: string; name: string } | null>(null);
 
   useEffect(() => {
     if (!authLoading && (!isAuthenticated || user?.role !== "admin")) {
@@ -223,12 +59,13 @@ export default function AdminUsers() {
         },
       });
     },
-    onSuccess: () => {
+    onSuccess: (_, variables) => {
       toast({
         title: "Success",
-        description: "User status updated successfully",
+        description: variables.isActive ? "User has been banned successfully" : "User has been activated successfully",
       });
       queryClient.invalidateQueries({ queryKey: ["/api/users"] });
+      setConfirmBanUser(null);
     },
     onError: (error: any) => {
       toast({
@@ -236,65 +73,222 @@ export default function AdminUsers() {
         description: error.message || "Failed to update user status",
         variant: "destructive",
       });
+      setConfirmBanUser(null);
+    },
+  });
+
+  const deleteUserMutation = useMutation({
+    mutationFn: async (userId: string) => {
+      return apiRequest(`/api/users/${userId}`, {
+        method: "DELETE",
+      });
+    },
+    onSuccess: () => {
+      toast({
+        title: "Success",
+        description: "User has been deleted successfully",
+      });
+      queryClient.invalidateQueries({ queryKey: ["/api/users"] });
+      setConfirmDeleteUser(null);
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to delete user",
+        variant: "destructive",
+      });
+      setConfirmDeleteUser(null);
     },
   });
 
   const handleItemClick = (id: string) => {
-    setActiveItem(id);
-    switch(id) {
-      case "dashboard":
-        navigate("/admin");
-        break;
-      case "mode":
-        navigate("/admin/settings");
-        break;
-      case "categories":
-        navigate("/admin/categories");
-        break;
-      case "products":
-        navigate("/admin/products");
-        break;
-      case "orders":
-        navigate("/admin/orders");
-        break;
-      case "users":
-        break;
-      case "riders":
-        navigate("/admin/riders");
-        break;
-      case "zones":
-        navigate("/admin/zones");
-        break;
-      case "messages":
-        navigate("/admin/messages");
-        break;
-      case "analytics":
-        navigate("/admin/analytics");
-        break;
-      case "branding":
-        navigate("/admin/branding");
-        break;
-      case "settings":
-        navigate("/admin/settings");
-        break;
+    navigate(
+      id === "dashboard" ? "/admin" :
+      id === "store" ? "/admin/store" :
+      id === "branding" ? "/admin/branding" :
+      id === "categories" ? "/admin/categories" :
+      id === "products" ? "/admin/products" :
+      id === "orders" ? "/admin/orders" :
+      id === "users" ? "/admin/users" :
+      id === "sellers" ? "/admin/sellers" :
+      id === "riders" ? "/admin/riders" :
+      id === "applications" ? "/admin/applications" :
+      id === "zones" ? "/admin/zones" :
+      id === "notifications" ? "/notifications" :
+      id === "messages" ? "/admin/messages" :
+      id === "analytics" ? "/admin/analytics" :
+      id === "settings" ? "/admin/settings" :
+      "/admin"
+    );
+  };
+
+  const handleBanUser = (userData: UserData) => {
+    setConfirmBanUser({
+      id: userData.id,
+      name: userData.name || userData.username,
+      isActive: userData.isActive,
+    });
+  };
+
+  const handleDeleteUser = (userData: UserData) => {
+    setConfirmDeleteUser({
+      id: userData.id,
+      name: userData.name || userData.username,
+    });
+  };
+
+  const confirmBanAction = () => {
+    if (confirmBanUser) {
+      toggleUserStatusMutation.mutate({
+        userId: confirmBanUser.id,
+        isActive: confirmBanUser.isActive,
+      });
     }
   };
 
-  const filteredUsers = users.filter(u => 
-    (u.username?.toLowerCase() || '').includes(searchQuery.toLowerCase()) ||
-    (u.email?.toLowerCase() || '').includes(searchQuery.toLowerCase()) ||
-    (u.role?.toLowerCase() || '').includes(searchQuery.toLowerCase())
+  const confirmDeleteAction = () => {
+    if (confirmDeleteUser) {
+      deleteUserMutation.mutate(confirmDeleteUser.id);
+    }
+  };
+
+  const filterUsersByRole = (users: UserData[], role: string) => {
+    if (role === "all") return users;
+    return users.filter(u => u.role === role);
+  };
+
+  const filterUsersByStatus = (users: UserData[], status: string) => {
+    if (status === "all") return users;
+    if (status === "active") return users.filter(u => u.isActive);
+    if (status === "inactive") return users.filter(u => !u.isActive);
+    return users;
+  };
+
+  const filterUsersBySearch = (users: UserData[], query: string) => {
+    if (!query) return users;
+    const lowerQuery = query.toLowerCase();
+    return users.filter(u => 
+      (u.username?.toLowerCase() || '').includes(lowerQuery) ||
+      (u.name?.toLowerCase() || '').includes(lowerQuery) ||
+      (u.email?.toLowerCase() || '').includes(lowerQuery)
+    );
+  };
+
+  const filteredUsers = filterUsersBySearch(
+    filterUsersByStatus(
+      filterUsersByRole(users, selectedRole),
+      selectedStatus
+    ),
+    searchQuery
   );
 
   const getRoleBadgeColor = (role: string) => {
     switch(role.toLowerCase()) {
-      case "admin": return "bg-purple-500";
-      case "seller": return "bg-blue-500";
-      case "buyer": return "bg-green-500";
-      case "rider": return "bg-orange-500";
-      default: return "bg-gray-500";
+      case "admin": return "bg-purple-500 text-white";
+      case "seller": return "bg-blue-500 text-white";
+      case "buyer": return "bg-green-500 text-white";
+      case "rider": return "bg-orange-500 text-white";
+      case "agent": return "bg-pink-500 text-white";
+      default: return "bg-gray-500 text-white";
     }
   };
+
+  const rolesCounts = {
+    all: users.length,
+    admin: users.filter(u => u.role === "admin").length,
+    seller: users.filter(u => u.role === "seller").length,
+    buyer: users.filter(u => u.role === "buyer").length,
+    rider: users.filter(u => u.role === "rider").length,
+    agent: users.filter(u => u.role === "agent").length,
+  };
+
+  const UserCard = ({ userData }: { userData: UserData }) => (
+    <Card className="p-4" data-testid={`card-user-${userData.id}`}>
+      <div className="flex items-center gap-4">
+        <div className="bg-primary/10 p-3 rounded-full">
+          <User className="h-6 w-6 text-primary" />
+        </div>
+        <div className="flex-1 min-w-0">
+          <h3 className="font-semibold text-lg truncate" data-testid={`text-username-${userData.id}`}>
+            {userData.name || userData.username}
+          </h3>
+          <div className="flex flex-wrap items-center gap-2 mt-1">
+            <span className="text-sm text-muted-foreground truncate" data-testid={`text-email-${userData.id}`}>
+              {userData.email}
+            </span>
+            <Badge className={getRoleBadgeColor(userData.role)} data-testid={`badge-role-${userData.id}`}>
+              {userData.role}
+            </Badge>
+            {userData.isActive ? (
+              <Badge className="bg-green-500 text-white flex items-center gap-1" data-testid={`badge-status-${userData.id}`}>
+                <CheckCircle className="h-3 w-3" />
+                Active
+              </Badge>
+            ) : (
+              <Badge variant="destructive" className="flex items-center gap-1" data-testid={`badge-status-${userData.id}`}>
+                <XCircle className="h-3 w-3" />
+                Inactive
+              </Badge>
+            )}
+            {(userData.role === "seller" || userData.role === "rider") && (
+              userData.isApproved ? (
+                <Badge className="bg-emerald-500 text-white" data-testid={`badge-approval-${userData.id}`}>
+                  Approved
+                </Badge>
+              ) : (
+                <Badge className="bg-yellow-500 text-white" data-testid={`badge-approval-${userData.id}`}>
+                  Pending
+                </Badge>
+              )
+            )}
+            <span className="text-xs text-muted-foreground" data-testid={`text-joined-${userData.id}`}>
+              Joined {new Date(userData.createdAt).toLocaleDateString()}
+            </span>
+          </div>
+        </div>
+        <div className="flex gap-2">
+          <Button 
+            variant="ghost" 
+            size="icon"
+            onClick={() => navigate(`/admin/users/${userData.id}/edit`)}
+            data-testid={`button-edit-${userData.id}`}
+            title="Edit user"
+          >
+            <Edit className="h-4 w-4" />
+          </Button>
+          <Button 
+            variant="ghost" 
+            size="icon"
+            onClick={() => handleBanUser(userData)}
+            disabled={toggleUserStatusMutation.isPending}
+            data-testid={`button-ban-${userData.id}`}
+            title={userData.isActive ? "Ban user" : "Activate user"}
+          >
+            <Ban className="h-4 w-4" />
+          </Button>
+          <Button 
+            variant="ghost" 
+            size="icon"
+            onClick={() => navigate(`/admin/messages?userId=${userData.id}`)}
+            data-testid={`button-message-${userData.id}`}
+            title="Send message"
+          >
+            <MessageSquare className="h-4 w-4" />
+          </Button>
+          <Button 
+            variant="ghost" 
+            size="icon"
+            onClick={() => handleDeleteUser(userData)}
+            disabled={deleteUserMutation.isPending}
+            data-testid={`button-delete-${userData.id}`}
+            title="Delete user"
+          >
+            <Trash2 className="h-4 w-4 text-destructive" />
+          </Button>
+        </div>
+      </div>
+    </Card>
+  );
 
   if (authLoading || !isAuthenticated || user?.role !== "admin") {
     return (
@@ -330,79 +324,132 @@ export default function AdminUsers() {
             </div>
           </div>
 
-          <div className="mb-6">
-            <div className="relative">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-              <Input
-                placeholder="Search users..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="pl-10"
-                data-testid="input-search-users"
-              />
+          <div className="mb-6 space-y-4">
+            <div className="flex gap-4">
+              <div className="relative flex-1">
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                <Input
+                  placeholder="Search by name or email..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="pl-10"
+                  data-testid="input-search-users"
+                />
+              </div>
+              <Select value={selectedStatus} onValueChange={setSelectedStatus}>
+                <SelectTrigger className="w-48" data-testid="select-status-filter">
+                  <SelectValue placeholder="Filter by status" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Status</SelectItem>
+                  <SelectItem value="active">Active Only</SelectItem>
+                  <SelectItem value="inactive">Inactive Only</SelectItem>
+                </SelectContent>
+              </Select>
             </div>
           </div>
 
-          {isLoading ? (
-            <div className="flex justify-center py-12">
-              <Loader2 className="h-8 w-8 animate-spin text-primary" />
-            </div>
-          ) : (
-            <div className="grid gap-4">
-              {filteredUsers.map((userData) => (
-                <Card key={userData.id} className="p-4" data-testid={`card-user-${userData.id}`}>
-                  <div className="flex items-center gap-4">
-                    <div className="bg-primary/10 p-3 rounded-full">
-                      <User className="h-6 w-6 text-primary" />
+          <Tabs value={selectedRole} onValueChange={setSelectedRole} className="w-full">
+            <TabsList className="grid w-full grid-cols-6 mb-6" data-testid="tabs-role-filter">
+              <TabsTrigger value="all" data-testid="tab-all">
+                All Users ({rolesCounts.all})
+              </TabsTrigger>
+              <TabsTrigger value="admin" data-testid="tab-admin">
+                Admins ({rolesCounts.admin})
+              </TabsTrigger>
+              <TabsTrigger value="seller" data-testid="tab-seller">
+                Sellers ({rolesCounts.seller})
+              </TabsTrigger>
+              <TabsTrigger value="buyer" data-testid="tab-buyer">
+                Buyers ({rolesCounts.buyer})
+              </TabsTrigger>
+              <TabsTrigger value="rider" data-testid="tab-rider">
+                Riders ({rolesCounts.rider})
+              </TabsTrigger>
+              <TabsTrigger value="agent" data-testid="tab-agent">
+                Agents ({rolesCounts.agent})
+              </TabsTrigger>
+            </TabsList>
+
+            <TabsContent value={selectedRole}>
+              {isLoading ? (
+                <div className="flex justify-center py-12">
+                  <Loader2 className="h-8 w-8 animate-spin text-primary" />
+                </div>
+              ) : (
+                <div className="grid gap-4">
+                  {filteredUsers.map((userData) => (
+                    <UserCard key={userData.id} userData={userData} />
+                  ))}
+                  
+                  {filteredUsers.length === 0 && (
+                    <div className="text-center py-12">
+                      <p className="text-muted-foreground" data-testid="text-no-users">
+                        No users found matching your filters
+                      </p>
                     </div>
-                    <div className="flex-1">
-                      <h3 className="font-semibold text-lg" data-testid={`text-username-${userData.id}`}>
-                        {userData.username}
-                      </h3>
-                      <div className="flex items-center gap-3 mt-1">
-                        <span className="text-sm text-muted-foreground" data-testid={`text-email-${userData.id}`}>
-                          {userData.email}
-                        </span>
-                        <Badge className={getRoleBadgeColor(userData.role)} data-testid={`badge-role-${userData.id}`}>
-                          {userData.role}
-                        </Badge>
-                        {userData.isActive ? (
-                          <Badge className="bg-green-500" data-testid={`badge-status-${userData.id}`}>Active</Badge>
-                        ) : (
-                          <Badge variant="destructive" data-testid={`badge-status-${userData.id}`}>Inactive</Badge>
-                        )}
-                        <span className="text-xs text-muted-foreground" data-testid={`text-joined-${userData.id}`}>
-                          Joined {new Date(userData.createdAt).toLocaleDateString()}
-                        </span>
-                      </div>
-                    </div>
-                    <div className="flex gap-2">
-                      <EditUserDialog userData={userData} />
-                      <Button 
-                        variant="ghost" 
-                        size="icon"
-                        onClick={() => toggleUserStatusMutation.mutate({ userId: userData.id, isActive: userData.isActive })}
-                        disabled={toggleUserStatusMutation.isPending}
-                        data-testid={`button-ban-${userData.id}`}
-                      >
-                        <Ban className="h-4 w-4" />
-                      </Button>
-                    </div>
-                  </div>
-                </Card>
-              ))}
-              
-              {filteredUsers.length === 0 && (
-                <div className="text-center py-12">
-                  <p className="text-muted-foreground" data-testid="text-no-users">
-                    No users found
-                  </p>
+                  )}
                 </div>
               )}
-            </div>
-          )}
+            </TabsContent>
+          </Tabs>
         </div>
       </div>
+
+      {/* Ban/Activate Confirmation Dialog */}
+      <AlertDialog open={!!confirmBanUser} onOpenChange={(open) => !open && setConfirmBanUser(null)}>
+        <AlertDialogContent data-testid="dialog-confirm-ban">
+          <AlertDialogHeader>
+            <AlertDialogTitle>
+              {confirmBanUser?.isActive ? "Ban User" : "Activate User"}
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              {confirmBanUser?.isActive 
+                ? `Are you sure you want to ban ${confirmBanUser?.name}? They will no longer be able to access the platform.`
+                : `Are you sure you want to activate ${confirmBanUser?.name}? They will be able to access the platform again.`
+              }
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel data-testid="button-cancel-ban">Cancel</AlertDialogCancel>
+            <AlertDialogAction 
+              onClick={confirmBanAction}
+              data-testid="button-confirm-ban"
+              className={confirmBanUser?.isActive ? "bg-destructive hover:bg-destructive/90" : ""}
+            >
+              {toggleUserStatusMutation.isPending && (
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              )}
+              {confirmBanUser?.isActive ? "Ban User" : "Activate User"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Delete Confirmation Dialog */}
+      <AlertDialog open={!!confirmDeleteUser} onOpenChange={(open) => !open && setConfirmDeleteUser(null)}>
+        <AlertDialogContent data-testid="dialog-confirm-delete">
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete User</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to permanently delete {confirmDeleteUser?.name}? This action cannot be undone and will remove all their data from the platform.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel data-testid="button-cancel-delete">Cancel</AlertDialogCancel>
+            <AlertDialogAction 
+              onClick={confirmDeleteAction}
+              data-testid="button-confirm-delete"
+              className="bg-destructive hover:bg-destructive/90"
+            >
+              {deleteUserMutation.isPending && (
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              )}
+              Delete User
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

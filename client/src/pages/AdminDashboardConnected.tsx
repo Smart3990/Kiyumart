@@ -6,7 +6,7 @@ import DashboardSidebar from "@/components/DashboardSidebar";
 import MetricCard from "@/components/MetricCard";
 import OrderCard from "@/components/OrderCard";
 import ThemeToggle from "@/components/ThemeToggle";
-import { DollarSign, ShoppingBag, Users, Truck, Loader2, AlertCircle } from "lucide-react";
+import { DollarSign, ShoppingBag, Users, Truck, Loader2, AlertCircle, UserCog, Ticket } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 
@@ -61,8 +61,12 @@ export default function AdminDashboardConnected() {
       setActiveItem("orders");
     } else if (path.includes("/admin/users")) {
       setActiveItem("users");
+    } else if (path.includes("/admin/sellers")) {
+      setActiveItem("sellers");
     } else if (path.includes("/admin/riders")) {
       setActiveItem("riders");
+    } else if (path.includes("/admin/applications")) {
+      setActiveItem("applications");
     } else if (path.includes("/admin/zones") || path.includes("/admin/delivery-zones")) {
       setActiveItem("zones");
     } else if (path.includes("/admin/messages")) {
@@ -78,44 +82,26 @@ export default function AdminDashboardConnected() {
     }
   }, [location]);
 
-  useEffect(() => {
-    // Navigate when sidebar item is clicked
-    switch(activeItem) {
-      case "dashboard":
-        // Already on dashboard
-        break;
-      case "mode":
-        navigate("/admin/settings");
-        break;
-      case "categories":
-        navigate("/admin/categories");
-        break;
-      case "products":
-        navigate("/admin/products");
-        break;
-      case "orders":
-        navigate("/admin/orders");
-        break;
-      case "users":
-        navigate("/admin/users");
-        break;
-      case "riders":
-        navigate("/admin/riders");
-        break;
-      case "zones":
-        navigate("/admin/zones");
-        break;
-      case "messages":
-        navigate("/admin/messages");
-        break;
-      case "analytics":
-        navigate("/admin/analytics");
-        break;
-      case "settings":
-        navigate("/admin/settings");
-        break;
-    }
-  }, [activeItem, navigate]);
+  const handleItemClick = (id: string) => {
+    navigate(
+      id === "dashboard" ? "/admin" :
+      id === "store" ? "/admin/store" :
+      id === "branding" ? "/admin/branding" :
+      id === "categories" ? "/admin/categories" :
+      id === "products" ? "/admin/products" :
+      id === "orders" ? "/admin/orders" :
+      id === "users" ? "/admin/users" :
+      id === "sellers" ? "/admin/sellers" :
+      id === "riders" ? "/admin/riders" :
+      id === "applications" ? "/admin/applications" :
+      id === "zones" ? "/admin/zones" :
+      id === "notifications" ? "/notifications" :
+      id === "messages" ? "/admin/messages" :
+      id === "analytics" ? "/admin/analytics" :
+      id === "settings" ? "/admin/settings" :
+      "/admin"
+    );
+  };
 
   const { data: analytics, isLoading: analyticsLoading } = useQuery<Analytics>({
     queryKey: ["/api/analytics"],
@@ -158,7 +144,7 @@ export default function AdminDashboardConnected() {
       <DashboardSidebar
         role="admin"
         activeItem={activeItem}
-        onItemClick={setActiveItem}
+        onItemClick={handleItemClick}
         userName={user.name}
       />
 
@@ -210,30 +196,118 @@ export default function AdminDashboardConnected() {
               </Card>
             )}
 
-            <Card>
-              <CardHeader className="flex flex-row items-center justify-between">
-                <CardTitle>Platform Settings</CardTitle>
-                <Button 
-                  variant="outline" 
-                  onClick={() => navigate("/admin/settings")}
-                  data-testid="button-configure"
-                >
-                  Configure
-                </Button>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-4">
-                  <div className="flex items-center justify-between p-4 bg-muted rounded-lg">
-                    <div>
-                      <p className="font-semibold">Platform Configuration</p>
-                      <p className="text-sm text-muted-foreground">
-                        Manage payment settings, contact info, and branding
-                      </p>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <Card>
+                <CardHeader className="flex flex-row items-center justify-between">
+                  <CardTitle>Platform Settings</CardTitle>
+                  <Button 
+                    variant="outline" 
+                    onClick={() => navigate("/admin/settings")}
+                    data-testid="button-configure"
+                  >
+                    Configure
+                  </Button>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-4">
+                    <div className="flex items-center justify-between p-4 bg-muted rounded-lg">
+                      <div>
+                        <p className="font-semibold">Platform Configuration</p>
+                        <p className="text-sm text-muted-foreground">
+                          Manage payment settings, contact info, and branding
+                        </p>
+                      </div>
                     </div>
                   </div>
-                </div>
-              </CardContent>
-            </Card>
+                </CardContent>
+              </Card>
+
+              <Card>
+                <CardHeader className="flex flex-row items-center justify-between">
+                  <CardTitle className="flex items-center gap-2">
+                    <UserCog className="h-5 w-5" />
+                    Sellers Management
+                  </CardTitle>
+                  <Button 
+                    variant="outline" 
+                    onClick={() => navigate("/admin/sellers")}
+                    data-testid="button-view-sellers"
+                  >
+                    View All
+                  </Button>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-4">
+                    <div className="flex items-center justify-between p-4 bg-muted rounded-lg">
+                      <div>
+                        <p className="font-semibold">Manage Sellers</p>
+                        <p className="text-sm text-muted-foreground">
+                          View, approve, and manage all sellers on the platform
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <Card>
+                <CardHeader className="flex flex-row items-center justify-between">
+                  <CardTitle className="flex items-center gap-2">
+                    <Ticket className="h-5 w-5" />
+                    Applications
+                  </CardTitle>
+                  <Button 
+                    variant="outline" 
+                    onClick={() => navigate("/admin/applications")}
+                    data-testid="button-view-applications"
+                  >
+                    Review
+                  </Button>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-4">
+                    <div className="flex items-center justify-between p-4 bg-muted rounded-lg">
+                      <div>
+                        <p className="font-semibold">Pending Applications</p>
+                        <p className="text-sm text-muted-foreground">
+                          Review and approve seller and rider applications
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+
+              <Card>
+                <CardHeader className="flex flex-row items-center justify-between">
+                  <CardTitle className="flex items-center gap-2">
+                    <Truck className="h-5 w-5" />
+                    Riders Management
+                  </CardTitle>
+                  <Button 
+                    variant="outline" 
+                    onClick={() => navigate("/admin/riders")}
+                    data-testid="button-view-riders"
+                  >
+                    View All
+                  </Button>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-4">
+                    <div className="flex items-center justify-between p-4 bg-muted rounded-lg">
+                      <div>
+                        <p className="font-semibold">Manage Riders</p>
+                        <p className="text-sm text-muted-foreground">
+                          View, approve, and manage all riders on the platform
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
 
             <div>
               <div className="flex items-center justify-between mb-4">

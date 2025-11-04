@@ -36,6 +36,7 @@ import AdminCategoryManager from "@/pages/AdminCategoryManager";
 import AdminProducts from "@/pages/AdminProducts";
 import AdminOrders from "@/pages/AdminOrders";
 import AdminUsers from "@/pages/AdminUsers";
+import AdminSellers from "@/pages/AdminSellers";
 import AdminRiders from "@/pages/AdminRiders";
 import AdminMessages from "@/pages/AdminMessages";
 import AdminAnalytics from "@/pages/AdminAnalytics";
@@ -50,6 +51,11 @@ import SellerStorePage from "@/pages/SellerStorePage";
 import BecomeSellerPage from "@/pages/BecomeSellerPage";
 import BecomeRiderPage from "@/pages/BecomeRiderPage";
 import AdminStoresList from "@/pages/AdminStoresList";
+import AdminUserEdit from "@/pages/AdminUserEdit";
+import RiderEdit from "@/pages/RiderEdit";
+import AdminApplications from "@/pages/AdminApplications";
+import AdminProductEdit from "@/pages/AdminProductEdit";
+import AdminProductCreate from "@/pages/AdminProductCreate";
 
 function Router() {
   return (
@@ -85,10 +91,16 @@ function Router() {
       <Route path="/admin/delivery-zones" component={AdminDeliveryZones} />
       <Route path="/admin/banners" component={AdminBannerManager} />
       <Route path="/admin/categories" component={AdminCategoryManager} />
+      <Route path="/admin/products/create" component={AdminProductCreate} />
+      <Route path="/admin/products/:id/edit" component={AdminProductEdit} />
       <Route path="/admin/products" component={AdminProducts} />
       <Route path="/admin/orders" component={AdminOrders} />
+      <Route path="/admin/users/:id/edit" component={AdminUserEdit} />
       <Route path="/admin/users" component={AdminUsers} />
+      <Route path="/admin/sellers" component={AdminSellers} />
+      <Route path="/admin/riders/:id/edit" component={RiderEdit} />
       <Route path="/admin/riders" component={AdminRiders} />
+      <Route path="/admin/applications" component={AdminApplications} />
       <Route path="/admin/messages" component={AdminMessages} />
       <Route path="/admin/analytics" component={AdminAnalytics} />
       <Route path="/seller" component={SellerDashboard} />

@@ -16,6 +16,7 @@ import {
   Palette,
   Bell,
   Ticket,
+  UserCog,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useQuery } from "@tanstack/react-query";
@@ -43,7 +44,9 @@ const menuItems: Record<string, MenuItem[]> = {
     { icon: Package, label: "Products", id: "products" },
     { icon: ShoppingBag, label: "Orders", id: "orders" },
     { icon: Users, label: "Users", id: "users" },
+    { icon: UserCog, label: "Sellers", id: "sellers" },
     { icon: Truck, label: "Riders", id: "riders" },
+    { icon: Ticket, label: "Applications", id: "applications" },
     { icon: MapPin, label: "Delivery Zones", id: "zones" },
     { icon: Bell, label: "Notifications", id: "notifications", badge: "dynamic" },
     { icon: MessageSquare, label: "Messages", id: "messages" },

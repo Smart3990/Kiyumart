@@ -284,44 +284,24 @@ export default function AdminRiders() {
   });
 
   const handleItemClick = (id: string) => {
-    setActiveItem(id);
-    switch(id) {
-      case "dashboard":
-        navigate("/admin");
-        break;
-      case "mode":
-        navigate("/admin/settings");
-        break;
-      case "categories":
-        navigate("/admin/categories");
-        break;
-      case "products":
-        navigate("/admin/products");
-        break;
-      case "orders":
-        navigate("/admin/orders");
-        break;
-      case "users":
-        navigate("/admin/users");
-        break;
-      case "riders":
-        break;
-      case "zones":
-        navigate("/admin/zones");
-        break;
-      case "messages":
-        navigate("/admin/messages");
-        break;
-      case "analytics":
-        navigate("/admin/analytics");
-        break;
-      case "branding":
-        navigate("/admin/branding");
-        break;
-      case "settings":
-        navigate("/admin/settings");
-        break;
-    }
+    navigate(
+      id === "dashboard" ? "/admin" :
+      id === "store" ? "/admin/store" :
+      id === "branding" ? "/admin/branding" :
+      id === "categories" ? "/admin/categories" :
+      id === "products" ? "/admin/products" :
+      id === "orders" ? "/admin/orders" :
+      id === "users" ? "/admin/users" :
+      id === "sellers" ? "/admin/sellers" :
+      id === "riders" ? "/admin/riders" :
+      id === "applications" ? "/admin/applications" :
+      id === "zones" ? "/admin/zones" :
+      id === "notifications" ? "/notifications" :
+      id === "messages" ? "/admin/messages" :
+      id === "analytics" ? "/admin/analytics" :
+      id === "settings" ? "/admin/settings" :
+      "/admin"
+    );
   };
 
   const filteredRiders = riders.filter(r => 
