@@ -57,8 +57,8 @@ export interface IStorage {
   updatePlatformSettings(data: Partial<PlatformSettings>): Promise<PlatformSettings>;
   
   // Cart operations
-  addToCart(userId: string, productId: string, quantity: number): Promise<Cart>;
-  getCart(userId: string): Promise<Array<{ id: string; productId: string; productName: string; productImage: string; quantity: number; price: string }>>;
+  addToCart(userId: string, productId: string, quantity: number, variantId?: string, selectedColor?: string, selectedSize?: string): Promise<Cart>;
+  getCart(userId: string): Promise<Array<{ id: string; productId: string; productName: string; productImage: string; quantity: number; price: string; variantId: string | null; selectedColor: string | null; selectedSize: string | null }>>;
   updateCartItem(id: string, quantity: number): Promise<Cart | undefined>;
   removeFromCart(id: string): Promise<boolean>;
   clearCart(userId: string): Promise<void>;
@@ -345,9 +345,15 @@ export class DbStorage implements IStorage {
   }
 
   // Cart operations
-  async addToCart(userId: string, productId: string, quantity: number): Promise<Cart> {
+  async addToCart(userId: string, productId: string, quantity: number, variantId?: string, selectedColor?: string, selectedSize?: string): Promise<Cart> {
     const existing = await db.select().from(cart)
-      .where(and(eq(cart.userId, userId), eq(cart.productId, productId)))
+      .where(and(
+        eq(cart.userId, userId), 
+        eq(cart.productId, productId),
+        variantId ? eq(cart.variantId, variantId) : sql`${cart.variantId} IS NULL`,
+        selectedColor ? eq(cart.selectedColor, selectedColor) : sql`${cart.selectedColor} IS NULL`,
+        selectedSize ? eq(cart.selectedSize, selectedSize) : sql`${cart.selectedSize} IS NULL`
+      ))
       .limit(1);
 
     if (existing.length > 0) {
@@ -358,11 +364,18 @@ export class DbStorage implements IStorage {
       return updated;
     }
 
-    const [newItem] = await db.insert(cart).values({ userId, productId, quantity }).returning();
+    const [newItem] = await db.insert(cart).values({ 
+      userId, 
+      productId, 
+      quantity,
+      variantId,
+      selectedColor,
+      selectedSize
+    }).returning();
     return newItem;
   }
 
-  async getCart(userId: string): Promise<Array<{ id: string; productId: string; productName: string; productImage: string; quantity: number; price: string }>> {
+  async getCart(userId: string): Promise<Array<{ id: string; productId: string; productName: string; productImage: string; quantity: number; price: string; variantId: string | null; selectedColor: string | null; selectedSize: string | null }>> {
     const items = await db
       .select({
         id: cart.id,
@@ -371,6 +384,9 @@ export class DbStorage implements IStorage {
         productImage: sql<string>`${products.images}[1]`,
         quantity: cart.quantity,
         price: products.price,
+        variantId: cart.variantId,
+        selectedColor: cart.selectedColor,
+        selectedSize: cart.selectedSize,
       })
       .from(cart)
       .leftJoin(products, eq(cart.productId, products.id))
@@ -381,7 +397,10 @@ export class DbStorage implements IStorage {
       ...item,
       productName: item.productName || "Unknown Product",
       productImage: item.productImage || "",
-      price: item.price || "0"
+      price: item.price || "0",
+      variantId: item.variantId,
+      selectedColor: item.selectedColor,
+      selectedSize: item.selectedSize
     }));
   }
 

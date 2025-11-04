@@ -165,8 +165,20 @@ export default function ProductDetails() {
   }, [selectedColor, hasSizeVariants, hasColorVariants, variants]);
 
   const addToCartMutation = useMutation({
-    mutationFn: async ({ productId, quantity }: { productId: string; quantity: number }) => {
-      const res = await apiRequest("POST", "/api/cart", { productId, quantity });
+    mutationFn: async ({ productId, quantity, variantId, selectedColor, selectedSize }: { 
+      productId: string; 
+      quantity: number;
+      variantId?: string;
+      selectedColor?: string;
+      selectedSize?: string;
+    }) => {
+      const res = await apiRequest("POST", "/api/cart", { 
+        productId, 
+        quantity,
+        variantId,
+        selectedColor,
+        selectedSize
+      });
       return res.json();
     },
     onSuccess: () => {
@@ -230,7 +242,14 @@ export default function ProductDetails() {
       navigate("/auth");
       return;
     }
-    addToCartMutation.mutate({ productId, quantity });
+    
+    addToCartMutation.mutate({ 
+      productId, 
+      quantity,
+      variantId: activeVariant?.id,
+      selectedColor: selectedColor || undefined,
+      selectedSize: selectedSize || undefined
+    });
   };
 
   if (isLoading) {

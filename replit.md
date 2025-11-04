@@ -57,7 +57,7 @@ The backend utilizes Express.js with a native HTTP server wrapped with Socket.IO
 ### Database Schema Design
 
 The database schema includes tables for:
-- **Core Commerce**: Users (with role-specific fields), Products (with seller association and inventory), Orders (with status tracking and delivery details, including geolocation data), Reviews (with product ratings and user comments), Delivery Zones, Transactions, Product Variants
+- **Core Commerce**: Users (with role-specific fields), Products (with seller association and inventory), Orders (with status tracking and delivery details, including geolocation data), Reviews (with product ratings and user comments), Delivery Zones, Transactions, Product Variants, Cart (with variant tracking: variantId, selectedColor, selectedSize)
 - **Real-Time Communication**: Chat Messages
 - **Content Management**: Hero Banners (single-store), Banner Collections and Marketplace Banners (multi-vendor mode)
 - **Configuration**: Platform Settings for dynamic feature toggling (including `isMultiVendor` flag, footer settings, and layout preferences)
@@ -65,6 +65,12 @@ The database schema includes tables for:
 #### Multi-Vendor Schema Extensions (Nov 2025)
 - `banner_collections`: Groups of themed marketplace banners with activation controls
 - `marketplace_banners`: Scheduled promotional banners with product/store references, display ordering, and metadata for the marketplace carousel
+
+#### Product Variant Tracking in Cart (Nov 2025)
+- Cart schema extended with variant tracking fields: `variantId`, `selectedColor`, `selectedSize`
+- When customers select specific product variants (color/size) on product details pages, the exact selection is stored in the cart
+- Cart retrieval returns complete variant metadata to ensure correct items are displayed throughout the shopping experience
+- Backend storage layer preserves variant selections from add-to-cart through checkout
 
 ## External Dependencies
 
