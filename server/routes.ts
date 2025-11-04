@@ -11,7 +11,7 @@ import {
   requireRole,
   type AuthRequest 
 } from "./auth";
-import { uploadToCloudinary } from "./cloudinary";
+import { uploadToCloudinary, uploadWithMetadata } from "./cloudinary";
 import { getExchangeRates, convertCurrency, SUPPORTED_CURRENCIES } from "./currency";
 import multer from "multer";
 import { insertUserSchema, insertProductSchema, insertDeliveryZoneSchema, insertOrderSchema, insertWishlistSchema, insertReviewSchema, insertBannerCollectionSchema, insertMarketplaceBannerSchema } from "@shared/schema";
@@ -299,6 +299,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const files = req.files as { [fieldname: string]: Express.Multer.File[] };
       const imageUrls: string[] = [];
       let videoUrl: string | undefined;
+      let videoDuration: number | undefined;
 
       if (files.images) {
         for (const image of files.images) {
@@ -308,15 +309,44 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       if (files.video && files.video[0]) {
-        videoUrl = await uploadToCloudinary(files.video[0].buffer, "kiyumart/videos");
+        const videoFile = files.video[0];
+        
+        // Video format validation
+        const allowedFormats = ['video/mp4', 'video/webm'];
+        if (!allowedFormats.includes(videoFile.mimetype)) {
+          return res.status(400).json({ 
+            error: "Invalid video format. Only MP4 and WEBM formats are allowed. Please upload an MP4 or WEBM file."
+          });
+        }
+
+        // Upload video and get server-side metadata
+        const videoMetadata = await uploadWithMetadata(videoFile.buffer, "kiyumart/videos");
+        videoUrl = videoMetadata.url;
+        
+        // SERVER-SIDE validation of 30-second limit (critical security requirement)
+        if (videoMetadata.duration) {
+          videoDuration = Math.round(videoMetadata.duration);
+          
+          if (videoDuration > 30) {
+            return res.status(400).json({ 
+              error: `Video duration exceeds maximum limit of 30 seconds. Your video is ${videoDuration} seconds long. Please upload a shorter video (max 30 seconds).`
+            });
+          }
+        }
       }
+
+      // Parse dynamic fields if provided
+      const dynamicFields = req.body.dynamicFields ? JSON.parse(req.body.dynamicFields) : undefined;
 
       const productData = {
         ...req.body,
         images: imageUrls,
         video: videoUrl,
+        videoDuration,
+        dynamicFields,
         price: req.body.price,
         sellerId: req.user!.id,
+        storeId: req.body.storeId || undefined, // Optional store linkage for multi-vendor
       };
 
       const validatedData = insertProductSchema.parse(productData);
@@ -639,9 +669,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post("/api/reviews", requireAuth, async (req: AuthRequest, res) => {
     try {
       const validatedData = insertReviewSchema.parse(req.body);
+      
+      // Automatically verify if user purchased the product
+      const verification = await storage.verifyPurchaseForReview(req.user!.id, validatedData.productId);
+      
       const review = await storage.createReview({
         ...validatedData,
         userId: req.user!.id,
+        orderId: verification.orderId || null,
+        isVerifiedPurchase: verification.verified,
       });
       res.json(review);
     } catch (error: any) {
@@ -2247,6 +2283,160 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       res.json(updated);
+    } catch (error: any) {
+      res.status(400).json({ error: error.message });
+    }
+  });
+
+  // ============ Category Fields Routes (Admin Only) ============
+  app.post("/api/category-fields", requireAuth, requireRole("admin"), async (req: AuthRequest, res) => {
+    try {
+      const field = await storage.createCategoryField(req.body);
+      res.json(field);
+    } catch (error: any) {
+      res.status(400).json({ error: error.message });
+    }
+  });
+
+  app.get("/api/category-fields", async (req, res) => {
+    try {
+      const { category } = req.query;
+      const fields = await storage.getCategoryFields(category as string);
+      res.json(fields);
+    } catch (error: any) {
+      res.status(400).json({ error: error.message });
+    }
+  });
+
+  app.patch("/api/category-fields/:id", requireAuth, requireRole("admin"), async (req: AuthRequest, res) => {
+    try {
+      const field = await storage.updateCategoryField(req.params.id, req.body);
+      if (!field) {
+        return res.status(404).json({ error: "Category field not found" });
+      }
+      res.json(field);
+    } catch (error: any) {
+      res.status(400).json({ error: error.message });
+    }
+  });
+
+  app.delete("/api/category-fields/:id", requireAuth, requireRole("admin"), async (req: AuthRequest, res) => {
+    try {
+      const success = await storage.deleteCategoryField(req.params.id);
+      if (!success) {
+        return res.status(404).json({ error: "Category field not found" });
+      }
+      res.json({ success: true });
+    } catch (error: any) {
+      res.status(400).json({ error: error.message });
+    }
+  });
+
+  // ============ Store Routes ============
+  app.post("/api/stores", requireAuth, requireRole("admin", "seller"), async (req: AuthRequest, res) => {
+    try {
+      const storeData = {
+        ...req.body,
+        primarySellerId: req.user!.role === "seller" ? req.user!.id : req.body.primarySellerId,
+      };
+      const store = await storage.createStore(storeData);
+      res.json(store);
+    } catch (error: any) {
+      res.status(400).json({ error: error.message });
+    }
+  });
+
+  app.get("/api/stores", async (req, res) => {
+    try {
+      const { isActive, isApproved } = req.query;
+      const stores = await storage.getStores({
+        isActive: isActive === "true" ? true : isActive === "false" ? false : undefined,
+        isApproved: isApproved === "true" ? true : isApproved === "false" ? false : undefined,
+      });
+      res.json(stores);
+    } catch (error: any) {
+      res.status(400).json({ error: error.message });
+    }
+  });
+
+  app.get("/api/stores/:id", async (req, res) => {
+    try {
+      const store = await storage.getStore(req.params.id);
+      if (!store) {
+        return res.status(404).json({ error: "Store not found" });
+      }
+      res.json(store);
+    } catch (error: any) {
+      res.status(400).json({ error: error.message });
+    }
+  });
+
+  app.get("/api/stores/by-seller/:sellerId", async (req, res) => {
+    try {
+      const store = await storage.getStoreByPrimarySeller(req.params.sellerId);
+      if (!store) {
+        return res.status(404).json({ error: "Store not found" });
+      }
+      res.json(store);
+    } catch (error: any) {
+      res.status(400).json({ error: error.message });
+    }
+  });
+
+  app.patch("/api/stores/:id", requireAuth, requireRole("admin", "seller"), async (req: AuthRequest, res) => {
+    try {
+      const store = await storage.getStore(req.params.id);
+      if (!store) {
+        return res.status(404).json({ error: "Store not found" });
+      }
+
+      // Sellers can only update their own store
+      if (req.user!.role === "seller" && store.primarySellerId !== req.user!.id) {
+        return res.status(403).json({ error: "Not authorized" });
+      }
+
+      const updated = await storage.updateStore(req.params.id, req.body);
+      res.json(updated);
+    } catch (error: any) {
+      res.status(400).json({ error: error.message });
+    }
+  });
+
+  app.delete("/api/stores/:id", requireAuth, requireRole("admin"), async (req: AuthRequest, res) => {
+    try {
+      const success = await storage.deleteStore(req.params.id);
+      if (!success) {
+        return res.status(404).json({ error: "Store not found" });
+      }
+      res.json({ success: true });
+    } catch (error: any) {
+      res.status(400).json({ error: error.message });
+    }
+  });
+
+  // ============ Enhanced Review Routes ============
+  app.post("/api/reviews/:id/reply", requireAuth, requireRole("seller"), async (req: AuthRequest, res) => {
+    try {
+      const { reply } = req.body;
+      if (!reply) {
+        return res.status(400).json({ error: "Reply is required" });
+      }
+
+      const review = await storage.addSellerReply(req.params.id, reply);
+      if (!review) {
+        return res.status(404).json({ error: "Review not found" });
+      }
+
+      res.json(review);
+    } catch (error: any) {
+      res.status(400).json({ error: error.message });
+    }
+  });
+
+  app.get("/api/reviews/verify-purchase/:productId", requireAuth, async (req: AuthRequest, res) => {
+    try {
+      const verification = await storage.verifyPurchaseForReview(req.user!.id, req.params.productId);
+      res.json(verification);
     } catch (error: any) {
       res.status(400).json({ error: error.message });
     }

@@ -3,13 +3,14 @@ import {
   users, products, orders, orderItems, deliveryZones, deliveryTracking,
   chatMessages, transactions, platformSettings, cart, wishlist, reviews,
   productVariants, heroBanners, coupons, bannerCollections, marketplaceBanners,
+  stores, categoryFields,
   type User, type InsertUser, type Product, type InsertProduct,
   type Order, type InsertOrder, type DeliveryZone, type InsertDeliveryZone,
   type ChatMessage, type InsertChatMessage, type Transaction, type PlatformSettings,
   type Cart, type Wishlist, type DeliveryTracking, type InsertDeliveryTracking,
   type Review, type InsertReview, type ProductVariant, type HeroBanner,
   type Coupon, type InsertCoupon, type BannerCollection, type InsertBannerCollection,
-  type MarketplaceBanner, type InsertMarketplaceBanner
+  type MarketplaceBanner, type InsertMarketplaceBanner, type Store, type CategoryField
 } from "@shared/schema";
 import { eq, and, desc, sql, lte, gte, or, isNull } from "drizzle-orm";
 
@@ -76,9 +77,25 @@ export interface IStorage {
   // Review operations
   createReview(review: InsertReview & { userId: string }): Promise<Review>;
   getProductReviews(productId: string): Promise<Array<Review & { userName: string }>>;
+  addSellerReply(reviewId: string, reply: string): Promise<Review | undefined>;
+  verifyPurchaseForReview(userId: string, productId: string): Promise<{ verified: boolean; orderId?: string }>;
   
   // Product Variant operations
   getProductVariants(productId: string): Promise<ProductVariant[]>;
+  
+  // Category Fields operations (admin only)
+  createCategoryField(field: any): Promise<any>;
+  getCategoryFields(categoryName?: string): Promise<any[]>;
+  updateCategoryField(id: string, data: any): Promise<any | undefined>;
+  deleteCategoryField(id: string): Promise<boolean>;
+  
+  // Store operations
+  createStore(store: any): Promise<any>;
+  getStore(id: string): Promise<any | undefined>;
+  getStores(filters?: { isActive?: boolean; isApproved?: boolean }): Promise<any[]>;
+  getStoreByPrimarySeller(sellerId: string): Promise<any | undefined>;
+  updateStore(id: string, data: any): Promise<any | undefined>;
+  deleteStore(id: string): Promise<boolean>;
   
   // Hero Banner operations
   getHeroBanners(): Promise<HeroBanner[]>;
@@ -730,6 +747,116 @@ export class DbStorage implements IStorage {
       .where(eq(products.isActive, true))
       .orderBy(desc(products.ratings), desc(products.createdAt))
       .limit(limit);
+  }
+
+  // Enhanced Review operations
+  async addSellerReply(reviewId: string, reply: string): Promise<Review | undefined> {
+    const [updated] = await db.update(reviews)
+      .set({ sellerReply: reply, sellerReplyAt: new Date() })
+      .where(eq(reviews.id, reviewId))
+      .returning();
+    return updated;
+  }
+
+  async verifyPurchaseForReview(userId: string, productId: string): Promise<{ verified: boolean; orderId?: string }> {
+    // Check if user has a delivered order containing this product
+    const result = await db.select({
+      orderId: orders.id,
+    })
+      .from(orders)
+      .innerJoin(orderItems, eq(orders.id, orderItems.orderId))
+      .where(
+        and(
+          eq(orders.buyerId, userId),
+          eq(orderItems.productId, productId),
+          eq(orders.status, "delivered")
+        )
+      )
+      .limit(1);
+
+    if (result.length > 0) {
+      return { verified: true, orderId: result[0].orderId };
+    }
+    return { verified: false };
+  }
+
+  // Category Fields operations
+  async createCategoryField(field: any): Promise<CategoryField> {
+    const [newField] = await db.insert(categoryFields).values(field).returning();
+    return newField;
+  }
+
+  async getCategoryFields(categoryName?: string): Promise<CategoryField[]> {
+    if (categoryName) {
+      return await db.select()
+        .from(categoryFields)
+        .where(eq(categoryFields.categoryName, categoryName))
+        .orderBy(categoryFields.displayOrder);
+    }
+    return await db.select().from(categoryFields).orderBy(categoryFields.categoryName, categoryFields.displayOrder);
+  }
+
+  async updateCategoryField(id: string, data: any): Promise<CategoryField | undefined> {
+    const [updated] = await db.update(categoryFields)
+      .set(data)
+      .where(eq(categoryFields.id, id))
+      .returning();
+    return updated;
+  }
+
+  async deleteCategoryField(id: string): Promise<boolean> {
+    const result = await db.delete(categoryFields).where(eq(categoryFields.id, id));
+    return result.rowCount !== null && result.rowCount > 0;
+  }
+
+  // Store operations
+  async createStore(store: any): Promise<Store> {
+    const [newStore] = await db.insert(stores).values(store).returning();
+    return newStore;
+  }
+
+  async getStore(id: string): Promise<Store | undefined> {
+    const result = await db.select().from(stores).where(eq(stores.id, id)).limit(1);
+    return result[0];
+  }
+
+  async getStores(filters?: { isActive?: boolean; isApproved?: boolean }): Promise<Store[]> {
+    let query = db.select().from(stores);
+    
+    const conditions = [];
+    if (filters?.isActive !== undefined) {
+      conditions.push(eq(stores.isActive, filters.isActive));
+    }
+    if (filters?.isApproved !== undefined) {
+      conditions.push(eq(stores.isApproved, filters.isApproved));
+    }
+
+    if (conditions.length > 0) {
+      query = query.where(and(...conditions)) as any;
+    }
+
+    return query.orderBy(desc(stores.createdAt));
+  }
+
+  async getStoreByPrimarySeller(sellerId: string): Promise<Store | undefined> {
+    const result = await db.select()
+      .from(stores)
+      .where(eq(stores.primarySellerId, sellerId))
+      .limit(1);
+    return result[0];
+  }
+
+  async updateStore(id: string, data: any): Promise<Store | undefined> {
+    const [updated] = await db.update(stores)
+      .set({ ...data, updatedAt: new Date() })
+      .where(eq(stores.id, id))
+      .returning();
+    return updated;
+  }
+
+  async deleteStore(id: string): Promise<boolean> {
+    const result = await db.delete(stores).where(eq(stores.id, id));
+    return result.rowCount !== null && result.rowCount > 0;
   }
 }
 
