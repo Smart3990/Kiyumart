@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation } from "@tanstack/react-query";
 import { useLocation } from "wouter";
 import DashboardSidebar from "@/components/DashboardSidebar";
 import { useAuth } from "@/lib/auth";
@@ -9,6 +9,13 @@ import { Input } from "@/components/ui/input";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Loader2, Search, User, Edit, Plus, Bike, ArrowLeft } from "lucide-react";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { z } from "zod";
+import { apiRequest, queryClient } from "@/lib/queryClient";
 
 interface Rider {
   id: string;
@@ -16,6 +23,231 @@ interface Rider {
   email: string;
   phone: string | null;
   isActive: boolean;
+}
+
+const addRiderSchema = z.object({
+  name: z.string().min(2, "Name must be at least 2 characters"),
+  email: z.string().email("Invalid email address"),
+  password: z.string().min(8, "Password must be at least 8 characters"),
+  phone: z.string().min(10, "Phone number must be at least 10 characters"),
+  vehicleType: z.string().min(1, "Vehicle type is required"),
+  vehicleNumber: z.string().min(1, "Vehicle number is required"),
+  licenseNumber: z.string().min(1, "License number is required"),
+});
+
+type AddRiderFormData = z.infer<typeof addRiderSchema>;
+
+function AddRiderDialog() {
+  const [open, setOpen] = useState(false);
+  const { toast } = useToast();
+
+  const form = useForm<AddRiderFormData>({
+    resolver: zodResolver(addRiderSchema),
+    defaultValues: {
+      name: "",
+      email: "",
+      password: "",
+      phone: "",
+      vehicleType: "",
+      vehicleNumber: "",
+      licenseNumber: "",
+    },
+  });
+
+  const createRiderMutation = useMutation({
+    mutationFn: async (data: AddRiderFormData) => {
+      const userData = {
+        name: data.name,
+        email: data.email,
+        password: data.password,
+        phone: data.phone,
+        role: "rider",
+        vehicleInfo: {
+          type: data.vehicleType,
+          plateNumber: data.vehicleNumber,
+          license: data.licenseNumber,
+        },
+      };
+      return apiRequest("/api/users", {
+        method: "POST",
+        body: JSON.stringify(userData),
+        headers: {
+          "Content-Type": "application/json",
+        },
+      });
+    },
+    onSuccess: () => {
+      toast({
+        title: "Success",
+        description: "Rider added successfully",
+      });
+      queryClient.invalidateQueries({ queryKey: ["/api/users", "rider"] });
+      form.reset();
+      setOpen(false);
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to add rider",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const onSubmit = (data: AddRiderFormData) => {
+    createRiderMutation.mutate(data);
+  };
+
+  return (
+    <Dialog open={open} onOpenChange={setOpen}>
+      <DialogTrigger asChild>
+        <Button data-testid="button-add-rider" className="gap-2">
+          <Plus className="h-4 w-4" />
+          Add Rider
+        </Button>
+      </DialogTrigger>
+      <DialogContent className="max-w-md">
+        <DialogHeader>
+          <DialogTitle>Add New Rider</DialogTitle>
+          <DialogDescription>
+            Create a new rider account with vehicle information
+          </DialogDescription>
+        </DialogHeader>
+        <Form {...form}>
+          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+            <FormField
+              control={form.control}
+              name="name"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Name</FormLabel>
+                  <FormControl>
+                    <Input placeholder="John Doe" {...field} data-testid="input-rider-name" />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            <FormField
+              control={form.control}
+              name="email"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Email</FormLabel>
+                  <FormControl>
+                    <Input type="email" placeholder="rider@example.com" {...field} data-testid="input-rider-email" />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            <FormField
+              control={form.control}
+              name="password"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Password</FormLabel>
+                  <FormControl>
+                    <Input type="password" placeholder="••••••••" {...field} data-testid="input-rider-password" />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            <FormField
+              control={form.control}
+              name="phone"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Phone</FormLabel>
+                  <FormControl>
+                    <Input placeholder="+233 XX XXX XXXX" {...field} data-testid="input-rider-phone" />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            <FormField
+              control={form.control}
+              name="vehicleType"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Vehicle Type</FormLabel>
+                  <Select onValueChange={field.onChange} defaultValue={field.value}>
+                    <FormControl>
+                      <SelectTrigger data-testid="select-vehicle-type">
+                        <SelectValue placeholder="Select vehicle type" />
+                      </SelectTrigger>
+                    </FormControl>
+                    <SelectContent>
+                      <SelectItem value="motorcycle">Motorcycle</SelectItem>
+                      <SelectItem value="bicycle">Bicycle</SelectItem>
+                      <SelectItem value="car">Car</SelectItem>
+                      <SelectItem value="van">Van</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            <FormField
+              control={form.control}
+              name="vehicleNumber"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Vehicle Number</FormLabel>
+                  <FormControl>
+                    <Input placeholder="GR-1234-23" {...field} data-testid="input-vehicle-number" />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            <FormField
+              control={form.control}
+              name="licenseNumber"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>License Number</FormLabel>
+                  <FormControl>
+                    <Input placeholder="DL-123456" {...field} data-testid="input-license-number" />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            <div className="flex justify-end gap-3 pt-4">
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => setOpen(false)}
+                data-testid="button-cancel"
+              >
+                Cancel
+              </Button>
+              <Button
+                type="submit"
+                disabled={createRiderMutation.isPending}
+                data-testid="button-submit-rider"
+              >
+                {createRiderMutation.isPending && (
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                )}
+                Add Rider
+              </Button>
+            </div>
+          </form>
+        </Form>
+      </DialogContent>
+    </Dialog>
+  );
 }
 
 export default function AdminRiders() {
@@ -62,7 +294,6 @@ export default function AdminRiders() {
         navigate("/admin/users");
         break;
       case "riders":
-        // Already on riders page
         break;
       case "zones":
         navigate("/admin/zones");
@@ -119,19 +350,7 @@ export default function AdminRiders() {
               <h1 className="text-3xl font-bold text-foreground" data-testid="heading-riders">Riders Management</h1>
               <p className="text-muted-foreground mt-1">Manage delivery riders</p>
             </div>
-            <Button 
-              onClick={() => {
-                toast({
-                  title: "Add Rider",
-                  description: "Add rider feature coming soon",
-                });
-              }}
-              data-testid="button-add-rider" 
-              className="gap-2"
-            >
-              <Plus className="h-4 w-4" />
-              Add Rider
-            </Button>
+            <AddRiderDialog />
           </div>
 
           <div className="mb-6">

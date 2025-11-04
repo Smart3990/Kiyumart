@@ -1,4 +1,4 @@
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation } from "@tanstack/react-query";
 import { useAuth } from "@/lib/auth";
 import { useLanguage } from "@/contexts/LanguageContext";
 import Header from "@/components/Header";
@@ -6,37 +6,70 @@ import Footer from "@/components/Footer";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Bell, Package, ShoppingCart, Tag, Check } from "lucide-react";
+import { Bell, Package, ShoppingCart, Tag, Check, User, MessageSquare } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
+import { apiRequest, queryClient } from "@/lib/queryClient";
+import { useToast } from "@/hooks/use-toast";
 
 interface Notification {
   id: string;
-  type: "order" | "delivery" | "promotion" | "system";
+  type: "order" | "user" | "product" | "review" | "message" | "system";
   title: string;
   message: string;
-  read: boolean;
+  isRead: boolean;
   createdAt: string;
 }
 
 export default function Notifications() {
   const { user } = useAuth();
   const { t } = useLanguage();
+  const { toast } = useToast();
 
   const { data: notifications = [], isLoading } = useQuery<Notification[]>({
     queryKey: ["/api/notifications"],
     enabled: !!user,
   });
 
-  const unreadCount = notifications.filter(n => !n.read).length;
+  const markAsReadMutation = useMutation({
+    mutationFn: (notificationId: string) => 
+      apiRequest(`/api/notifications/${notificationId}/read`, {
+        method: "PATCH",
+      }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/notifications"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/notifications/unread-count"] });
+    },
+  });
+
+  const markAllAsReadMutation = useMutation({
+    mutationFn: () => 
+      apiRequest("/api/notifications/mark-all-read", {
+        method: "PATCH",
+      }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/notifications"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/notifications/unread-count"] });
+      toast({
+        title: "Success",
+        description: "All notifications marked as read",
+      });
+    },
+  });
+
+  const unreadCount = notifications.filter(n => !n.isRead).length;
 
   const getIcon = (type: string) => {
     switch (type) {
       case "order":
         return <ShoppingCart className="h-5 w-5" />;
-      case "delivery":
+      case "product":
         return <Package className="h-5 w-5" />;
-      case "promotion":
+      case "user":
+        return <User className="h-5 w-5" />;
+      case "review":
         return <Tag className="h-5 w-5" />;
+      case "message":
+        return <MessageSquare className="h-5 w-5" />;
       default:
         return <Bell className="h-5 w-5" />;
     }
@@ -46,10 +79,14 @@ export default function Notifications() {
     switch (type) {
       case "order":
         return "text-blue-500";
-      case "delivery":
+      case "product":
         return "text-primary";
-      case "promotion":
+      case "user":
         return "text-purple-500";
+      case "review":
+        return "text-orange-500";
+      case "message":
+        return "text-green-500";
       default:
         return "text-muted-foreground";
     }
@@ -76,14 +113,16 @@ export default function Notifications() {
                 </p>
               )}
             </div>
-            {notifications.length > 0 && (
+            {unreadCount > 0 && (
               <Button
                 variant="outline"
                 size="sm"
                 data-testid="button-mark-all-read"
+                onClick={() => markAllAsReadMutation.mutate()}
+                disabled={markAllAsReadMutation.isPending}
               >
                 <Check className="h-4 w-4 mr-2" />
-                Mark all as read
+                {markAllAsReadMutation.isPending ? "Marking..." : "Mark all as read"}
               </Button>
             )}
           </div>
@@ -116,10 +155,11 @@ export default function Notifications() {
               {notifications.map((notification) => (
                 <Card
                   key={notification.id}
-                  className={`hover-elevate transition-all ${
-                    !notification.read ? "border-primary/50 bg-primary/5" : ""
+                  className={`hover-elevate transition-all cursor-pointer ${
+                    !notification.isRead ? "border-primary/50 bg-primary/5" : ""
                   }`}
                   data-testid={`card-notification-${notification.id}`}
+                  onClick={() => !notification.isRead && markAsReadMutation.mutate(notification.id)}
                 >
                   <CardContent className="p-6">
                     <div className="flex items-start gap-4">
@@ -131,7 +171,7 @@ export default function Notifications() {
                           <h3 className="font-semibold" data-testid={`text-notification-title-${notification.id}`}>
                             {notification.title}
                           </h3>
-                          {!notification.read && (
+                          {!notification.isRead && (
                             <Badge variant="default" className="shrink-0">
                               New
                             </Badge>

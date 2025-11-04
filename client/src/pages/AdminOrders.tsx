@@ -1,22 +1,178 @@
 import { useState, useEffect } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation } from "@tanstack/react-query";
 import { useLocation } from "wouter";
 import DashboardSidebar from "@/components/DashboardSidebar";
 import { useAuth } from "@/lib/auth";
+import { useToast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Loader2, Search, Eye, Package, ArrowLeft } from "lucide-react";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { apiRequest, queryClient } from "@/lib/queryClient";
 
 interface Order {
   id: string;
   orderNumber: string;
   buyerId: string;
+  sellerId: string;
   total: string;
+  subtotal: string;
+  deliveryFee: string;
+  processingFee: string;
   status: string;
+  paymentStatus: string;
   createdAt: string;
   deliveryMethod: string;
+  deliveryAddress?: string;
+  deliveryPhone?: string;
+}
+
+function ViewOrderDialog({ orderId }: { orderId: string }) {
+  const [open, setOpen] = useState(false);
+  const { toast } = useToast();
+
+  const { data: orderDetails, isLoading } = useQuery({
+    queryKey: ["/api/orders", orderId],
+    queryFn: async () => {
+      const res = await fetch(`/api/orders/${orderId}`);
+      if (!res.ok) throw new Error("Failed to fetch order details");
+      return res.json();
+    },
+    enabled: open,
+  });
+
+  const updateStatusMutation = useMutation({
+    mutationFn: async (status: string) => {
+      return apiRequest(`/api/orders/${orderId}/status`, {
+        method: "PATCH",
+        body: JSON.stringify({ status }),
+        headers: {
+          "Content-Type": "application/json",
+        },
+      });
+    },
+    onSuccess: () => {
+      toast({
+        title: "Success",
+        description: "Order status updated successfully",
+      });
+      queryClient.invalidateQueries({ queryKey: ["/api/orders"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/orders", orderId] });
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to update order status",
+        variant: "destructive",
+      });
+    },
+  });
+
+  return (
+    <Dialog open={open} onOpenChange={setOpen}>
+      <DialogTrigger asChild>
+        <Button variant="ghost" size="icon" data-testid={`button-view-${orderId}`}>
+          <Eye className="h-4 w-4" />
+        </Button>
+      </DialogTrigger>
+      <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
+        <DialogHeader>
+          <DialogTitle>Order Details</DialogTitle>
+          <DialogDescription>
+            View and manage order information
+          </DialogDescription>
+        </DialogHeader>
+        {isLoading ? (
+          <div className="flex justify-center py-8">
+            <Loader2 className="h-8 w-8 animate-spin text-primary" />
+          </div>
+        ) : orderDetails ? (
+          <div className="space-y-4">
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <p className="text-sm font-medium text-muted-foreground">Order Number</p>
+                <p className="font-semibold">#{orderDetails.orderNumber}</p>
+              </div>
+              <div>
+                <p className="text-sm font-medium text-muted-foreground">Status</p>
+                <Select
+                  defaultValue={orderDetails.status}
+                  onValueChange={(value) => updateStatusMutation.mutate(value)}
+                  disabled={updateStatusMutation.isPending}
+                >
+                  <SelectTrigger data-testid="select-order-status">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="pending">Pending</SelectItem>
+                    <SelectItem value="processing">Processing</SelectItem>
+                    <SelectItem value="delivering">Delivering</SelectItem>
+                    <SelectItem value="delivered">Delivered</SelectItem>
+                    <SelectItem value="cancelled">Cancelled</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div>
+                <p className="text-sm font-medium text-muted-foreground">Payment Status</p>
+                <Badge className={orderDetails.paymentStatus === "completed" ? "bg-green-500" : "bg-yellow-500"}>
+                  {orderDetails.paymentStatus}
+                </Badge>
+              </div>
+              <div>
+                <p className="text-sm font-medium text-muted-foreground">Delivery Method</p>
+                <p className="font-semibold">{orderDetails.deliveryMethod}</p>
+              </div>
+              <div>
+                <p className="text-sm font-medium text-muted-foreground">Date</p>
+                <p className="font-semibold">{new Date(orderDetails.createdAt).toLocaleString()}</p>
+              </div>
+              <div>
+                <p className="text-sm font-medium text-muted-foreground">Total</p>
+                <p className="font-semibold text-primary">GHS {orderDetails.total}</p>
+              </div>
+            </div>
+
+            {orderDetails.deliveryAddress && (
+              <div>
+                <p className="text-sm font-medium text-muted-foreground">Delivery Address</p>
+                <p className="font-semibold">{orderDetails.deliveryAddress}</p>
+                {orderDetails.deliveryPhone && (
+                  <p className="text-sm text-muted-foreground">{orderDetails.deliveryPhone}</p>
+                )}
+              </div>
+            )}
+
+            <div className="border-t pt-4">
+              <p className="font-medium mb-2">Order Summary</p>
+              <div className="space-y-2">
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">Subtotal</span>
+                  <span>GHS {orderDetails.subtotal}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">Delivery Fee</span>
+                  <span>GHS {orderDetails.deliveryFee}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">Processing Fee</span>
+                  <span>GHS {orderDetails.processingFee}</span>
+                </div>
+                <div className="flex justify-between font-bold text-lg border-t pt-2">
+                  <span>Total</span>
+                  <span className="text-primary">GHS {orderDetails.total}</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        ) : (
+          <p className="text-center text-muted-foreground py-8">Failed to load order details</p>
+        )}
+      </DialogContent>
+    </Dialog>
+  );
 }
 
 export default function AdminOrders() {
@@ -52,7 +208,6 @@ export default function AdminOrders() {
         navigate("/admin/products");
         break;
       case "orders":
-        // Already on orders page
         break;
       case "users":
         navigate("/admin/users");
@@ -87,7 +242,7 @@ export default function AdminOrders() {
     switch(status.toLowerCase()) {
       case "pending": return "bg-yellow-500";
       case "processing": return "bg-blue-500";
-      case "shipped": return "bg-purple-500";
+      case "delivering": return "bg-purple-500";
       case "delivered": return "bg-green-500";
       case "cancelled": return "bg-red-500";
       default: return "bg-gray-500";
@@ -173,9 +328,7 @@ export default function AdminOrders() {
                       </div>
                     </div>
                     <div className="flex gap-2">
-                      <Button variant="ghost" size="icon" data-testid={`button-view-${order.id}`}>
-                        <Eye className="h-4 w-4" />
-                      </Button>
+                      <ViewOrderDialog orderId={order.id} />
                     </div>
                   </div>
                 </Card>

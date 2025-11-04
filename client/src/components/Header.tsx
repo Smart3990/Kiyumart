@@ -20,7 +20,6 @@ import logoDark from "@assets/photo_2025-09-24_21-19-48-removebg-preview_1762169
 
 interface HeaderProps {
   cartItemsCount?: number;
-  notificationCount?: number;
   onMenuClick?: () => void;
   onCartClick?: () => void;
   onSearch?: (query: string) => void;
@@ -33,7 +32,6 @@ interface WishlistItem {
 
 export default function Header({ 
   cartItemsCount = 0,
-  notificationCount = 0,
   onMenuClick,
   onCartClick,
   onSearch 
@@ -46,6 +44,14 @@ export default function Header({
     queryKey: ["/api/wishlist"],
     enabled: isAuthenticated,
   });
+
+  const { data: notificationData } = useQuery<{ count: number }>({
+    queryKey: ["/api/notifications/unread-count"],
+    enabled: isAuthenticated,
+    refetchInterval: 30000, // Refetch every 30 seconds
+  });
+
+  const notificationCount = notificationData?.count || 0;
 
   const isActive = (path: string) => location === path;
 

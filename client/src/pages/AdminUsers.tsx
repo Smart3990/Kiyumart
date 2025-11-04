@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation } from "@tanstack/react-query";
 import { useLocation } from "wouter";
 import DashboardSidebar from "@/components/DashboardSidebar";
 import { useAuth } from "@/lib/auth";
@@ -9,14 +9,190 @@ import { Input } from "@/components/ui/input";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Loader2, Search, User, Edit, Ban, ArrowLeft } from "lucide-react";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { z } from "zod";
+import { apiRequest, queryClient } from "@/lib/queryClient";
 
 interface UserData {
   id: string;
   username: string;
+  name: string;
   email: string;
   role: string;
+  phone: string | null;
   isActive: boolean;
   createdAt: string;
+}
+
+const editUserSchema = z.object({
+  name: z.string().min(2, "Name must be at least 2 characters"),
+  email: z.string().email("Invalid email address"),
+  phone: z.string().optional(),
+  role: z.enum(["buyer", "seller", "rider", "admin"]),
+});
+
+type EditUserFormData = z.infer<typeof editUserSchema>;
+
+function EditUserDialog({ userData }: { userData: UserData }) {
+  const [open, setOpen] = useState(false);
+  const { toast } = useToast();
+
+  const form = useForm<EditUserFormData>({
+    resolver: zodResolver(editUserSchema),
+    defaultValues: {
+      name: userData.name || userData.username,
+      email: userData.email,
+      phone: userData.phone || "",
+      role: userData.role as any,
+    },
+  });
+
+  const editUserMutation = useMutation({
+    mutationFn: async (data: EditUserFormData) => {
+      return apiRequest(`/api/users/${userData.id}`, {
+        method: "PATCH",
+        body: JSON.stringify(data),
+        headers: {
+          "Content-Type": "application/json",
+        },
+      });
+    },
+    onSuccess: () => {
+      toast({
+        title: "Success",
+        description: "User updated successfully",
+      });
+      queryClient.invalidateQueries({ queryKey: ["/api/users"] });
+      setOpen(false);
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to update user",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const onSubmit = (data: EditUserFormData) => {
+    editUserMutation.mutate(data);
+  };
+
+  return (
+    <Dialog open={open} onOpenChange={setOpen}>
+      <DialogTrigger asChild>
+        <Button 
+          variant="ghost" 
+          size="icon"
+          data-testid={`button-edit-${userData.id}`}
+        >
+          <Edit className="h-4 w-4" />
+        </Button>
+      </DialogTrigger>
+      <DialogContent className="max-w-md">
+        <DialogHeader>
+          <DialogTitle>Edit User</DialogTitle>
+          <DialogDescription>
+            Update user information and role
+          </DialogDescription>
+        </DialogHeader>
+        <Form {...form}>
+          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+            <FormField
+              control={form.control}
+              name="name"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Name</FormLabel>
+                  <FormControl>
+                    <Input placeholder="John Doe" {...field} data-testid="input-edit-name" />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            <FormField
+              control={form.control}
+              name="email"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Email</FormLabel>
+                  <FormControl>
+                    <Input type="email" placeholder="user@example.com" {...field} data-testid="input-edit-email" />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            <FormField
+              control={form.control}
+              name="phone"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Phone (Optional)</FormLabel>
+                  <FormControl>
+                    <Input placeholder="+233 XX XXX XXXX" {...field} data-testid="input-edit-phone" />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            <FormField
+              control={form.control}
+              name="role"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Role</FormLabel>
+                  <Select onValueChange={field.onChange} defaultValue={field.value}>
+                    <FormControl>
+                      <SelectTrigger data-testid="select-edit-role">
+                        <SelectValue placeholder="Select role" />
+                      </SelectTrigger>
+                    </FormControl>
+                    <SelectContent>
+                      <SelectItem value="buyer">Buyer</SelectItem>
+                      <SelectItem value="seller">Seller</SelectItem>
+                      <SelectItem value="rider">Rider</SelectItem>
+                      <SelectItem value="admin">Admin</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            <div className="flex justify-end gap-3 pt-4">
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => setOpen(false)}
+                data-testid="button-cancel-edit"
+              >
+                Cancel
+              </Button>
+              <Button
+                type="submit"
+                disabled={editUserMutation.isPending}
+                data-testid="button-submit-edit"
+              >
+                {editUserMutation.isPending && (
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                )}
+                Update User
+              </Button>
+            </div>
+          </form>
+        </Form>
+      </DialogContent>
+    </Dialog>
+  );
 }
 
 export default function AdminUsers() {
@@ -35,6 +211,32 @@ export default function AdminUsers() {
   const { data: users = [], isLoading } = useQuery<UserData[]>({
     queryKey: ["/api/users"],
     enabled: isAuthenticated && user?.role === "admin",
+  });
+
+  const toggleUserStatusMutation = useMutation({
+    mutationFn: async ({ userId, isActive }: { userId: string; isActive: boolean }) => {
+      return apiRequest(`/api/users/${userId}/status`, {
+        method: "PATCH",
+        body: JSON.stringify({ isActive: !isActive }),
+        headers: {
+          "Content-Type": "application/json",
+        },
+      });
+    },
+    onSuccess: () => {
+      toast({
+        title: "Success",
+        description: "User status updated successfully",
+      });
+      queryClient.invalidateQueries({ queryKey: ["/api/users"] });
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to update user status",
+        variant: "destructive",
+      });
+    },
   });
 
   const handleItemClick = (id: string) => {
@@ -56,7 +258,6 @@ export default function AdminUsers() {
         navigate("/admin/orders");
         break;
       case "users":
-        // Already on users page
         break;
       case "riders":
         navigate("/admin/riders");
@@ -176,23 +377,12 @@ export default function AdminUsers() {
                       </div>
                     </div>
                     <div className="flex gap-2">
-                      <Button 
-                        variant="ghost" 
-                        size="icon" 
-                        onClick={() => navigate(`/admin/users/${userData.id}/edit`)}
-                        data-testid={`button-edit-${userData.id}`}
-                      >
-                        <Edit className="h-4 w-4" />
-                      </Button>
+                      <EditUserDialog userData={userData} />
                       <Button 
                         variant="ghost" 
                         size="icon"
-                        onClick={() => {
-                          toast({
-                            title: userData.isActive ? "Ban User" : "Activate User",
-                            description: `User ${userData.isActive ? "ban" : "activation"} feature coming soon`,
-                          });
-                        }}
+                        onClick={() => toggleUserStatusMutation.mutate({ userId: userData.id, isActive: userData.isActive })}
+                        disabled={toggleUserStatusMutation.isPending}
                         data-testid={`button-ban-${userData.id}`}
                       >
                         <Ban className="h-4 w-4" />

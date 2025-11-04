@@ -9,6 +9,7 @@ export const deliveryMethodEnum = pgEnum("delivery_method", ["pickup", "bus", "r
 export const paymentStatusEnum = pgEnum("payment_status", ["pending", "processing", "completed", "failed", "refunded"]);
 export const supportStatusEnum = pgEnum("support_status", ["open", "assigned", "resolved"]);
 export const discountTypeEnum = pgEnum("discount_type", ["percentage", "fixed"]);
+export const notificationTypeEnum = pgEnum("notification_type", ["order", "user", "product", "review", "message", "system"]);
 
 export const users = pgTable("users", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
@@ -281,6 +282,17 @@ export const reviews = pgTable("reviews", {
   createdAt: timestamp("created_at").defaultNow(),
 });
 
+export const notifications = pgTable("notifications", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  userId: varchar("user_id").notNull().references(() => users.id),
+  type: notificationTypeEnum("type").notNull(),
+  title: text("title").notNull(),
+  message: text("message").notNull(),
+  isRead: boolean("is_read").default(false),
+  metadata: jsonb("metadata").$type<Record<string, any>>(),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
 export const productVariants = pgTable("product_variants", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
   productId: varchar("product_id").notNull().references(() => products.id),
@@ -408,6 +420,14 @@ export const insertReviewSchema = createInsertSchema(reviews).pick({
   isVerifiedPurchase: true,
 });
 
+export const insertNotificationSchema = createInsertSchema(notifications).pick({
+  userId: true,
+  type: true,
+  title: true,
+  message: true,
+  metadata: true,
+});
+
 export const insertProductVariantSchema = createInsertSchema(productVariants).pick({
   productId: true,
   color: true,
@@ -492,6 +512,9 @@ export type DeliveryTracking = typeof deliveryTracking.$inferSelect;
 
 export type InsertReview = z.infer<typeof insertReviewSchema>;
 export type Review = typeof reviews.$inferSelect;
+
+export type InsertNotification = z.infer<typeof insertNotificationSchema>;
+export type Notification = typeof notifications.$inferSelect;
 
 export const insertSupportConversationSchema = createInsertSchema(supportConversations).pick({
   subject: true,

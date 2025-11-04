@@ -14,14 +14,16 @@ import {
   Heart,
   Headphones,
   Palette,
+  Bell,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { useQuery } from "@tanstack/react-query";
 
 interface MenuItem {
   icon: React.ElementType;
   label: string;
   id: string;
-  badge?: number;
+  badge?: number | "dynamic";
 }
 
 interface DashboardSidebarProps {
@@ -34,7 +36,7 @@ interface DashboardSidebarProps {
 const menuItems: Record<string, MenuItem[]> = {
   admin: [
     { icon: LayoutDashboard, label: "Dashboard", id: "dashboard" },
-    { icon: Store, label: "Mode Settings", id: "mode" },
+    { icon: Store, label: "Store", id: "store" },
     { icon: Palette, label: "Branding", id: "branding" },
     { icon: Grid3x3, label: "Categories", id: "categories" },
     { icon: Package, label: "Products", id: "products" },
@@ -42,24 +44,27 @@ const menuItems: Record<string, MenuItem[]> = {
     { icon: Users, label: "Users", id: "users" },
     { icon: Truck, label: "Riders", id: "riders" },
     { icon: MapPin, label: "Delivery Zones", id: "zones" },
-    { icon: MessageSquare, label: "Messages", id: "messages", badge: 5 },
+    { icon: Bell, label: "Notifications", id: "notifications", badge: "dynamic" },
+    { icon: MessageSquare, label: "Messages", id: "messages" },
     { icon: BarChart3, label: "Analytics", id: "analytics" },
     { icon: Settings, label: "Settings", id: "settings" },
   ],
   seller: [
     { icon: LayoutDashboard, label: "Dashboard", id: "dashboard" },
     { icon: Package, label: "My Products", id: "products" },
-    { icon: ShoppingBag, label: "Orders", id: "orders", badge: 3 },
+    { icon: ShoppingBag, label: "Orders", id: "orders" },
     { icon: Tag, label: "Coupons", id: "coupons" },
     { icon: Truck, label: "Deliveries", id: "deliveries" },
-    { icon: MessageSquare, label: "Messages", id: "messages", badge: 2 },
+    { icon: Bell, label: "Notifications", id: "notifications", badge: "dynamic" },
+    { icon: MessageSquare, label: "Messages", id: "messages" },
     { icon: BarChart3, label: "Analytics", id: "analytics" },
     { icon: Settings, label: "Settings", id: "settings" },
   ],
   rider: [
     { icon: LayoutDashboard, label: "Dashboard", id: "dashboard" },
-    { icon: ShoppingBag, label: "Deliveries", id: "deliveries", badge: 4 },
+    { icon: ShoppingBag, label: "Deliveries", id: "deliveries" },
     { icon: MapPin, label: "Active Route", id: "route" },
+    { icon: Bell, label: "Notifications", id: "notifications", badge: "dynamic" },
     { icon: MessageSquare, label: "Messages", id: "messages" },
     { icon: BarChart3, label: "Earnings", id: "earnings" },
     { icon: Settings, label: "Settings", id: "settings" },
@@ -68,6 +73,7 @@ const menuItems: Record<string, MenuItem[]> = {
     { icon: LayoutDashboard, label: "Dashboard", id: "dashboard" },
     { icon: ShoppingBag, label: "My Orders", id: "orders" },
     { icon: Heart, label: "Wishlist", id: "wishlist" },
+    { icon: Bell, label: "Notifications", id: "notifications", badge: "dynamic" },
     { icon: Headphones, label: "Support", id: "support" },
     { icon: Settings, label: "Settings", id: "settings" },
   ],
@@ -80,6 +86,14 @@ export default function DashboardSidebar({
   userName = "User",
 }: DashboardSidebarProps) {
   const items = menuItems[role];
+
+  // Fetch real notification count
+  const { data: notificationData } = useQuery<{ count: number }>({
+    queryKey: ["/api/notifications/unread-count"],
+    refetchInterval: 30000, // Refetch every 30 seconds
+  });
+
+  const notificationCount = notificationData?.count || 0;
 
   return (
     <div className="flex flex-col h-full w-64 bg-card border-r">
@@ -120,7 +134,7 @@ export default function DashboardSidebar({
               <span className="flex-1 text-left">{item.label}</span>
               {item.badge && (
                 <span className="bg-destructive text-destructive-foreground text-xs rounded-full px-2 py-0.5">
-                  {item.badge}
+                  {item.badge === "dynamic" ? (notificationCount > 0 ? (notificationCount > 9 ? "9+" : notificationCount) : null) : item.badge}
                 </span>
               )}
             </button>

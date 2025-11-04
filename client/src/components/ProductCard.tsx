@@ -46,6 +46,11 @@ export default function ProductCard({
   const sellingPrice = typeof price === 'string' ? parseFloat(price) : price;
   const originalPrice = costPrice ? (typeof costPrice === 'string' ? parseFloat(costPrice) : costPrice) : null;
   const ratingNum = typeof rating === 'string' ? parseFloat(rating) : rating;
+  
+  // Calculate actual discount percentage only if costPrice > sellingPrice
+  const actualDiscount = originalPrice && originalPrice > sellingPrice 
+    ? Math.round(((originalPrice - sellingPrice) / originalPrice) * 100)
+    : 0;
 
   const handleWishlistToggle = (e: React.MouseEvent) => {
     e.stopPropagation();
@@ -70,12 +75,12 @@ export default function ProductCard({
           className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
           data-testid={`img-product-${id}`}
         />
-        {discount > 0 && (
+        {actualDiscount > 0 && (
           <Badge 
             className="absolute top-2 left-2 bg-destructive text-destructive-foreground z-10 font-semibold text-xs px-2 py-1 shadow-md"
             data-testid={`badge-discount-${id}`}
           >
-            -{discount}%
+            -{actualDiscount}%
           </Badge>
         )}
         <Button

@@ -52,6 +52,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       const user = await storage.createUser(userData);
 
+      // Notify admins about new seller/rider registration
+      if (requestedRole === "seller" || requestedRole === "rider") {
+        await notifyAdmins(
+          "user",
+          `New ${requestedRole} registration`,
+          `${user.name} (${user.email}) has registered as a ${requestedRole}`,
+          { userId: user.id, role: requestedRole }
+        );
+      }
+
       const token = generateToken(user);
       const { password, ...userWithoutPassword } = user;
 
@@ -348,6 +358,66 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  app.post("/api/users", requireAuth, requireRole("admin"), async (req, res) => {
+    try {
+      const validatedData = insertUserSchema.parse(req.body);
+      const existingUser = await storage.getUserByEmail(validatedData.email);
+      
+      if (existingUser) {
+        return res.status(400).json({ error: "Email already exists" });
+      }
+
+      const hashedPassword = await hashPassword(validatedData.password);
+      
+      const userData: any = {
+        ...validatedData,
+        password: hashedPassword,
+        isApproved: validatedData.role === "rider" || validatedData.role === "seller" ? true : false,
+      };
+      
+      const user = await storage.createUser(userData);
+      const { password, ...userWithoutPassword } = user;
+
+      res.json(userWithoutPassword);
+    } catch (error: any) {
+      res.status(400).json({ error: error.message });
+    }
+  });
+
+  app.patch("/api/users/:id", requireAuth, requireRole("admin"), async (req, res) => {
+    try {
+      const allowedFields = ['name', 'email', 'phone', 'role', 'isActive', 'isApproved', 'vehicleInfo'];
+      const updateData: Record<string, any> = {};
+      
+      for (const field of allowedFields) {
+        if (req.body[field] !== undefined) {
+          updateData[field] = req.body[field];
+        }
+      }
+
+      if (Object.keys(updateData).length === 0) {
+        return res.status(400).json({ error: "No valid fields to update" });
+      }
+
+      if (updateData.email) {
+        const existingUser = await storage.getUserByEmail(updateData.email);
+        if (existingUser && existingUser.id !== req.params.id) {
+          return res.status(400).json({ error: "Email already exists" });
+        }
+      }
+      
+      const user = await storage.updateUser(req.params.id, updateData);
+      if (!user) {
+        return res.status(404).json({ error: "User not found" });
+      }
+
+      const { password, ...userWithoutPassword } = user;
+      res.json(userWithoutPassword);
+    } catch (error: any) {
+      res.status(400).json({ error: error.message });
+    }
+  });
+
   // ============ Product Routes ============
   app.post("/api/products", requireAuth, requireRole("admin", "seller"), upload.fields([
     { name: "images", maxCount: 5 },
@@ -412,6 +482,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
         ...validatedData,
         sellerId: req.user!.id,
       });
+
+      // Notify admins about new product
+      await notifyAdmins(
+        "product",
+        "New product added",
+        `${req.user!.name} added a new product: ${product.name}`,
+        { productId: product.id, sellerId: req.user!.id }
+      );
 
       res.json(product);
     } catch (error: any) {
@@ -737,6 +815,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
         orderId: verification.orderId || null,
         isVerifiedPurchase: verification.verified,
       });
+      
+      // Notify admins about new review
+      const product = await storage.getProduct(validatedData.productId);
+      await notifyAdmins(
+        "review",
+        "New review posted",
+        `${req.user!.name} posted a ${validatedData.rating}-star review${product ? ` for ${product.name}` : ''}`,
+        { reviewId: review.id, productId: validatedData.productId, userId: req.user!.id }
+      );
+      
       res.json(review);
     } catch (error: any) {
       res.status(400).json({ error: error.message });
@@ -1164,8 +1252,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           password: await bcrypt.hash("store123", 10),
           name: "KiyuMart Store",
           role: "seller" as const,
-          storeName: "KiyuMart - Islamic Fashion",
-          isActive: true
+          storeName: "KiyuMart - Islamic Fashion"
         });
         // Approve the seller
         if (seller) {
@@ -1194,8 +1281,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           "/attached_assets/generated_images/Elegant_black_abaya_with_gold_embroidery_cc860cad.png",
           "/attached_assets/generated_images/Burgundy_velvet_abaya_with_pearls_c19f2d40.png"
         ],
-        video: "https://www.w3schools.com/html/mov_bbb.mp4",
-        isActive: true
+        video: "https://www.w3schools.com/html/mov_bbb.mp4"
       });
       products.push(product1);
 
@@ -1212,8 +1298,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         images: [
           "/attached_assets/generated_images/Pink_lace_abaya_dress_53759991.png",
           "/attached_assets/generated_images/Cream_abaya_with_beige_embroidery_92e12aec.png"
-        ],
-        isActive: true
+        ]
       });
       products.push(product2);
 
@@ -1230,8 +1315,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         images: [
           "/attached_assets/generated_images/Burgundy_velvet_abaya_with_pearls_c19f2d40.png",
           "/attached_assets/generated_images/Elegant_black_abaya_with_gold_embroidery_cc860cad.png"
-        ],
-        isActive: true
+        ]
       });
       products.push(product3);
 
@@ -1247,8 +1331,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         stock: 20,
         images: [
           "/attached_assets/generated_images/Hijabs_and_accessories_category_09f9b1a2.png"
-        ],
-        isActive: true
+        ]
       });
       products.push(product4);
 
@@ -1281,15 +1364,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       // Add real customer reviews
-      if (customers.length > 0) {
+      if (customers.length >= 4) {
         const reviewsData = [
-          { productId: product1.id, userId: customers[0].id, rating: 5, comment: "Beautiful dress, runs true to size. The embroidery makes it feel very special." },
-          { productId: product1.id, userId: customers[1].id, rating: 4, comment: "Absolutely gorgeous dress! The navy blue color is rich and the fit is flattering. Highly recommend!" },
-          { productId: product1.id, userId: customers[2].id, rating: 5, comment: "The quality exceeded my expectations. Perfect for formal occasions and very comfortable to wear all day." },
-          { productId: product2.id, userId: customers[0].id, rating: 5, comment: "Love the lace details! Very elegant and modest. Got so many compliments." },
-          { productId: product2.id, userId: customers[3].id, rating: 4, comment: "Beautiful abaya, the pink color is lovely. Great quality fabric." },
-          { productId: product3.id, userId: customers[1].id, rating: 5, comment: "Stunning dress! The emerald green color is absolutely beautiful. Worth every penny." },
-          { productId: product4.id, userId: customers[2].id, rating: 5, comment: "Perfect handbag! Good size and the quality is excellent. Very happy with my purchase." }
+          { productId: product1.id, userId: customers[0]!.id, rating: 5, comment: "Beautiful dress, runs true to size. The embroidery makes it feel very special." },
+          { productId: product1.id, userId: customers[1]!.id, rating: 4, comment: "Absolutely gorgeous dress! The navy blue color is rich and the fit is flattering. Highly recommend!" },
+          { productId: product1.id, userId: customers[2]!.id, rating: 5, comment: "The quality exceeded my expectations. Perfect for formal occasions and very comfortable to wear all day." },
+          { productId: product2.id, userId: customers[0]!.id, rating: 5, comment: "Love the lace details! Very elegant and modest. Got so many compliments." },
+          { productId: product2.id, userId: customers[3]!.id, rating: 4, comment: "Beautiful abaya, the pink color is lovely. Great quality fabric." },
+          { productId: product3.id, userId: customers[1]!.id, rating: 5, comment: "Stunning dress! The emerald green color is absolutely beautiful. Worth every penny." },
+          { productId: product4.id, userId: customers[2]!.id, rating: 5, comment: "Perfect handbag! Good size and the quality is excellent. Very happy with my purchase." }
         ];
 
         for (const review of reviewsData) {
@@ -1645,6 +1728,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const validatedOrder = insertOrderSchema.parse(orderInput);
       const order = await storage.createOrder(validatedOrder, validatedItems);
       
+      // Notify admins about new order
+      await notifyAdmins(
+        "order",
+        "New order placed",
+        `Order #${order.orderNumber} has been placed by ${req.user!.name}`,
+        { orderId: order.id, orderNumber: order.orderNumber, buyerId: req.user!.id }
+      );
+      
       res.json(order);
     } catch (error: any) {
       res.status(400).json({ error: error.message });
@@ -1799,6 +1890,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const message = await storage.createMessage(messageData);
       
       io.to(req.body.receiverId).emit("new_message", message);
+      
+      // Notify admins about new messages to admin
+      const receiver = await storage.getUser(req.body.receiverId);
+      if (receiver && receiver.role === "admin") {
+        await notifyAdmins(
+          "message",
+          "New message received",
+          `${req.user!.name} sent you a message`,
+          { messageId: message.id, senderId: req.user!.id }
+        );
+      }
       
       res.json(message);
     } catch (error: any) {
@@ -2078,6 +2180,32 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   // ============ Socket.IO for Real-time Chat ============
   const userSockets = new Map<string, string>();
+
+  // Helper function to send notifications to all admins
+  async function notifyAdmins(type: string, title: string, message: string, metadata?: Record<string, any>) {
+    try {
+      const admins = await storage.getUsersByRole("admin");
+      for (const admin of admins) {
+        // Save notification to database
+        await storage.createNotification({
+          userId: admin.id,
+          type: type as any,
+          title,
+          message,
+          metadata,
+        });
+        
+        // Send real-time notification via Socket.IO
+        io.to(admin.id).emit("notification", {
+          title,
+          message,
+          type: "default",
+        });
+      }
+    } catch (error) {
+      console.error("Error notifying admins:", error);
+    }
+  }
 
   io.on("connection", (socket) => {
     console.log("User connected:", socket.id);
@@ -2565,6 +2693,47 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const verification = await storage.verifyPurchaseForReview(req.user!.id, req.params.productId);
       res.json(verification);
+    } catch (error: any) {
+      res.status(400).json({ error: error.message });
+    }
+  });
+
+  // ============ Notification Routes ============
+  app.get("/api/notifications", requireAuth, async (req: AuthRequest, res) => {
+    try {
+      const limit = req.query.limit ? parseInt(req.query.limit as string) : 50;
+      const notifications = await storage.getNotificationsByUser(req.user!.id, limit);
+      res.json(notifications);
+    } catch (error: any) {
+      res.status(400).json({ error: error.message });
+    }
+  });
+
+  app.get("/api/notifications/unread-count", requireAuth, async (req: AuthRequest, res) => {
+    try {
+      const count = await storage.getUnreadNotificationCount(req.user!.id);
+      res.json({ count });
+    } catch (error: any) {
+      res.status(400).json({ error: error.message });
+    }
+  });
+
+  app.patch("/api/notifications/:id/read", requireAuth, async (req: AuthRequest, res) => {
+    try {
+      const notification = await storage.markNotificationAsRead(req.params.id);
+      if (!notification) {
+        return res.status(404).json({ error: "Notification not found" });
+      }
+      res.json(notification);
+    } catch (error: any) {
+      res.status(400).json({ error: error.message });
+    }
+  });
+
+  app.patch("/api/notifications/mark-all-read", requireAuth, async (req: AuthRequest, res) => {
+    try {
+      await storage.markAllNotificationsAsRead(req.user!.id);
+      res.json({ success: true });
     } catch (error: any) {
       res.status(400).json({ error: error.message });
     }

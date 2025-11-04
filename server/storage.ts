@@ -3,7 +3,7 @@ import {
   users, products, orders, orderItems, deliveryZones, deliveryTracking,
   chatMessages, transactions, platformSettings, cart, wishlist, reviews,
   productVariants, heroBanners, coupons, bannerCollections, marketplaceBanners,
-  stores, categoryFields, categories,
+  stores, categoryFields, categories, notifications,
   type User, type InsertUser, type Product, type InsertProduct,
   type Order, type InsertOrder, type DeliveryZone, type InsertDeliveryZone,
   type ChatMessage, type InsertChatMessage, type Transaction, type PlatformSettings,
@@ -11,7 +11,7 @@ import {
   type Review, type InsertReview, type ProductVariant, type HeroBanner,
   type Coupon, type InsertCoupon, type BannerCollection, type InsertBannerCollection,
   type MarketplaceBanner, type InsertMarketplaceBanner, type Store, type CategoryField,
-  type Category
+  type Category, type Notification, type InsertNotification
 } from "@shared/schema";
 import { eq, and, desc, sql, lte, gte, or, isNull } from "drizzle-orm";
 
@@ -80,6 +80,13 @@ export interface IStorage {
   getProductReviews(productId: string): Promise<Array<Review & { userName: string }>>;
   addSellerReply(reviewId: string, reply: string): Promise<Review | undefined>;
   verifyPurchaseForReview(userId: string, productId: string): Promise<{ verified: boolean; orderId?: string }>;
+  
+  // Notification operations
+  createNotification(notification: InsertNotification): Promise<Notification>;
+  getNotificationsByUser(userId: string, limit?: number): Promise<Notification[]>;
+  getUnreadNotificationCount(userId: string): Promise<number>;
+  markNotificationAsRead(notificationId: string): Promise<Notification | undefined>;
+  markAllNotificationsAsRead(userId: string): Promise<void>;
   
   // Product Variant operations
   getProductVariants(productId: string): Promise<ProductVariant[]>;
@@ -512,6 +519,71 @@ export class DbStorage implements IStorage {
       .where(eq(reviews.productId, productId))
       .orderBy(desc(reviews.createdAt));
     return result as Array<Review & { userName: string }>;
+  }
+
+  async addSellerReply(reviewId: string, reply: string): Promise<Review | undefined> {
+    const [updated] = await db.update(reviews)
+      .set({ sellerReply: reply, sellerReplyAt: new Date() })
+      .where(eq(reviews.id, reviewId))
+      .returning();
+    return updated;
+  }
+
+  async verifyPurchaseForReview(userId: string, productId: string): Promise<{ verified: boolean; orderId?: string }> {
+    const result = await db.select()
+      .from(orders)
+      .innerJoin(orderItems, eq(orders.id, orderItems.orderId))
+      .where(
+        and(
+          eq(orders.buyerId, userId),
+          eq(orderItems.productId, productId),
+          eq(orders.status, "delivered")
+        )
+      )
+      .limit(1);
+    
+    if (result.length > 0) {
+      return { verified: true, orderId: result[0].orders.id };
+    }
+    return { verified: false };
+  }
+
+  // Notification operations
+  async createNotification(notification: InsertNotification): Promise<Notification> {
+    const [newNotification] = await db.insert(notifications).values(notification).returning();
+    return newNotification;
+  }
+
+  async getNotificationsByUser(userId: string, limit: number = 50): Promise<Notification[]> {
+    return db.select()
+      .from(notifications)
+      .where(eq(notifications.userId, userId))
+      .orderBy(desc(notifications.createdAt))
+      .limit(limit);
+  }
+
+  async getUnreadNotificationCount(userId: string): Promise<number> {
+    const result = await db.select({ count: sql<number>`count(*)::int` })
+      .from(notifications)
+      .where(and(
+        eq(notifications.userId, userId),
+        eq(notifications.isRead, false)
+      ));
+    return result[0]?.count || 0;
+  }
+
+  async markNotificationAsRead(notificationId: string): Promise<Notification | undefined> {
+    const [updated] = await db.update(notifications)
+      .set({ isRead: true })
+      .where(eq(notifications.id, notificationId))
+      .returning();
+    return updated;
+  }
+
+  async markAllNotificationsAsRead(userId: string): Promise<void> {
+    await db.update(notifications)
+      .set({ isRead: true })
+      .where(eq(notifications.userId, userId));
   }
 
   // Product Variant operations
