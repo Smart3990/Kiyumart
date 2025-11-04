@@ -26,6 +26,19 @@ When enabled via the admin settings (`isMultiVendor: true`), the platform transf
 
 Preferred communication style: Simple, everyday language.
 
+## Quick Testing Guide
+
+To test all dashboards and features:
+
+1. **Create Test Accounts**: Go to `/auth` and click "Create Test Accounts" button
+2. **Quick Login**: Use the quick login buttons for instant access:
+   - **Admin**: admin@kiyumart.com / admin123 → Access `/admin` dashboard
+   - **Seller**: seller@kiyumart.com / seller123 → Access `/seller` dashboard
+   - **Buyer**: buyer@kiyumart.com / buyer123 → Access `/buyer` dashboard
+   - **Rider**: rider@kiyumart.com / rider123 → Access `/rider` dashboard
+
+All dashboards are now fully functional with proper routing and authentication.
+
 ## System Architecture
 
 ### Frontend Architecture

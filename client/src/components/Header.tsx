@@ -49,15 +49,24 @@ export default function Header({
 
   const isActive = (path: string) => location === path;
 
-  // Check if user has a dashboard role (admin, seller, rider)
-  const hasDashboard = user && ['admin', 'seller', 'rider'].includes(user.role);
-  const isDashboardPage = location.startsWith('/admin') || location.startsWith('/seller') || location.startsWith('/rider');
+  // Check if user has a dashboard role (admin, seller, rider, buyer)
+  const hasDashboard = user && ['admin', 'seller', 'rider', 'buyer'].includes(user.role);
+  const isDashboardPage = location.startsWith('/admin') || location.startsWith('/seller') || location.startsWith('/rider') || location.startsWith('/buyer');
   
   const getDashboardPath = () => {
     if (user?.role === 'admin') return '/admin';
     if (user?.role === 'seller') return '/seller';
     if (user?.role === 'rider') return '/rider';
+    if (user?.role === 'buyer') return '/buyer';
     return '/';
+  };
+  
+  const getDashboardLabel = () => {
+    if (user?.role === 'admin') return 'Admin Dashboard';
+    if (user?.role === 'seller') return 'Seller Dashboard';
+    if (user?.role === 'rider') return 'Rider Dashboard';
+    if (user?.role === 'buyer') return 'My Dashboard';
+    return 'Dashboard';
   };
 
   return (
@@ -199,7 +208,7 @@ export default function Header({
                     data-testid="menu-dashboard"
                   >
                     <LayoutDashboard className="mr-2 h-4 w-4" />
-                    <span>{user.role === 'admin' ? 'Admin' : user.role === 'seller' ? 'Seller' : 'Rider'} Dashboard</span>
+                    <span>{getDashboardLabel()}</span>
                   </DropdownMenuItem>
                   <DropdownMenuItem 
                     onClick={() => navigate("/")}
