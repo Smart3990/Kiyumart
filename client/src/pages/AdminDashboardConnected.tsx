@@ -35,7 +35,7 @@ interface User {
 
 export default function AdminDashboardConnected() {
   const [activeItem, setActiveItem] = useState("dashboard");
-  const [, navigate] = useLocation();
+  const [location, navigate] = useLocation();
   const { user, isAuthenticated, isLoading: authLoading } = useAuth();
 
   useEffect(() => {
@@ -43,6 +43,40 @@ export default function AdminDashboardConnected() {
       navigate("/");
     }
   }, [isAuthenticated, authLoading, user, navigate]);
+
+  useEffect(() => {
+    // Update activeItem based on current route
+    const path = location;
+    if (path === "/admin" || path === "/admin/") {
+      setActiveItem("dashboard");
+    } else if (path.includes("/admin/store")) {
+      setActiveItem("store");
+    } else if (path.includes("/admin/branding")) {
+      setActiveItem("branding");
+    } else if (path.includes("/admin/categories")) {
+      setActiveItem("categories");
+    } else if (path.includes("/admin/products")) {
+      setActiveItem("products");
+    } else if (path.includes("/admin/orders")) {
+      setActiveItem("orders");
+    } else if (path.includes("/admin/users")) {
+      setActiveItem("users");
+    } else if (path.includes("/admin/riders")) {
+      setActiveItem("riders");
+    } else if (path.includes("/admin/zones") || path.includes("/admin/delivery-zones")) {
+      setActiveItem("zones");
+    } else if (path.includes("/admin/messages")) {
+      setActiveItem("messages");
+    } else if (path.includes("/admin/analytics")) {
+      setActiveItem("analytics");
+    } else if (path.includes("/admin/settings")) {
+      setActiveItem("settings");
+    } else if (path.includes("/admin/banners")) {
+      setActiveItem("banners");
+    } else if (path.includes("/notifications")) {
+      setActiveItem("notifications");
+    }
+  }, [location]);
 
   useEffect(() => {
     // Navigate when sidebar item is clicked

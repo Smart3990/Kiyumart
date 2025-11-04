@@ -28,6 +28,7 @@ export const users = pgTable("users", {
   storeDescription: text("store_description"),
   storeBanner: text("store_banner"),
   vehicleInfo: jsonb("vehicle_info").$type<{ type: string; plateNumber: string; license: string }>(),
+  nationalIdCard: varchar("national_id_card"),
   ratings: decimal("ratings", { precision: 3, scale: 2 }).default("0"),
   totalRatings: integer("total_ratings").default(0),
   createdAt: timestamp("created_at").defaultNow(),

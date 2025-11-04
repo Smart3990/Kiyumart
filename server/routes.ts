@@ -1076,6 +1076,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           name: "Test Rider",
           role: "rider",
           vehicleInfo: { type: "motorcycle", number: "TEST-001", license: "LIC-001" },
+          nationalIdCard: "TEST-ID-001",
           isActive: true,
           isApproved: true,
           phone: "+233501234567"

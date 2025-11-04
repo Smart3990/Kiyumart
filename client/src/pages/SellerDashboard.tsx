@@ -99,7 +99,6 @@ export default function SellerDashboard() {
                   <ProductCard
                     key={product.id}
                     {...product}
-                    onAddToCart={(id) => console.log('Edit product:', id)}
                     onToggleWishlist={(id) => console.log('Delete product:', id)}
                   />
                 ))}

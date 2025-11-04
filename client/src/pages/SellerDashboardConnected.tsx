@@ -81,7 +81,7 @@ type CouponFormData = z.infer<typeof couponFormSchema>;
 
 export default function SellerDashboardConnected() {
   const [activeItem, setActiveItem] = useState("dashboard");
-  const [, navigate] = useLocation();
+  const [location, navigate] = useLocation();
   const { user, isAuthenticated, isLoading: authLoading } = useAuth();
   const { toast } = useToast();
   const [isDialogOpen, setIsDialogOpen] = useState(false);
@@ -92,6 +92,30 @@ export default function SellerDashboardConnected() {
       navigate("/");
     }
   }, [isAuthenticated, authLoading, user, navigate]);
+
+  useEffect(() => {
+    // Update activeItem based on current route
+    const path = location;
+    if (path === "/seller" || path === "/seller/") {
+      setActiveItem("dashboard");
+    } else if (path.includes("/seller/products")) {
+      setActiveItem("products");
+    } else if (path.includes("/seller/orders")) {
+      setActiveItem("orders");
+    } else if (path.includes("/seller/coupons")) {
+      setActiveItem("coupons");
+    } else if (path.includes("/seller/deliveries")) {
+      setActiveItem("deliveries");
+    } else if (path.includes("/seller/messages")) {
+      setActiveItem("messages");
+    } else if (path.includes("/seller/analytics")) {
+      setActiveItem("analytics");
+    } else if (path.includes("/seller/settings")) {
+      setActiveItem("settings");
+    } else if (path.includes("/notifications")) {
+      setActiveItem("notifications");
+    }
+  }, [location]);
 
   useEffect(() => {
     // Navigate when sidebar item is clicked

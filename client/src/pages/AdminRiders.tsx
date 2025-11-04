@@ -33,6 +33,7 @@ const addRiderSchema = z.object({
   vehicleType: z.string().min(1, "Vehicle type is required"),
   vehicleNumber: z.string().min(1, "Vehicle number is required"),
   licenseNumber: z.string().min(1, "License number is required"),
+  nationalIdCard: z.string().min(5, "National ID card must be at least 5 characters"),
 });
 
 type AddRiderFormData = z.infer<typeof addRiderSchema>;
@@ -51,12 +52,13 @@ function AddRiderDialog() {
       vehicleType: "",
       vehicleNumber: "",
       licenseNumber: "",
+      nationalIdCard: "",
     },
   });
 
   const createRiderMutation = useMutation({
     mutationFn: async (data: AddRiderFormData) => {
-      const userData = {
+      const riderData = {
         name: data.name,
         email: data.email,
         password: data.password,
@@ -67,14 +69,9 @@ function AddRiderDialog() {
           plateNumber: data.vehicleNumber,
           license: data.licenseNumber,
         },
+        nationalIdCard: data.nationalIdCard,
       };
-      return apiRequest("/api/users", {
-        method: "POST",
-        body: JSON.stringify(userData),
-        headers: {
-          "Content-Type": "application/json",
-        },
-      });
+      return apiRequest("POST", "/api/users", riderData);
     },
     onSuccess: () => {
       toast({
@@ -217,6 +214,20 @@ function AddRiderDialog() {
                   <FormLabel>License Number</FormLabel>
                   <FormControl>
                     <Input placeholder="DL-123456" {...field} data-testid="input-license-number" />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            <FormField
+              control={form.control}
+              name="nationalIdCard"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>National ID Card</FormLabel>
+                  <FormControl>
+                    <Input placeholder="GHA-123456789-0" {...field} data-testid="input-national-id" />
                   </FormControl>
                   <FormMessage />
                 </FormItem>

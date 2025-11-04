@@ -15,6 +15,7 @@ import {
   Headphones,
   Palette,
   Bell,
+  Ticket,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useQuery } from "@tanstack/react-query";
@@ -27,7 +28,7 @@ interface MenuItem {
 }
 
 interface DashboardSidebarProps {
-  role: "admin" | "seller" | "rider" | "buyer";
+  role: "admin" | "seller" | "buyer" | "rider" | "agent";
   activeItem?: string;
   onItemClick?: (id: string) => void;
   userName?: string;
@@ -75,6 +76,14 @@ const menuItems: Record<string, MenuItem[]> = {
     { icon: Heart, label: "Wishlist", id: "wishlist" },
     { icon: Bell, label: "Notifications", id: "notifications", badge: "dynamic" },
     { icon: Headphones, label: "Support", id: "support" },
+    { icon: Settings, label: "Settings", id: "settings" },
+  ],
+  agent: [
+    { icon: LayoutDashboard, label: "Dashboard", id: "dashboard" },
+    { icon: Ticket, label: "My Tickets", id: "tickets" },
+    { icon: Users, label: "Customers", id: "customers" },
+    { icon: MessageSquare, label: "Messages", id: "messages" },
+    { icon: Bell, label: "Notifications", id: "notifications", badge: "dynamic" },
     { icon: Settings, label: "Settings", id: "settings" },
   ],
 };

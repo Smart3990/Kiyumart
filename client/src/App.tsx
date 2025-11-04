@@ -15,6 +15,7 @@ import AdminDashboard from "@/pages/AdminDashboardConnected";
 import SellerDashboard from "@/pages/SellerDashboardConnected";
 import RiderDashboard from "@/pages/RiderDashboard";
 import BuyerDashboard from "@/pages/BuyerDashboard";
+import AgentDashboard from "@/pages/AgentDashboard";
 import ChatPage from "@/pages/ChatPageConnected";
 import OrderTracking from "@/pages/OrderTracking";
 import Checkout from "@/pages/CheckoutConnected";
@@ -46,6 +47,9 @@ import NotFound from "@/pages/not-found";
 import AllProducts from "@/pages/AllProducts";
 import BrowseStores from "@/pages/BrowseStores";
 import SellerStorePage from "@/pages/SellerStorePage";
+import BecomeSellerPage from "@/pages/BecomeSellerPage";
+import BecomeRiderPage from "@/pages/BecomeRiderPage";
+import AdminStoresList from "@/pages/AdminStoresList";
 
 function Router() {
   return (
@@ -70,7 +74,10 @@ function Router() {
       <Route path="/wishlist" component={Wishlist} />
       <Route path="/orders" component={Orders} />
       <Route path="/support" component={CustomerSupport} />
+      <Route path="/become-seller" component={BecomeSellerPage} />
+      <Route path="/become-rider" component={BecomeRiderPage} />
       <Route path="/admin" component={AdminDashboard} />
+      <Route path="/admin/stores" component={AdminStoresList} />
       <Route path="/admin/store" component={AdminStoreManager} />
       <Route path="/admin/settings" component={AdminSettings} />
       <Route path="/admin/branding" component={AdminBranding} />
@@ -87,6 +94,7 @@ function Router() {
       <Route path="/seller" component={SellerDashboard} />
       <Route path="/rider" component={RiderDashboard} />
       <Route path="/buyer" component={BuyerDashboard} />
+      <Route path="/agent" component={AgentDashboard} />
       <Route path="/chat" component={ChatPage} />
       <Route path="/track" component={OrderTracking} />
       <Route component={NotFound} />
