@@ -165,7 +165,7 @@ export default function AdminDashboardConnected() {
             <div>
               <div className="flex items-center justify-between mb-4">
                 <h2 className="text-xl font-bold">Recent Orders</h2>
-                <Button variant="outline" data-testid="button-view-all">View All</Button>
+                <Button variant="outline" onClick={() => navigate("/orders")} data-testid="button-view-all">View All</Button>
               </div>
 
               {ordersLoading ? (

@@ -1,4 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
+import { useAuth } from "@/lib/auth";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import MarketplaceBannerCarousel from "@/components/MarketplaceBannerCarousel";
@@ -12,6 +13,8 @@ import type { User as BaseUser, Product, PlatformSettings } from "@shared/schema
 type Seller = BaseUser;
 
 export default function MultiVendorHome() {
+  const { user } = useAuth();
+  
   const { data: settings } = useQuery<PlatformSettings>({
     queryKey: ["/api/platform-settings"],
   });
@@ -31,6 +34,8 @@ export default function MultiVendorHome() {
   const getSellerProductCount = (sellerId: string) => {
     return allProducts.filter((p) => p.sellerId === sellerId).length;
   };
+  
+  const isAdmin = user?.role === "admin";
 
   return (
     <div className="min-h-screen flex flex-col bg-background dark:bg-gray-900">
@@ -54,9 +59,11 @@ export default function MultiVendorHome() {
                   Shop by Store
                 </h2>
               </div>
-              <Badge variant="outline" className="text-sm" data-testid="badge-store-count">
-                {sellers.length} {sellers.length === 1 ? "Store" : "Stores"}
-              </Badge>
+              {isAdmin && (
+                <Badge variant="outline" className="text-sm" data-testid="badge-store-count">
+                  {sellers.length} {sellers.length === 1 ? "Store" : "Stores"}
+                </Badge>
+              )}
             </div>
 
             {sellersLoading ? (

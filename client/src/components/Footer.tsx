@@ -16,6 +16,7 @@ interface PlatformSettings {
   instagramUrl?: string;
   twitterUrl?: string;
   footerDescription: string;
+  isMultiVendor?: boolean;
 }
 
 export default function Footer() {
@@ -40,8 +41,8 @@ export default function Footer() {
   return (
     <footer className="bg-card border-t mt-20">
       <div className="max-w-7xl mx-auto px-4 py-12">
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
-          <div>
+        <div className={`grid grid-cols-1 ${settings?.isMultiVendor ? 'md:grid-cols-3' : 'md:grid-cols-2 lg:grid-cols-4'} gap-8`}>
+          <div className={settings?.isMultiVendor ? 'md:col-span-1' : ''}>
             {settings?.logo ? (
               <img 
                 src={settings.logo}
@@ -102,15 +103,17 @@ export default function Footer() {
             </div>
           </div>
 
-          <div>
-            <h4 className="font-semibold mb-4">Shop</h4>
-            <ul className="space-y-2 text-muted-foreground">
-              <li><Link href="/" className="hover:text-foreground transition-colors" data-testid="link-home">Home</Link></li>
-              <li><Link href="/category/abayas" className="hover:text-foreground transition-colors" data-testid="link-abayas">Abayas</Link></li>
-              <li><Link href="/category/hijabs" className="hover:text-foreground transition-colors" data-testid="link-hijabs">Hijabs</Link></li>
-              <li><Link href="/category/dresses" className="hover:text-foreground transition-colors" data-testid="link-dresses">Dresses</Link></li>
-            </ul>
-          </div>
+          {!settings?.isMultiVendor && (
+            <div>
+              <h4 className="font-semibold mb-4">Shop</h4>
+              <ul className="space-y-2 text-muted-foreground">
+                <li><Link href="/" className="hover:text-foreground transition-colors" data-testid="link-home">Home</Link></li>
+                <li><Link href="/category/abayas" className="hover:text-foreground transition-colors" data-testid="link-abayas">Abayas</Link></li>
+                <li><Link href="/category/hijabs" className="hover:text-foreground transition-colors" data-testid="link-hijabs">Hijabs</Link></li>
+                <li><Link href="/category/dresses" className="hover:text-foreground transition-colors" data-testid="link-dresses">Dresses</Link></li>
+              </ul>
+            </div>
+          )}
 
           <div>
             <h4 className="font-semibold mb-4">Customer Service</h4>
