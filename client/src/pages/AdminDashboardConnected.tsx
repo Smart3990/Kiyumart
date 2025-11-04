@@ -53,6 +53,9 @@ export default function AdminDashboardConnected() {
       case "mode":
         navigate("/admin/settings");
         break;
+      case "categories":
+        navigate("/admin/categories");
+        break;
       case "products":
         navigate("/admin/products");
         break;

@@ -10,6 +10,7 @@ import {
   Store,
   MapPin,
   Tag,
+  Grid3x3,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -31,6 +32,7 @@ const menuItems: Record<string, MenuItem[]> = {
   admin: [
     { icon: LayoutDashboard, label: "Dashboard", id: "dashboard" },
     { icon: Store, label: "Mode Settings", id: "mode" },
+    { icon: Grid3x3, label: "Categories", id: "categories" },
     { icon: Package, label: "Products", id: "products" },
     { icon: ShoppingBag, label: "Orders", id: "orders" },
     { icon: Users, label: "Users", id: "users" },
