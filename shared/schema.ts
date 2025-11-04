@@ -68,9 +68,25 @@ export const platformSettings = pgTable("platform_settings", {
   updatedAt: timestamp("updated_at").defaultNow(),
 });
 
+// Stores table for multi-vendor support (backward compatible - optional)
+export const stores = pgTable("stores", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  primarySellerId: varchar("primary_seller_id").references(() => users.id),
+  name: text("name").notNull(),
+  description: text("description"),
+  logo: text("logo"),
+  banner: text("banner"),
+  category: text("category"),
+  isActive: boolean("is_active").default(true),
+  isApproved: boolean("is_approved").default(true),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
 export const products = pgTable("products", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
   sellerId: varchar("seller_id").notNull().references(() => users.id),
+  storeId: varchar("store_id").references(() => stores.id), // Optional - for multi-vendor mode
   name: text("name").notNull(),
   description: text("description").notNull(),
   category: text("category").notNull(),
@@ -79,8 +95,10 @@ export const products = pgTable("products", {
   discount: integer("discount").default(0),
   stock: integer("stock").default(0),
   images: text("images").array().notNull(),
-  video: text("video"),
+  video: text("video"), // Max 30 seconds, MP4 or WEBM
+  videoDuration: integer("video_duration"), // Duration in seconds for validation
   tags: text("tags").array(),
+  dynamicFields: jsonb("dynamic_fields").$type<Record<string, any>>(), // Category-specific dynamic fields
   isActive: boolean("is_active").default(true),
   ratings: decimal("ratings", { precision: 3, scale: 2 }).default("0"),
   totalRatings: integer("total_ratings").default(0),
@@ -230,8 +248,14 @@ export const reviews = pgTable("reviews", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
   productId: varchar("product_id").notNull().references(() => products.id),
   userId: varchar("user_id").notNull().references(() => users.id),
+  orderId: varchar("order_id").references(() => orders.id), // Track which order this review is for
   rating: integer("rating").notNull(),
   comment: text("comment"),
+  images: text("images").array(), // Optional review images
+  isVerifiedPurchase: boolean("is_verified_purchase").default(false), // Only true if buyer actually purchased
+  sellerReply: text("seller_reply"), // Seller can reply to reviews
+  sellerReplyAt: timestamp("seller_reply_at"),
+  isApproved: boolean("is_approved").default(true), // Admin moderation
   createdAt: timestamp("created_at").defaultNow(),
 });
 
@@ -307,7 +331,10 @@ export const insertProductSchema = createInsertSchema(products).pick({
   stock: true,
   images: true,
   video: true,
+  videoDuration: true,
   tags: true,
+  dynamicFields: true,
+  storeId: true,
 });
 
 export const insertDeliveryZoneSchema = createInsertSchema(deliveryZones).pick({
@@ -352,8 +379,11 @@ export const insertDeliveryTrackingSchema = createInsertSchema(deliveryTracking)
 
 export const insertReviewSchema = createInsertSchema(reviews).pick({
   productId: true,
+  orderId: true,
   rating: true,
   comment: true,
+  images: true,
+  isVerifiedPurchase: true,
 });
 
 export const insertProductVariantSchema = createInsertSchema(productVariants).pick({
@@ -470,3 +500,24 @@ export type BannerCollection = typeof bannerCollections.$inferSelect;
 
 export type InsertMarketplaceBanner = z.infer<typeof insertMarketplaceBannerSchema>;
 export type MarketplaceBanner = typeof marketplaceBanners.$inferSelect;
+
+// Category Fields for dynamic admin-created categories
+export const categoryFields = pgTable("category_fields", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  categoryName: text("category_name").notNull(),
+  fieldName: text("field_name").notNull(),
+  fieldType: text("field_type").notNull(), // text, number, dropdown, multiselect, table
+  fieldOptions: jsonb("field_options").$type<Array<string>>(), // For dropdown/multiselect
+  isRequired: boolean("is_required").default(false),
+  displayOrder: integer("display_order").default(0),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+export const insertCategoryFieldSchema = createInsertSchema(categoryFields).omit({ id: true, createdAt: true });
+export type InsertCategoryField = z.infer<typeof insertCategoryFieldSchema>;
+export type CategoryField = typeof categoryFields.$inferSelect;
+
+// Store schema
+export const insertStoreSchema = createInsertSchema(stores).omit({ id: true, createdAt: true, updatedAt: true });
+export type InsertStore = z.infer<typeof insertStoreSchema>;
+export type Store = typeof stores.$inferSelect;

@@ -57,9 +57,11 @@ The backend utilizes Express.js with a native HTTP server wrapped with Socket.IO
 ### Database Schema Design
 
 The database schema includes tables for:
-- **Core Commerce**: Users (with role-specific fields), Products (with seller association and inventory), Orders (with status tracking and delivery details, including geolocation data), Reviews (with product ratings and user comments), Delivery Zones, Transactions, Product Variants, Cart (with variant tracking: variantId, selectedColor, selectedSize)
+- **Core Commerce**: Users (with role-specific fields), Products (with seller association, store linkage, video support, and dynamic fields), Orders (with status tracking and delivery details, including geolocation data), Reviews (with verified purchase tracking, seller replies, and admin moderation), Delivery Zones, Transactions, Product Variants, Cart (with variant tracking: variantId, selectedColor, selectedSize, selectedImageIndex)
+- **Store Management**: Stores (with primary_seller_id for backward compatibility)
 - **Real-Time Communication**: Chat Messages
 - **Content Management**: Hero Banners (single-store), Banner Collections and Marketplace Banners (multi-vendor mode)
+- **Dynamic Categories**: Category Fields (admin-created custom fields per category)
 - **Configuration**: Platform Settings for dynamic feature toggling (including `isMultiVendor` flag, footer settings, and layout preferences)
 
 #### Multi-Vendor Schema Extensions (Nov 2025)
@@ -67,10 +69,30 @@ The database schema includes tables for:
 - `marketplace_banners`: Scheduled promotional banners with product/store references, display ordering, and metadata for the marketplace carousel
 
 #### Product Variant Tracking in Cart (Nov 2025)
-- Cart schema extended with variant tracking fields: `variantId`, `selectedColor`, `selectedSize`
+- Cart schema extended with variant tracking fields: `variantId`, `selectedColor`, `selectedSize`, `selectedImageIndex`
 - When customers select specific product variants (color/size) on product details pages, the exact selection is stored in the cart
+- Selected product image is also tracked (selectedImageIndex) so cart displays the exact image user clicked
 - Cart retrieval returns complete variant metadata to ensure correct items are displayed throughout the shopping experience
 - Backend storage layer preserves variant selections from add-to-cart through checkout
+
+#### Stores & Multi-Vendor Support (Nov 2025)
+- `stores` table added with `primary_seller_id` to link stores to seller accounts
+- Products can optionally reference a `storeId` for multi-vendor marketplace mode
+- Backward compatible: existing products still use `sellerId` for single-store operation
+- Migration automatically creates default stores for all existing sellers
+
+#### Enhanced Product Module (Nov 2025)
+- Video support: Products can have 1 video (max 30 seconds, MP4/WEBM format)
+- Video duration tracking: `videoDuration` field validates 30-second limit
+- Dynamic fields: `dynamicFields` JSON column for category-specific custom attributes (e.g., electronics specs, fashion sizes)
+- Category Fields system: Admins can define custom fields per category (text, dropdown, table, etc.)
+
+#### Verified Buyer Reviews (Nov 2025)
+- Reviews linked to specific orders via `orderId` to verify purchases
+- `isVerifiedPurchase` flag indicates buyer actually purchased the product
+- Review images: Buyers can upload images with their reviews
+- Seller replies: Sellers can respond to reviews (`sellerReply`, `sellerReplyAt`)
+- Admin moderation: `isApproved` flag for review moderation
 
 ## External Dependencies
 
