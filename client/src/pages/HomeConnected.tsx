@@ -199,12 +199,16 @@ export default function HomeConnected() {
     const product = cartProducts.find(p => p.id === cartItem.productId);
     if (!product) return null;
     
+    const productImage = Array.isArray(product.images) && product.images.length > 0 
+      ? product.images[0] 
+      : heroImage;
+    
     return {
       id: cartItem.id,
       name: product.name,
       price: parseFloat(product.price) * (1 - product.discount / 100),
       quantity: cartItem.quantity,
-      image: product.images[0] || heroImage,
+      image: productImage,
     };
   }).filter(Boolean) as any[];
 
@@ -325,6 +329,9 @@ export default function HomeConnected() {
                   : 0;
 
                 const isWishlisted = wishlist.some(item => item.productId === product.id);
+                const productImage = Array.isArray(product.images) && product.images.length > 0 
+                  ? product.images[0] 
+                  : heroImage;
 
                 return (
                   <ProductCard
@@ -334,7 +341,7 @@ export default function HomeConnected() {
                     price={sellingPrice}
                     costPrice={originalPrice || undefined}
                     currency={currencySymbol}
-                    image={product.images[0] || heroImage}
+                    image={productImage}
                     discount={calculatedDiscount}
                     rating={parseFloat(product.ratings) || 0}
                     reviewCount={product.totalRatings}

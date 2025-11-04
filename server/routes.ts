@@ -1111,22 +1111,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
           "/attached_assets/generated_images/Pink_lace_abaya_dress_53759991.png",
           "/attached_assets/generated_images/Cream_abaya_with_beige_embroidery_92e12aec.png"
         ],
-        isFeatured: true,
         isActive: true
       });
       products.push(product2);
-
-      // Add variants for product 2
-      const p2Variants = [
-        { productId: product2.id, color: "Pink", size: "S", stock: 3, priceAdjustment: "0" },
-        { productId: product2.id, color: "Pink", size: "M", stock: 5, priceAdjustment: "0" },
-        { productId: product2.id, color: "Pink", size: "L", stock: 4, priceAdjustment: "0" },
-        { productId: product2.id, color: "Pink", size: "XL", stock: 3, priceAdjustment: "0" }
-      ];
-      for (const variant of p2Variants) {
-        const created = await storage.createProductVariant(variant);
-        variants.push(created);
-      }
 
       // Product 3: Emerald Green Satin Evening Dress
       const product3 = await storage.createProduct({
@@ -1142,7 +1129,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
           "/attached_assets/generated_images/Burgundy_velvet_abaya_with_pearls_c19f2d40.png",
           "/attached_assets/generated_images/Elegant_black_abaya_with_gold_embroidery_cc860cad.png"
         ],
-        isFeatured: true,
         isActive: true
       });
       products.push(product3);
@@ -1160,7 +1146,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
         images: [
           "/attached_assets/generated_images/Hijabs_and_accessories_category_09f9b1a2.png"
         ],
-        isFeatured: true,
         isActive: true
       });
       products.push(product4);
@@ -1196,23 +1181,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Add real customer reviews
       if (customers.length > 0) {
         const reviewsData = [
-          { productId: product1.id, userId: customers[0]?.id, rating: 5, comment: "Beautiful dress, runs true to size. The embroidery makes it feel very special." },
-          { productId: product1.id, userId: customers[1]?.id, rating: 4, comment: "Absolutely gorgeous dress! The navy blue color is rich and the fit is flattering. Highly recommend!" },
-          { productId: product1.id, userId: customers[2]?.id, rating: 5, comment: "The quality exceeded my expectations. Perfect for formal occasions and very comfortable to wear all day." },
-          { productId: product2.id, userId: customers[0]?.id, rating: 5, comment: "Love the lace details! Very elegant and modest. Got so many compliments." },
-          { productId: product2.id, userId: customers[3]?.id, rating: 4, comment: "Beautiful abaya, the pink color is lovely. Great quality fabric." },
-          { productId: product3.id, userId: customers[1]?.id, rating: 5, comment: "Stunning dress! The emerald green color is absolutely beautiful. Worth every penny." },
-          { productId: product4.id, userId: customers[2]?.id, rating: 5, comment: "Perfect handbag! Good size and the quality is excellent. Very happy with my purchase." }
+          { productId: product1.id, userId: customers[0].id, rating: 5, comment: "Beautiful dress, runs true to size. The embroidery makes it feel very special." },
+          { productId: product1.id, userId: customers[1].id, rating: 4, comment: "Absolutely gorgeous dress! The navy blue color is rich and the fit is flattering. Highly recommend!" },
+          { productId: product1.id, userId: customers[2].id, rating: 5, comment: "The quality exceeded my expectations. Perfect for formal occasions and very comfortable to wear all day." },
+          { productId: product2.id, userId: customers[0].id, rating: 5, comment: "Love the lace details! Very elegant and modest. Got so many compliments." },
+          { productId: product2.id, userId: customers[3].id, rating: 4, comment: "Beautiful abaya, the pink color is lovely. Great quality fabric." },
+          { productId: product3.id, userId: customers[1].id, rating: 5, comment: "Stunning dress! The emerald green color is absolutely beautiful. Worth every penny." },
+          { productId: product4.id, userId: customers[2].id, rating: 5, comment: "Perfect handbag! Good size and the quality is excellent. Very happy with my purchase." }
         ];
 
         for (const review of reviewsData) {
-          if (review.userId) {
-            try {
-              const created = await storage.createReview(review);
-              reviews.push(created);
-            } catch (error) {
-              console.log("Review already exists");
-            }
+          try {
+            const created = await storage.createReview(review);
+            reviews.push(created);
+          } catch (error) {
+            console.log("Review already exists");
           }
         }
       }
@@ -1222,7 +1205,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
         message: "Islamic fashion products seeded successfully!",
         stats: {
           products: products.length,
-          variants: variants.length,
           reviews: reviews.length
         }
       });
