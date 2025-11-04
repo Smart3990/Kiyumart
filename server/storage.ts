@@ -3,14 +3,15 @@ import {
   users, products, orders, orderItems, deliveryZones, deliveryTracking,
   chatMessages, transactions, platformSettings, cart, wishlist, reviews,
   productVariants, heroBanners, coupons, bannerCollections, marketplaceBanners,
-  stores, categoryFields,
+  stores, categoryFields, categories,
   type User, type InsertUser, type Product, type InsertProduct,
   type Order, type InsertOrder, type DeliveryZone, type InsertDeliveryZone,
   type ChatMessage, type InsertChatMessage, type Transaction, type PlatformSettings,
   type Cart, type Wishlist, type DeliveryTracking, type InsertDeliveryTracking,
   type Review, type InsertReview, type ProductVariant, type HeroBanner,
   type Coupon, type InsertCoupon, type BannerCollection, type InsertBannerCollection,
-  type MarketplaceBanner, type InsertMarketplaceBanner, type Store, type CategoryField
+  type MarketplaceBanner, type InsertMarketplaceBanner, type Store, type CategoryField,
+  type Category
 } from "@shared/schema";
 import { eq, and, desc, sql, lte, gte, or, isNull } from "drizzle-orm";
 
@@ -96,6 +97,14 @@ export interface IStorage {
   getStoreByPrimarySeller(sellerId: string): Promise<any | undefined>;
   updateStore(id: string, data: any): Promise<any | undefined>;
   deleteStore(id: string): Promise<boolean>;
+  
+  // Category operations
+  createCategory(category: any): Promise<any>;
+  getCategory(id: string): Promise<any | undefined>;
+  getCategoryBySlug(slug: string): Promise<any | undefined>;
+  getCategories(filters?: { isActive?: boolean }): Promise<any[]>;
+  updateCategory(id: string, data: any): Promise<any | undefined>;
+  deleteCategory(id: string): Promise<boolean>;
   
   // Hero Banner operations
   getHeroBanners(): Promise<HeroBanner[]>;
@@ -856,6 +865,45 @@ export class DbStorage implements IStorage {
 
   async deleteStore(id: string): Promise<boolean> {
     const result = await db.delete(stores).where(eq(stores.id, id));
+    return result.rowCount !== null && result.rowCount > 0;
+  }
+
+  // Category operations
+  async createCategory(category: any): Promise<Category> {
+    const [newCategory] = await db.insert(categories).values(category).returning();
+    return newCategory;
+  }
+
+  async getCategory(id: string): Promise<Category | undefined> {
+    const result = await db.select().from(categories).where(eq(categories.id, id)).limit(1);
+    return result[0];
+  }
+
+  async getCategoryBySlug(slug: string): Promise<Category | undefined> {
+    const result = await db.select().from(categories).where(eq(categories.slug, slug)).limit(1);
+    return result[0];
+  }
+
+  async getCategories(filters?: { isActive?: boolean }): Promise<Category[]> {
+    let query = db.select().from(categories);
+    
+    if (filters?.isActive !== undefined) {
+      query = query.where(eq(categories.isActive, filters.isActive)) as any;
+    }
+
+    return query.orderBy(categories.displayOrder, categories.name);
+  }
+
+  async updateCategory(id: string, data: any): Promise<Category | undefined> {
+    const [updated] = await db.update(categories)
+      .set({ ...data, updatedAt: new Date() })
+      .where(eq(categories.id, id))
+      .returning();
+    return updated;
+  }
+
+  async deleteCategory(id: string): Promise<boolean> {
+    const result = await db.delete(categories).where(eq(categories.id, id));
     return result.rowCount !== null && result.rowCount > 0;
   }
 }

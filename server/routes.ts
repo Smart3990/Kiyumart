@@ -2472,6 +2472,76 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // ============ Category Routes ============
+  app.post("/api/categories", requireAuth, requireRole("admin"), async (req: AuthRequest, res) => {
+    try {
+      const category = await storage.createCategory(req.body);
+      res.json(category);
+    } catch (error: any) {
+      res.status(400).json({ error: error.message });
+    }
+  });
+
+  app.get("/api/categories", async (req, res) => {
+    try {
+      const { isActive } = req.query;
+      const categories = await storage.getCategories({
+        isActive: isActive === "true" ? true : isActive === "false" ? false : undefined,
+      });
+      res.json(categories);
+    } catch (error: any) {
+      res.status(400).json({ error: error.message });
+    }
+  });
+
+  app.get("/api/categories/:id", async (req, res) => {
+    try {
+      const category = await storage.getCategory(req.params.id);
+      if (!category) {
+        return res.status(404).json({ error: "Category not found" });
+      }
+      res.json(category);
+    } catch (error: any) {
+      res.status(400).json({ error: error.message });
+    }
+  });
+
+  app.get("/api/categories/by-slug/:slug", async (req, res) => {
+    try {
+      const category = await storage.getCategoryBySlug(req.params.slug);
+      if (!category) {
+        return res.status(404).json({ error: "Category not found" });
+      }
+      res.json(category);
+    } catch (error: any) {
+      res.status(400).json({ error: error.message });
+    }
+  });
+
+  app.patch("/api/categories/:id", requireAuth, requireRole("admin"), async (req: AuthRequest, res) => {
+    try {
+      const updated = await storage.updateCategory(req.params.id, req.body);
+      if (!updated) {
+        return res.status(404).json({ error: "Category not found" });
+      }
+      res.json(updated);
+    } catch (error: any) {
+      res.status(400).json({ error: error.message });
+    }
+  });
+
+  app.delete("/api/categories/:id", requireAuth, requireRole("admin"), async (req: AuthRequest, res) => {
+    try {
+      const success = await storage.deleteCategory(req.params.id);
+      if (!success) {
+        return res.status(404).json({ error: "Category not found" });
+      }
+      res.json({ success: true });
+    } catch (error: any) {
+      res.status(400).json({ error: error.message });
+    }
+  });
+
   // ============ Enhanced Review Routes ============
   app.post("/api/reviews/:id/reply", requireAuth, requireRole("seller"), async (req: AuthRequest, res) => {
     try {
