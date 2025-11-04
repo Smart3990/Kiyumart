@@ -36,6 +36,7 @@ export default function MultiVendorHome() {
   };
   
   const isAdmin = user?.role === "admin";
+  const shopDisplayMode = (settings as any)?.shopDisplayMode || "by-store";
 
   return (
     <div className="min-h-screen flex flex-col bg-background dark:bg-gray-900">
@@ -56,10 +57,10 @@ export default function MultiVendorHome() {
                   className="text-2xl md:text-3xl font-bold text-foreground dark:text-white"
                   data-testid="heading-categories"
                 >
-                  Shop by Store
+                  {shopDisplayMode === "by-category" ? "Shop by Categories" : "Shop by Store"}
                 </h2>
               </div>
-              {isAdmin && (
+              {isAdmin && shopDisplayMode === "by-store" && (
                 <Badge variant="outline" className="text-sm" data-testid="badge-store-count">
                   {sellers.length} {sellers.length === 1 ? "Store" : "Stores"}
                 </Badge>

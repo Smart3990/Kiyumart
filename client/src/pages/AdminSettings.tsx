@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useLocation } from "wouter";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -63,6 +64,7 @@ interface PlatformSettings extends SettingsFormData {
 }
 
 export default function AdminSettings() {
+  const [, navigate] = useLocation();
   const { toast } = useToast();
   const [activeTab, setActiveTab] = useState("general");
 
@@ -229,7 +231,7 @@ export default function AdminSettings() {
                         <Button
                           type="button"
                           variant="outline"
-                          onClick={() => window.location.href = "/admin/banners"}
+                          onClick={() => navigate("/admin/banners")}
                           data-testid="button-banner-manager"
                         >
                           <ImageIcon className="w-4 h-4 mr-2" />
