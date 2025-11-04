@@ -61,6 +61,7 @@ export const platformSettings = pgTable("platform_settings", {
   heroBannerAdUrl: text("hero_banner_ad_url"),
   sidebarAdImage: text("sidebar_ad_image"),
   sidebarAdUrl: text("sidebar_ad_url"),
+  shopDisplayMode: text("shop_display_mode").default("by-store"), // "by-store" or "by-category"
   footerAdImage: text("footer_ad_image"),
   footerAdUrl: text("footer_ad_url"),
   productPageAdImage: text("product_page_ad_image"),

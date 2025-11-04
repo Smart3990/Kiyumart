@@ -26,6 +26,7 @@ import {
 const settingsSchema = z.object({
   platformName: z.string().min(1, "Platform name is required"),
   isMultiVendor: z.boolean(),
+  shopDisplayMode: z.enum(["by-store", "by-category"]).optional(),
   primaryColor: z.string().regex(/^#([A-Fa-f0-9]{6})$/, "Must be a valid hex color"),
   defaultCurrency: z.string(),
   paystackPublicKey: z.string().optional(),
@@ -74,6 +75,7 @@ export default function AdminSettings() {
     values: settings ? {
       platformName: settings.platformName,
       isMultiVendor: settings.isMultiVendor,
+      shopDisplayMode: (settings as any).shopDisplayMode || "by-store",
       primaryColor: settings.primaryColor,
       defaultCurrency: settings.defaultCurrency,
       paystackPublicKey: settings.paystackPublicKey || "",
@@ -218,7 +220,7 @@ export default function AdminSettings() {
                   </div>
 
                   {form.watch("isMultiVendor") && (
-                    <div className="p-4 border rounded-lg bg-muted/50">
+                    <div className="p-4 border rounded-lg bg-muted/50 space-y-4">
                       <div className="space-y-2">
                         <Label>Multi-Vendor Features</Label>
                         <p className="text-sm text-muted-foreground mb-3">
@@ -233,6 +235,25 @@ export default function AdminSettings() {
                           <ImageIcon className="w-4 h-4 mr-2" />
                           Manage Banners
                         </Button>
+                      </div>
+                      
+                      <div className="space-y-2 pt-2 border-t">
+                        <Label htmlFor="shopDisplayMode">Homepage Display Mode</Label>
+                        <Select
+                          value={form.watch("shopDisplayMode")}
+                          onValueChange={(value) => form.setValue("shopDisplayMode", value as "by-store" | "by-category")}
+                        >
+                          <SelectTrigger id="shopDisplayMode" data-testid="select-shop-display-mode">
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="by-store">Shop by Store</SelectItem>
+                            <SelectItem value="by-category">Shop by Categories</SelectItem>
+                          </SelectContent>
+                        </Select>
+                        <p className="text-xs text-muted-foreground">
+                          Choose how products are displayed on the multi-vendor homepage
+                        </p>
                       </div>
                     </div>
                   )}
