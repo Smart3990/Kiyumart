@@ -1048,6 +1048,189 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Islamic Fashion Products Seed (Development/Testing only)
+  app.post("/api/seed/islamic-fashion", async (req, res) => {
+    try {
+      // Get or create a seller for the store
+      let seller;
+      try {
+        const existingSeller = await storage.getUserByEmail("store@kiyumart.com");
+        seller = existingSeller;
+      } catch {
+        seller = await storage.createUser({
+          email: "store@kiyumart.com",
+          password: await bcrypt.hash("store123", 10),
+          name: "KiyuMart Store",
+          role: "seller" as const,
+          storeName: "KiyuMart - Islamic Fashion",
+          isActive: true
+        });
+        // Approve the seller
+        if (seller) {
+          await storage.updateUser(seller.id, { isActive: true });
+        }
+      }
+
+      if (!seller) {
+        throw new Error("Failed to create or find seller");
+      }
+
+      const products = [];
+      const reviews = [];
+
+      // Product 1: Navy Blue Embroidered Modest Dress
+      const product1 = await storage.createProduct({
+        sellerId: seller.id,
+        name: "Navy Blue Embroidered Modest Dress",
+        description: "Beautiful navy blue modest dress with intricate embroidery. Features full-length sleeves and an elegant A-line cut. Perfect for both formal and casual occasions.",
+        category: "evening",
+        price: "229.99",
+        costPrice: "320.00",
+        discount: 28,
+        stock: 0,
+        images: [
+          "/attached_assets/generated_images/Elegant_black_abaya_with_gold_embroidery_cc860cad.png",
+          "/attached_assets/generated_images/Burgundy_velvet_abaya_with_pearls_c19f2d40.png"
+        ],
+        video: "https://www.w3schools.com/html/mov_bbb.mp4",
+        isActive: true
+      });
+      products.push(product1);
+
+      // Product 2: Pink Lace Abaya Dress
+      const product2 = await storage.createProduct({
+        sellerId: seller.id,
+        name: "Pink Lace Abaya Dress",
+        description: "Elegant pink abaya with beautiful lace details along the hem. Modest and stylish design perfect for special occasions.",
+        category: "abayas",
+        price: "279.99",
+        costPrice: "380.00",
+        discount: 26,
+        stock: 15,
+        images: [
+          "/attached_assets/generated_images/Pink_lace_abaya_dress_53759991.png",
+          "/attached_assets/generated_images/Cream_abaya_with_beige_embroidery_92e12aec.png"
+        ],
+        isFeatured: true,
+        isActive: true
+      });
+      products.push(product2);
+
+      // Add variants for product 2
+      const p2Variants = [
+        { productId: product2.id, color: "Pink", size: "S", stock: 3, priceAdjustment: "0" },
+        { productId: product2.id, color: "Pink", size: "M", stock: 5, priceAdjustment: "0" },
+        { productId: product2.id, color: "Pink", size: "L", stock: 4, priceAdjustment: "0" },
+        { productId: product2.id, color: "Pink", size: "XL", stock: 3, priceAdjustment: "0" }
+      ];
+      for (const variant of p2Variants) {
+        const created = await storage.createProductVariant(variant);
+        variants.push(created);
+      }
+
+      // Product 3: Emerald Green Satin Evening Dress
+      const product3 = await storage.createProduct({
+        sellerId: seller.id,
+        name: "Emerald Green Satin Evening Dress",
+        description: "Luxurious emerald green satin dress with elegant draping. Perfect for weddings and formal events.",
+        category: "evening",
+        price: "299.99",
+        costPrice: "400.00",
+        discount: 25,
+        stock: 12,
+        images: [
+          "/attached_assets/generated_images/Burgundy_velvet_abaya_with_pearls_c19f2d40.png",
+          "/attached_assets/generated_images/Elegant_black_abaya_with_gold_embroidery_cc860cad.png"
+        ],
+        isFeatured: true,
+        isActive: true
+      });
+      products.push(product3);
+
+      // Product 4: Designer Modest Handbag
+      const product4 = await storage.createProduct({
+        sellerId: seller.id,
+        name: "Designer Modest Handbag",
+        description: "Premium leather handbag in elegant brown color. Spacious interior with multiple compartments.",
+        category: "hijabs",
+        price: "129.99",
+        costPrice: "180.00",
+        discount: 28,
+        stock: 20,
+        images: [
+          "/attached_assets/generated_images/Hijabs_and_accessories_category_09f9b1a2.png"
+        ],
+        isFeatured: true,
+        isActive: true
+      });
+      products.push(product4);
+
+      // Create customer accounts for reviews
+      const customers = [];
+      const customerData = [
+        { email: "fatima@customer.com", name: "Fatima Ahmed" },
+        { email: "aisha@customer.com", name: "Aisha Rahman" },
+        { email: "mariam@customer.com", name: "Mariam Hassan" },
+        { email: "zainab@customer.com", name: "Zainab Ibrahim" }
+      ];
+
+      for (const customer of customerData) {
+        try {
+          let user;
+          try {
+            user = await storage.getUserByEmail(customer.email);
+          } catch {
+            user = await storage.createUser({
+              email: customer.email,
+              password: await bcrypt.hash("customer123", 10),
+              name: customer.name,
+              role: "buyer"
+            });
+          }
+          customers.push(user);
+        } catch (error) {
+          console.log(`Customer ${customer.email} already exists`);
+        }
+      }
+
+      // Add real customer reviews
+      if (customers.length > 0) {
+        const reviewsData = [
+          { productId: product1.id, userId: customers[0]?.id, rating: 5, comment: "Beautiful dress, runs true to size. The embroidery makes it feel very special." },
+          { productId: product1.id, userId: customers[1]?.id, rating: 4, comment: "Absolutely gorgeous dress! The navy blue color is rich and the fit is flattering. Highly recommend!" },
+          { productId: product1.id, userId: customers[2]?.id, rating: 5, comment: "The quality exceeded my expectations. Perfect for formal occasions and very comfortable to wear all day." },
+          { productId: product2.id, userId: customers[0]?.id, rating: 5, comment: "Love the lace details! Very elegant and modest. Got so many compliments." },
+          { productId: product2.id, userId: customers[3]?.id, rating: 4, comment: "Beautiful abaya, the pink color is lovely. Great quality fabric." },
+          { productId: product3.id, userId: customers[1]?.id, rating: 5, comment: "Stunning dress! The emerald green color is absolutely beautiful. Worth every penny." },
+          { productId: product4.id, userId: customers[2]?.id, rating: 5, comment: "Perfect handbag! Good size and the quality is excellent. Very happy with my purchase." }
+        ];
+
+        for (const review of reviewsData) {
+          if (review.userId) {
+            try {
+              const created = await storage.createReview(review);
+              reviews.push(created);
+            } catch (error) {
+              console.log("Review already exists");
+            }
+          }
+        }
+      }
+
+      res.json({
+        success: true,
+        message: "Islamic fashion products seeded successfully!",
+        stats: {
+          products: products.length,
+          variants: variants.length,
+          reviews: reviews.length
+        }
+      });
+    } catch (error: any) {
+      res.status(400).json({ error: error.message });
+    }
+  });
+
   // Admin seed for marketplace setup (Development only)
   app.post("/api/seed/marketplace-setup", requireAuth, requireRole("admin"), async (req: AuthRequest, res) => {
     try {

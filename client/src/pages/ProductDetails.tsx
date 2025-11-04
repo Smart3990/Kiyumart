@@ -399,7 +399,7 @@ export default function ProductDetails() {
                   </span>
                   {originalPrice && originalPrice > sellingPrice && (
                     <span 
-                      className="text-xl text-muted-foreground line-through decoration-2"
+                      className="text-2xl text-gray-500 dark:text-gray-400 line-through font-medium"
                       data-testid="text-cost-price"
                     >
                       {currencySymbol} {originalPrice.toFixed(2)}
