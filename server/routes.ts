@@ -876,7 +876,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
           name: "Test Seller",
           role: "seller",
           storeName: "Test Store",
-          storeBanner: "https://images.unsplash.com/photo-1441986300917-64674bd600d8?w=800"
+          storeBanner: "https://images.unsplash.com/photo-1441986300917-64674bd600d8?w=800",
+          isApproved: true,
+          isActive: true
         },
         {
           email: "rider@kiyumart.com",
@@ -938,7 +940,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
           role: "seller",
           storeName: "Fatima's Boutique",
           storeBanner: "https://images.unsplash.com/photo-1441986300917-64674bd600d8?w=800",
-          ratings: "4.8"
+          ratings: "4.8",
+          isApproved: true,
+          isActive: true
         },
         {
           email: "seller2@kiyumart.com",
@@ -947,7 +951,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
           role: "seller",
           storeName: "Aisha's Collection",
           storeBanner: "https://images.unsplash.com/photo-1445205170230-053b83016050?w=800",
-          ratings: "4.6"
+          ratings: "4.6",
+          isApproved: true,
+          isActive: true
         },
         {
           email: "seller3@kiyumart.com",
@@ -956,7 +962,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
           role: "seller",
           storeName: "Zainab's Designs",
           storeBanner: "https://images.unsplash.com/photo-1441984904996-e0b6ba687e04?w=800",
-          ratings: "4.9"
+          ratings: "4.9",
+          isApproved: true,
+          isActive: true
         }
       ];
 
@@ -1551,6 +1559,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   // ============ Platform Settings ============
   app.get("/api/settings", async (req, res) => {
+    try {
+      const settings = await storage.getPlatformSettings();
+      res.json(settings);
+    } catch (error: any) {
+      res.status(400).json({ error: error.message });
+    }
+  });
+
+  // Alias for platform settings (used by multi-vendor components)
+  app.get("/api/platform-settings", async (req, res) => {
     try {
       const settings = await storage.getPlatformSettings();
       res.json(settings);

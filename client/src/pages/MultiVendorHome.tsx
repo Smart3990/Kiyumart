@@ -25,7 +25,7 @@ export default function MultiVendorHome() {
   });
 
   const { data: allProducts = [] } = useQuery<Product[]>({
-    queryKey: ["/api/products", { isActive: "true" }],
+    queryKey: ["/api/products"],
   });
 
   const getSellerProductCount = (sellerId: string) => {
