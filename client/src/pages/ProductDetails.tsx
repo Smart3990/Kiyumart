@@ -165,19 +165,21 @@ export default function ProductDetails() {
   }, [selectedColor, hasSizeVariants, hasColorVariants, variants]);
 
   const addToCartMutation = useMutation({
-    mutationFn: async ({ productId, quantity, variantId, selectedColor, selectedSize }: { 
+    mutationFn: async ({ productId, quantity, variantId, selectedColor, selectedSize, selectedImageIndex }: { 
       productId: string; 
       quantity: number;
       variantId?: string;
       selectedColor?: string;
       selectedSize?: string;
+      selectedImageIndex?: number;
     }) => {
       const res = await apiRequest("POST", "/api/cart", { 
         productId, 
         quantity,
         variantId,
         selectedColor,
-        selectedSize
+        selectedSize,
+        selectedImageIndex
       });
       return res.json();
     },
@@ -248,7 +250,8 @@ export default function ProductDetails() {
       quantity,
       variantId: activeVariant?.id,
       selectedColor: selectedColor || undefined,
-      selectedSize: selectedSize || undefined
+      selectedSize: selectedSize || undefined,
+      selectedImageIndex: selectedImage
     });
   };
 

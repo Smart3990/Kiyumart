@@ -57,8 +57,8 @@ export interface IStorage {
   updatePlatformSettings(data: Partial<PlatformSettings>): Promise<PlatformSettings>;
   
   // Cart operations
-  addToCart(userId: string, productId: string, quantity: number, variantId?: string, selectedColor?: string, selectedSize?: string): Promise<Cart>;
-  getCart(userId: string): Promise<Array<{ id: string; productId: string; productName: string; productImage: string; quantity: number; price: string; variantId: string | null; selectedColor: string | null; selectedSize: string | null }>>;
+  addToCart(userId: string, productId: string, quantity: number, variantId?: string, selectedColor?: string, selectedSize?: string, selectedImageIndex?: number): Promise<Cart>;
+  getCart(userId: string): Promise<Array<{ id: string; productId: string; productName: string; productImage: string; quantity: number; price: string; variantId: string | null; selectedColor: string | null; selectedSize: string | null; selectedImageIndex: number | null }>>;
   updateCartItem(id: string, quantity: number): Promise<Cart | undefined>;
   removeFromCart(id: string): Promise<boolean>;
   clearCart(userId: string): Promise<void>;
@@ -345,7 +345,7 @@ export class DbStorage implements IStorage {
   }
 
   // Cart operations
-  async addToCart(userId: string, productId: string, quantity: number, variantId?: string, selectedColor?: string, selectedSize?: string): Promise<Cart> {
+  async addToCart(userId: string, productId: string, quantity: number, variantId?: string, selectedColor?: string, selectedSize?: string, selectedImageIndex?: number): Promise<Cart> {
     const existing = await db.select().from(cart)
       .where(and(
         eq(cart.userId, userId), 
@@ -358,7 +358,11 @@ export class DbStorage implements IStorage {
 
     if (existing.length > 0) {
       const [updated] = await db.update(cart)
-        .set({ quantity: existing[0].quantity + quantity, updatedAt: new Date() })
+        .set({ 
+          quantity: existing[0].quantity + quantity, 
+          selectedImageIndex: selectedImageIndex ?? existing[0].selectedImageIndex,
+          updatedAt: new Date() 
+        })
         .where(eq(cart.id, existing[0].id))
         .returning();
       return updated;
@@ -370,38 +374,50 @@ export class DbStorage implements IStorage {
       quantity,
       variantId,
       selectedColor,
-      selectedSize
+      selectedSize,
+      selectedImageIndex: selectedImageIndex ?? 0
     }).returning();
     return newItem;
   }
 
-  async getCart(userId: string): Promise<Array<{ id: string; productId: string; productName: string; productImage: string; quantity: number; price: string; variantId: string | null; selectedColor: string | null; selectedSize: string | null }>> {
+  async getCart(userId: string): Promise<Array<{ id: string; productId: string; productName: string; productImage: string; quantity: number; price: string; variantId: string | null; selectedColor: string | null; selectedSize: string | null; selectedImageIndex: number | null }>> {
     const items = await db
       .select({
         id: cart.id,
         productId: cart.productId,
         productName: products.name,
-        productImage: sql<string>`${products.images}[1]`,
+        productImages: products.images,
         quantity: cart.quantity,
         price: products.price,
         variantId: cart.variantId,
         selectedColor: cart.selectedColor,
         selectedSize: cart.selectedSize,
+        selectedImageIndex: cart.selectedImageIndex,
       })
       .from(cart)
       .leftJoin(products, eq(cart.productId, products.id))
       .where(eq(cart.userId, userId))
       .orderBy(desc(cart.createdAt));
     
-    return items.map(item => ({
-      ...item,
-      productName: item.productName || "Unknown Product",
-      productImage: item.productImage || "",
-      price: item.price || "0",
-      variantId: item.variantId,
-      selectedColor: item.selectedColor,
-      selectedSize: item.selectedSize
-    }));
+    return items.map(item => {
+      const imageIndex = item.selectedImageIndex ?? 0;
+      const productImage = item.productImages && Array.isArray(item.productImages) && item.productImages.length > imageIndex
+        ? item.productImages[imageIndex]
+        : (item.productImages && Array.isArray(item.productImages) && item.productImages.length > 0 ? item.productImages[0] : "");
+      
+      return {
+        id: item.id,
+        productId: item.productId,
+        productName: item.productName || "Unknown Product",
+        productImage,
+        quantity: item.quantity,
+        price: item.price || "0",
+        variantId: item.variantId,
+        selectedColor: item.selectedColor,
+        selectedSize: item.selectedSize,
+        selectedImageIndex: item.selectedImageIndex
+      };
+    });
   }
 
   async updateCartItem(id: string, quantity: number): Promise<Cart | undefined> {

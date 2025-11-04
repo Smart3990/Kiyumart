@@ -211,6 +211,7 @@ export const cart = pgTable("cart", {
   variantId: varchar("variant_id").references(() => productVariants.id),
   selectedColor: varchar("selected_color"),
   selectedSize: varchar("selected_size"),
+  selectedImageIndex: integer("selected_image_index").default(0),
   quantity: integer("quantity").notNull().default(1),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),

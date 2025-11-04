@@ -553,14 +553,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // ============ Cart Routes ============
   app.post("/api/cart", requireAuth, async (req: AuthRequest, res) => {
     try {
-      const { productId, quantity = 1, variantId, selectedColor, selectedSize } = req.body;
+      const { productId, quantity = 1, variantId, selectedColor, selectedSize, selectedImageIndex } = req.body;
       const cartItem = await storage.addToCart(
         req.user!.id, 
         productId, 
         quantity,
         variantId,
         selectedColor,
-        selectedSize
+        selectedSize,
+        selectedImageIndex
       );
       res.json(cartItem);
     } catch (error: any) {
