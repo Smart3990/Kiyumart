@@ -30,6 +30,12 @@ import AdminSettings from "@/pages/AdminSettings";
 import AdminDeliveryZones from "@/pages/AdminDeliveryZones";
 import AdminBannerManager from "@/pages/AdminBannerManager";
 import AdminCategoryManager from "@/pages/AdminCategoryManager";
+import AdminProducts from "@/pages/AdminProducts";
+import AdminOrders from "@/pages/AdminOrders";
+import AdminUsers from "@/pages/AdminUsers";
+import AdminRiders from "@/pages/AdminRiders";
+import AdminMessages from "@/pages/AdminMessages";
+import AdminAnalytics from "@/pages/AdminAnalytics";
 import CategoryPage from "@/pages/CategoryPage";
 import Wishlist from "@/pages/Wishlist";
 import Orders from "@/pages/Orders";
@@ -58,9 +64,16 @@ function Router() {
       <Route path="/support" component={CustomerSupport} />
       <Route path="/admin" component={AdminDashboard} />
       <Route path="/admin/settings" component={AdminSettings} />
+      <Route path="/admin/zones" component={AdminDeliveryZones} />
       <Route path="/admin/delivery-zones" component={AdminDeliveryZones} />
       <Route path="/admin/banners" component={AdminBannerManager} />
       <Route path="/admin/categories" component={AdminCategoryManager} />
+      <Route path="/admin/products" component={AdminProducts} />
+      <Route path="/admin/orders" component={AdminOrders} />
+      <Route path="/admin/users" component={AdminUsers} />
+      <Route path="/admin/riders" component={AdminRiders} />
+      <Route path="/admin/messages" component={AdminMessages} />
+      <Route path="/admin/analytics" component={AdminAnalytics} />
       <Route path="/seller" component={SellerDashboard} />
       <Route path="/rider" component={RiderDashboard} />
       <Route path="/buyer" component={BuyerDashboard} />

@@ -73,12 +73,19 @@ export default function DashboardSidebar({
   return (
     <div className="flex flex-col h-full w-64 bg-card border-r">
       <div className="p-6 border-b">
-        <h2 className="text-2xl font-bold text-primary" data-testid="text-dashboard-logo">
-          KiyuMart
-        </h2>
-        <p className="text-sm text-muted-foreground mt-1 capitalize">
-          {role} Dashboard
-        </p>
+        <div className="flex items-center gap-3">
+          <div className="w-10 h-10 rounded-lg bg-primary flex items-center justify-center text-white font-bold text-xl">
+            K
+          </div>
+          <div>
+            <h2 className="text-xl font-bold text-primary" data-testid="text-dashboard-logo">
+              KiyuMart
+            </h2>
+            <p className="text-xs text-muted-foreground capitalize">
+              {role} Dashboard
+            </p>
+          </div>
+        </div>
       </div>
 
       <nav className="flex-1 p-4 space-y-1 overflow-y-auto">
