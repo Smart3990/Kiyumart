@@ -64,6 +64,26 @@ The database schema includes tables for:
 - **Dynamic Categories**: Category Fields (admin-created custom fields per category)
 - **Configuration**: Platform Settings for dynamic feature toggling (including `isMultiVendor` flag, footer settings, and layout preferences)
 
+#### Backend API Enhancements (Nov 2025)
+**Critical Security Fixes:**
+- Video upload validation now uses server-side Cloudinary metadata (not client input) to enforce 30-second maximum duration
+- `uploadWithMetadata()` function extracts actual video duration from Cloudinary response
+- Product creation rejects videos >30 seconds with detailed error messages showing actual duration
+
+**New API Endpoints:**
+- Category Fields CRUD (admin-only): `POST/GET/PATCH/DELETE /api/category-fields` - Manage dynamic category fields
+- Stores CRUD: `POST/GET/PATCH/DELETE /api/stores` - Multi-vendor store management with seller authorization
+- Enhanced Reviews: `POST /api/reviews/:id/reply` - Sellers can reply to customer reviews
+- Verified Purchase Check: `GET /api/reviews/verify-purchase/:productId` - Check if buyer purchased product
+- Review creation automatically verifies purchase and sets `isVerifiedPurchase` flag for delivered orders
+
+**Storage Layer:**
+- `addSellerReply()` - Seller response to reviews with timestamp
+- `verifyPurchaseForReview()` - Checks delivered orders for verified purchase badge
+- Category fields CRUD methods for admin-created dynamic fields
+- Stores CRUD with filtering (isActive, isApproved)
+- `getStoreByPrimarySeller()` - Find store by seller account
+
 #### Multi-Vendor Schema Extensions (Nov 2025)
 - `banner_collections`: Groups of themed marketplace banners with activation controls
 - `marketplace_banners`: Scheduled promotional banners with product/store references, display ordering, and metadata for the marketplace carousel
