@@ -78,8 +78,8 @@ export default function AdminRiders() {
   };
 
   const filteredRiders = riders.filter(r => 
-    r.username.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    r.email.toLowerCase().includes(searchQuery.toLowerCase())
+    (r.username?.toLowerCase() || '').includes(searchQuery.toLowerCase()) ||
+    (r.email?.toLowerCase() || '').includes(searchQuery.toLowerCase())
   );
 
   if (authLoading || !isAuthenticated || user?.role !== "admin") {

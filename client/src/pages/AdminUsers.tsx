@@ -75,9 +75,9 @@ export default function AdminUsers() {
   };
 
   const filteredUsers = users.filter(u => 
-    u.username.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    u.email.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    u.role.toLowerCase().includes(searchQuery.toLowerCase())
+    (u.username?.toLowerCase() || '').includes(searchQuery.toLowerCase()) ||
+    (u.email?.toLowerCase() || '').includes(searchQuery.toLowerCase()) ||
+    (u.role?.toLowerCase() || '').includes(searchQuery.toLowerCase())
   );
 
   const getRoleBadgeColor = (role: string) => {
