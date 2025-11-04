@@ -4,6 +4,7 @@ import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import MarketplaceBannerCarousel from "@/components/MarketplaceBannerCarousel";
 import SellerCategoryCard from "@/components/SellerCategoryCard";
+import CategoryCard from "@/components/CategoryCard";
 import ProductCard from "@/components/ProductCard";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Badge } from "@/components/ui/badge";
@@ -11,6 +12,16 @@ import { TrendingUp, Star, ShoppingBag } from "lucide-react";
 import type { User as BaseUser, Product, PlatformSettings } from "@shared/schema";
 
 type Seller = BaseUser;
+
+interface Category {
+  id: string;
+  name: string;
+  slug: string;
+  image: string;
+  description?: string;
+  displayOrder: number;
+  isActive: boolean;
+}
 
 export default function MultiVendorHome() {
   const { user } = useAuth();
@@ -31,8 +42,20 @@ export default function MultiVendorHome() {
     queryKey: ["/api/products"],
   });
 
+  const { data: categories = [], isLoading: categoriesLoading } = useQuery<Category[]>({
+    queryKey: ["/api/categories", "active"],
+    queryFn: async () => {
+      const res = await fetch("/api/categories?isActive=true");
+      return res.json();
+    },
+  });
+
   const getSellerProductCount = (sellerId: string) => {
     return allProducts.filter((p) => p.sellerId === sellerId).length;
+  };
+
+  const getCategoryProductCount = (categorySlug: string) => {
+    return allProducts.filter((p) => p.category === categorySlug).length;
   };
   
   const isAdmin = user?.role === "admin";
@@ -60,34 +83,65 @@ export default function MultiVendorHome() {
                   {shopDisplayMode === "by-category" ? "Shop by Categories" : "Shop by Store"}
                 </h2>
               </div>
-              {isAdmin && shopDisplayMode === "by-store" && (
+              {isAdmin && (
                 <Badge variant="outline" className="text-sm" data-testid="badge-store-count">
-                  {sellers.length} {sellers.length === 1 ? "Store" : "Stores"}
+                  {shopDisplayMode === "by-store" 
+                    ? `${sellers.length} ${sellers.length === 1 ? "Store" : "Stores"}`
+                    : `${categories.length} ${categories.length === 1 ? "Category" : "Categories"}`
+                  }
                 </Badge>
               )}
             </div>
 
-            {sellersLoading ? (
-              <div className="category-grid">
-                {[...Array(6)].map((_, i) => (
-                  <Skeleton key={i} className="aspect-[16/10] rounded-lg" data-testid={`skeleton-seller-${i}`} />
-                ))}
-              </div>
-            ) : sellers.length > 0 ? (
-              <div className="category-grid" data-testid="grid-sellers">
-                {sellers.map((seller) => (
-                  <SellerCategoryCard
-                    key={seller.id}
-                    seller={seller}
-                    productCount={getSellerProductCount(seller.id)}
-                  />
-                ))}
-              </div>
+            {shopDisplayMode === "by-category" ? (
+              categoriesLoading ? (
+                <div className="category-grid">
+                  {[...Array(6)].map((_, i) => (
+                    <Skeleton key={i} className="aspect-[4/3] rounded-lg" data-testid={`skeleton-category-${i}`} />
+                  ))}
+                </div>
+              ) : categories.length > 0 ? (
+                <div className="category-grid" data-testid="grid-categories">
+                  {categories.map((category) => (
+                    <CategoryCard
+                      key={category.id}
+                      category={category}
+                      name={category.name}
+                      image={category.image}
+                      slug={category.slug}
+                      productCount={getCategoryProductCount(category.slug)}
+                    />
+                  ))}
+                </div>
+              ) : (
+                <div className="text-center py-12 text-muted-foreground" data-testid="empty-categories">
+                  <ShoppingBag className="w-16 h-16 mx-auto mb-4 opacity-50" />
+                  <p>No categories available yet</p>
+                </div>
+              )
             ) : (
-              <div className="text-center py-12 text-muted-foreground" data-testid="empty-sellers">
-                <ShoppingBag className="w-16 h-16 mx-auto mb-4 opacity-50" />
-                <p>No stores available yet</p>
-              </div>
+              sellersLoading ? (
+                <div className="category-grid">
+                  {[...Array(6)].map((_, i) => (
+                    <Skeleton key={i} className="aspect-[16/10] rounded-lg" data-testid={`skeleton-seller-${i}`} />
+                  ))}
+                </div>
+              ) : sellers.length > 0 ? (
+                <div className="category-grid" data-testid="grid-sellers">
+                  {sellers.map((seller) => (
+                    <SellerCategoryCard
+                      key={seller.id}
+                      seller={seller}
+                      productCount={getSellerProductCount(seller.id)}
+                    />
+                  ))}
+                </div>
+              ) : (
+                <div className="text-center py-12 text-muted-foreground" data-testid="empty-sellers">
+                  <ShoppingBag className="w-16 h-16 mx-auto mb-4 opacity-50" />
+                  <p>No stores available yet</p>
+                </div>
+              )
             )}
           </section>
 

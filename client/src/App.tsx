@@ -41,11 +41,17 @@ import Wishlist from "@/pages/Wishlist";
 import Orders from "@/pages/Orders";
 import CustomerSupport from "@/pages/CustomerSupport";
 import NotFound from "@/pages/not-found";
+import AllProducts from "@/pages/AllProducts";
+import BrowseStores from "@/pages/BrowseStores";
+import SellerStorePage from "@/pages/SellerStorePage";
 
 function Router() {
   return (
     <Switch>
       <Route path="/" component={Home} />
+      <Route path="/products" component={AllProducts} />
+      <Route path="/stores" component={BrowseStores} />
+      <Route path="/seller/:id" component={SellerStorePage} />
       <Route path="/product/:id" component={ProductDetails} />
       <Route path="/category/:id" component={CategoryPage} />
       <Route path="/cart" component={Cart} />
