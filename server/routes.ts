@@ -860,7 +860,67 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Complete marketplace seed - creates sellers, products, and banners (Development only - No auth required)
+  // Create test user accounts for all roles (Development/Testing only)
+  app.post("/api/seed/test-users", async (req, res) => {
+    try {
+      const testUsers = [
+        {
+          email: "admin@kiyumart.com",
+          password: await bcrypt.hash("admin123", 10),
+          name: "Test Admin",
+          role: "admin"
+        },
+        {
+          email: "seller@kiyumart.com",
+          password: await bcrypt.hash("seller123", 10),
+          name: "Test Seller",
+          role: "seller",
+          storeName: "Test Store",
+          storeBanner: "https://images.unsplash.com/photo-1441986300917-64674bd600d8?w=800"
+        },
+        {
+          email: "rider@kiyumart.com",
+          password: await bcrypt.hash("rider123", 10),
+          name: "Test Rider",
+          role: "rider"
+        },
+        {
+          email: "agent@kiyumart.com",
+          password: await bcrypt.hash("agent123", 10),
+          name: "Test Agent",
+          role: "agent"
+        }
+      ];
+
+      const created = [];
+      for (const user of testUsers) {
+        try {
+          const newUser = await storage.createUser(user as any);
+          created.push({ email: user.email, role: user.role });
+        } catch (error: any) {
+          if (error.message.includes("duplicate")) {
+            created.push({ email: user.email, role: user.role, status: "already exists" });
+          }
+        }
+      }
+
+      res.json({
+        success: true,
+        message: "Test users created/verified",
+        users: created,
+        credentials: {
+          admin: "admin@kiyumart.com / admin123",
+          seller: "seller@kiyumart.com / seller123",
+          rider: "rider@kiyumart.com / rider123",
+          agent: "agent@kiyumart.com / agent123"
+        }
+      });
+    } catch (error: any) {
+      res.status(400).json({ error: error.message });
+    }
+  });
+
+  // Complete marketplace seed - creates sellers, products, and banners (Development/Testing only)
   app.post("/api/seed/complete-marketplace", async (req, res) => {
     try {
       const results = {
@@ -1045,7 +1105,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Seller seed for products (Development only)
+  // Seller seed for products (⚠️ DEVELOPMENT/TESTING ONLY - Remove or disable in production)
   app.post("/api/seed/sample-data", requireAuth, requireRole("seller"), async (req: AuthRequest, res) => {
     try {
       const sellerId = req.user!.id;
