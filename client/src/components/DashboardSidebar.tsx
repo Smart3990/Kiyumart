@@ -11,6 +11,8 @@ import {
   MapPin,
   Tag,
   Grid3x3,
+  Heart,
+  Headphones,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -22,7 +24,7 @@ interface MenuItem {
 }
 
 interface DashboardSidebarProps {
-  role: "admin" | "seller" | "rider";
+  role: "admin" | "seller" | "rider" | "buyer";
   activeItem?: string;
   onItemClick?: (id: string) => void;
   userName?: string;
@@ -58,6 +60,13 @@ const menuItems: Record<string, MenuItem[]> = {
     { icon: MapPin, label: "Active Route", id: "route" },
     { icon: MessageSquare, label: "Messages", id: "messages" },
     { icon: BarChart3, label: "Earnings", id: "earnings" },
+    { icon: Settings, label: "Settings", id: "settings" },
+  ],
+  buyer: [
+    { icon: LayoutDashboard, label: "Dashboard", id: "dashboard" },
+    { icon: ShoppingBag, label: "My Orders", id: "orders" },
+    { icon: Heart, label: "Wishlist", id: "wishlist" },
+    { icon: Headphones, label: "Support", id: "support" },
     { icon: Settings, label: "Settings", id: "settings" },
   ],
 };
