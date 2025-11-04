@@ -99,6 +99,14 @@ The database schema includes tables for:
 
 #### Recent Updates (Nov 4, 2025)
 
+**Dashboard Navigation & Persistence (Latest):**
+- All admin dashboard pages now have persistent DashboardSidebar navigation (Users, Riders, Orders, Products, Analytics, Messages, Delivery Zones)
+- DashboardSidebar updated to support all 4 roles: admin, seller, buyer, rider
+- Buyer dashboard now uses DashboardSidebar with buyer-specific menu items (Dashboard, My Orders, Wishlist, Support, Settings)
+- Fixed all user property references from `username` to `name` across admin pages
+- Fixed null safety in filter operations (Users, Riders pages)
+- AdminSettings keeps dedicated Header/Footer layout for platform configuration interface
+
 **Navigation Improvements:**
 - Fixed all dashboard sidebar navigation - clicking sidebar items now properly navigates to pages
 - Admin dashboard "Mode Settings" button now navigates to `/admin/settings`
