@@ -82,7 +82,7 @@ export default function AdminAnalytics() {
         role="admin"
         activeItem={activeItem}
         onItemClick={handleItemClick}
-        userName={user?.username || "Admin"}
+        userName={user?.name || "Admin"}
       />
       
       <div className="flex-1 overflow-auto">

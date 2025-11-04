@@ -1,12 +1,13 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
+import { useLocation } from "wouter";
+import DashboardSidebar from "@/components/DashboardSidebar";
+import { useAuth } from "@/lib/auth";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { queryClient, apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
-import Header from "@/components/Header";
-import Footer from "@/components/Footer";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -51,11 +52,21 @@ interface DeliveryZone {
 
 export default function AdminDeliveryZones() {
   const { toast } = useToast();
+  const [activeItem, setActiveItem] = useState("zones");
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingZone, setEditingZone] = useState<DeliveryZone | null>(null);
+  const [, navigate] = useLocation();
+  const { user, isAuthenticated, isLoading: authLoading } = useAuth();
+
+  useEffect(() => {
+    if (!authLoading && (!isAuthenticated || user?.role !== "admin")) {
+      navigate("/auth");
+    }
+  }, [isAuthenticated, authLoading, user, navigate]);
 
   const { data: zones = [], isLoading } = useQuery<DeliveryZone[]>({
     queryKey: ["/api/delivery-zones"],
+    enabled: isAuthenticated && user?.role === "admin",
   });
 
   const form = useForm<ZoneFormData>({
@@ -163,7 +174,46 @@ export default function AdminDeliveryZones() {
     setIsDialogOpen(true);
   };
 
-  if (isLoading) {
+  const handleItemClick = (id: string) => {
+    setActiveItem(id);
+    switch(id) {
+      case "dashboard":
+        navigate("/admin");
+        break;
+      case "mode":
+        navigate("/admin/settings");
+        break;
+      case "categories":
+        navigate("/admin/categories");
+        break;
+      case "products":
+        navigate("/admin/products");
+        break;
+      case "orders":
+        navigate("/admin/orders");
+        break;
+      case "users":
+        navigate("/admin/users");
+        break;
+      case "riders":
+        navigate("/admin/riders");
+        break;
+      case "zones":
+        // Already on zones page
+        break;
+      case "messages":
+        navigate("/admin/messages");
+        break;
+      case "analytics":
+        navigate("/admin/analytics");
+        break;
+      case "settings":
+        navigate("/admin/settings");
+        break;
+    }
+  };
+
+  if (authLoading || isLoading || !isAuthenticated || user?.role !== "admin") {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <Loader2 className="h-8 w-8 animate-spin text-primary" />
@@ -172,10 +222,16 @@ export default function AdminDeliveryZones() {
   }
 
   return (
-    <div className="min-h-screen flex flex-col">
-      <Header />
+    <div className="flex h-screen bg-background">
+      <DashboardSidebar
+        role="admin"
+        activeItem={activeItem}
+        onItemClick={handleItemClick}
+        userName={user?.name || "Admin"}
+      />
       
-      <main className="flex-1 max-w-7xl w-full mx-auto px-4 py-8">
+      <div className="flex-1 overflow-auto">
+        <div className="p-8">
         <div className="mb-6 flex items-center justify-between">
           <div>
             <h1 className="text-3xl font-bold flex items-center gap-2" data-testid="heading-delivery-zones">
@@ -355,9 +411,8 @@ export default function AdminDeliveryZones() {
             )}
           </CardContent>
         </Card>
-      </main>
-
-      <Footer />
+        </div>
+      </div>
     </div>
   );
 }
