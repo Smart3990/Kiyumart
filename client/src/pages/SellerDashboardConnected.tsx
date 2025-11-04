@@ -93,6 +93,36 @@ export default function SellerDashboardConnected() {
     }
   }, [isAuthenticated, authLoading, user, navigate]);
 
+  useEffect(() => {
+    // Navigate when sidebar item is clicked
+    switch(activeItem) {
+      case "dashboard":
+        // Already on dashboard
+        break;
+      case "products":
+        navigate("/seller/products");
+        break;
+      case "orders":
+        navigate("/seller/orders");
+        break;
+      case "coupons":
+        // Stays on dashboard showing coupons section
+        break;
+      case "deliveries":
+        navigate("/seller/deliveries");
+        break;
+      case "messages":
+        navigate("/seller/messages");
+        break;
+      case "analytics":
+        navigate("/seller/analytics");
+        break;
+      case "settings":
+        navigate("/seller/settings");
+        break;
+    }
+  }, [activeItem, navigate]);
+
   const { data: analytics, isLoading: analyticsLoading } = useQuery<Analytics>({
     queryKey: ["/api/analytics"],
     enabled: isAuthenticated && user?.role === "seller",

@@ -44,6 +44,42 @@ export default function AdminDashboardConnected() {
     }
   }, [isAuthenticated, authLoading, user, navigate]);
 
+  useEffect(() => {
+    // Navigate when sidebar item is clicked
+    switch(activeItem) {
+      case "dashboard":
+        // Already on dashboard
+        break;
+      case "mode":
+        navigate("/admin/settings");
+        break;
+      case "products":
+        navigate("/admin/products");
+        break;
+      case "orders":
+        navigate("/admin/orders");
+        break;
+      case "users":
+        navigate("/admin/users");
+        break;
+      case "riders":
+        navigate("/admin/riders");
+        break;
+      case "zones":
+        navigate("/admin/zones");
+        break;
+      case "messages":
+        navigate("/admin/messages");
+        break;
+      case "analytics":
+        navigate("/admin/analytics");
+        break;
+      case "settings":
+        navigate("/admin/settings");
+        break;
+    }
+  }, [activeItem, navigate]);
+
   const { data: analytics, isLoading: analyticsLoading } = useQuery<Analytics>({
     queryKey: ["/api/analytics"],
     enabled: isAuthenticated && user?.role === "admin",
