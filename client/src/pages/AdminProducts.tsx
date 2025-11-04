@@ -103,8 +103,8 @@ export default function AdminProducts() {
       case "dashboard":
         navigate("/admin");
         break;
-      case "mode":
-        navigate("/admin/settings");
+      case "store":
+        navigate("/admin/store");
         break;
       case "categories":
         navigate("/admin/categories");
@@ -175,7 +175,11 @@ export default function AdminProducts() {
               <h1 className="text-3xl font-bold text-foreground" data-testid="heading-products">Products Management</h1>
               <p className="text-muted-foreground mt-1">Manage your product catalog</p>
             </div>
-            <Button data-testid="button-add-product" className="gap-2">
+            <Button 
+              onClick={() => navigate("/admin/products/new")}
+              data-testid="button-add-product" 
+              className="gap-2"
+            >
               <Plus className="h-4 w-4" />
               Add Product
             </Button>
@@ -242,7 +246,7 @@ export default function AdminProducts() {
                       <Button 
                         variant="ghost" 
                         size="icon"
-                        onClick={() => navigate(`/product/${product.id}/edit`)}
+                        onClick={() => navigate(`/admin/products/${product.id}/edit`)}
                         data-testid={`button-edit-${product.id}`}
                       >
                         <Edit className="h-4 w-4" />
