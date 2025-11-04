@@ -248,6 +248,64 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Generic image upload endpoint (for admins/sellers)
+  app.post("/api/upload/image", requireAuth, upload.single("file"), async (req: AuthRequest, res) => {
+    try {
+      if (!req.file) {
+        return res.status(400).json({ error: "No image file provided" });
+      }
+
+      const allowedMimeTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp', 'image/gif'];
+      if (!allowedMimeTypes.includes(req.file.mimetype)) {
+        return res.status(400).json({ error: "Invalid file type. Only JPEG, PNG, WEBP, and GIF images are allowed" });
+      }
+
+      const maxSize = 10 * 1024 * 1024; // 10MB
+      if (req.file.size > maxSize) {
+        return res.status(400).json({ error: "File too large. Maximum size is 10MB" });
+      }
+
+      const imageUrl = await uploadToCloudinary(req.file.buffer, "kiyumart/uploads");
+      res.json({ url: imageUrl });
+    } catch (error: any) {
+      console.error("Image upload error:", error);
+      res.status(500).json({ error: error.message || "Failed to upload image" });
+    }
+  });
+
+  // Generic video upload endpoint (for admins/sellers)
+  app.post("/api/upload/video", requireAuth, upload.single("file"), async (req: AuthRequest, res) => {
+    try {
+      if (!req.file) {
+        return res.status(400).json({ error: "No video file provided" });
+      }
+
+      const allowedMimeTypes = ['video/mp4', 'video/webm', 'video/quicktime'];
+      if (!allowedMimeTypes.includes(req.file.mimetype)) {
+        return res.status(400).json({ error: "Invalid file type. Only MP4, WEBM, and MOV videos are allowed" });
+      }
+
+      const maxSize = 30 * 1024 * 1024; // 30MB
+      if (req.file.size > maxSize) {
+        return res.status(400).json({ error: "File too large. Maximum size is 30MB" });
+      }
+
+      const result = await uploadWithMetadata(req.file.buffer, "kiyumart/videos");
+      
+      // Check video duration if metadata is available
+      if (result.duration && result.duration > 30) {
+        return res.status(400).json({ 
+          error: `Video is too long (${Math.round(result.duration)}s). Maximum duration is 30 seconds` 
+        });
+      }
+
+      res.json({ url: result.url, duration: result.duration });
+    } catch (error: any) {
+      console.error("Video upload error:", error);
+      res.status(500).json({ error: error.message || "Failed to upload video" });
+    }
+  });
+
   // ============ User Management (Admin only) ============
   app.get("/api/users", requireAuth, requireRole("admin"), async (req, res) => {
     try {

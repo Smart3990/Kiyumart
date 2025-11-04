@@ -97,6 +97,48 @@ The database schema includes tables for:
 - Stores CRUD with filtering (isActive, isApproved)
 - `getStoreByPrimarySeller()` - Find store by seller account
 
+#### Recent Updates (Nov 4, 2025)
+
+**Navigation Improvements:**
+- Fixed all dashboard sidebar navigation - clicking sidebar items now properly navigates to pages
+- Admin dashboard "Mode Settings" button now navigates to `/admin/settings`
+- Seller dashboard sidebar items navigate to correct seller routes
+- All navigation uses wouter's `navigate()` for proper SPA routing (no more `window.location.href`)
+
+**Platform Settings Enhancements:**
+- Added `shopDisplayMode` field to platform_settings table ("by-store" | "by-category")
+- Admin can toggle between "Shop by Store" and "Shop by Categories" view in multi-vendor mode
+- Homepage heading dynamically updates based on selected display mode
+- Store count badge visibility restricted to admin users only
+
+**Footer Improvements:**
+- Multi-vendor footer now shows appropriate marketplace links instead of hiding content:
+  - "Marketplace" section with: Home, All Products, Browse Stores, Become a Seller
+  - Single-store mode shows traditional category links: Home, Abayas, Hijabs, Dresses
+- Footer adapts grid layout: 3 columns in multi-vendor mode, 4 columns in single-store mode
+
+**Media Upload System:**
+- Created `MediaUploadInput` component - reusable upload widget for all URL fields
+- Dual input modes: Enter URL directly OR upload file
+- Supports both images (10MB max) and videos (30MB max, 30s duration limit)
+- New backend endpoints: `POST /api/upload/image` and `POST /api/upload/video`
+- Uploads to Cloudinary with automatic validation (file type, size, duration)
+- Preview functionality for uploaded images/videos
+- Tab interface for seamless switching between URL entry and file upload
+
+**Auto-Calendar Banner Feature:**
+- Banner system already supports auto-scheduling via `startAt` and `endAt` timestamps
+- `getActiveMarketplaceBanners()` automatically filters banners by current date
+- Admins can create occasion-based banners (Christmas, Eid, Ramadan, etc.) with scheduled dates
+- System automatically displays only active banners within their scheduled time range
+
+**Profile & Order Tracking:**
+- Profile update API exists at `PATCH /api/profile` - supports updating: username, phone, address, city, country
+- Order tracking available via `/orders` page for all users
+- Buyer dashboard has direct links to "My Orders" and order tracking
+- Real-time order status updates via Socket.IO
+- Live delivery map with rider location tracking
+
 #### Multi-Vendor Schema Extensions (Nov 2025)
 - `banner_collections`: Groups of themed marketplace banners with activation controls
 - `marketplace_banners`: Scheduled promotional banners with product/store references, display ordering, and metadata for the marketplace carousel
