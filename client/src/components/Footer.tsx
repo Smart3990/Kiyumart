@@ -103,17 +103,29 @@ export default function Footer() {
             </div>
           </div>
 
-          {!settings?.isMultiVendor && (
-            <div>
-              <h4 className="font-semibold mb-4">Shop</h4>
-              <ul className="space-y-2 text-muted-foreground">
-                <li><Link href="/" className="hover:text-foreground transition-colors" data-testid="link-home">Home</Link></li>
-                <li><Link href="/category/abayas" className="hover:text-foreground transition-colors" data-testid="link-abayas">Abayas</Link></li>
-                <li><Link href="/category/hijabs" className="hover:text-foreground transition-colors" data-testid="link-hijabs">Hijabs</Link></li>
-                <li><Link href="/category/dresses" className="hover:text-foreground transition-colors" data-testid="link-dresses">Dresses</Link></li>
-              </ul>
-            </div>
-          )}
+          <div>
+            {settings?.isMultiVendor ? (
+              <>
+                <h4 className="font-semibold mb-4">Marketplace</h4>
+                <ul className="space-y-2 text-muted-foreground">
+                  <li><Link href="/" className="hover:text-foreground transition-colors" data-testid="link-home">Home</Link></li>
+                  <li><Link href="/products" className="hover:text-foreground transition-colors" data-testid="link-all-products">All Products</Link></li>
+                  <li><Link href="/stores" className="hover:text-foreground transition-colors" data-testid="link-stores">Browse Stores</Link></li>
+                  <li><Link href="/auth?seller=true" className="hover:text-foreground transition-colors" data-testid="link-become-seller">Become a Seller</Link></li>
+                </ul>
+              </>
+            ) : (
+              <>
+                <h4 className="font-semibold mb-4">Shop</h4>
+                <ul className="space-y-2 text-muted-foreground">
+                  <li><Link href="/" className="hover:text-foreground transition-colors" data-testid="link-home">Home</Link></li>
+                  <li><Link href="/category/abayas" className="hover:text-foreground transition-colors" data-testid="link-abayas">Abayas</Link></li>
+                  <li><Link href="/category/hijabs" className="hover:text-foreground transition-colors" data-testid="link-hijabs">Hijabs</Link></li>
+                  <li><Link href="/category/dresses" className="hover:text-foreground transition-colors" data-testid="link-dresses">Dresses</Link></li>
+                </ul>
+              </>
+            )}
+          </div>
 
           <div>
             <h4 className="font-semibold mb-4">Customer Service</h4>
