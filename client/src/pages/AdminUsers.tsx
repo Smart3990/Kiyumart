@@ -50,13 +50,7 @@ export default function AdminUsers() {
 
   const toggleUserStatusMutation = useMutation({
     mutationFn: async ({ userId, isActive }: { userId: string; isActive: boolean }) => {
-      return apiRequest(`/api/users/${userId}/status`, {
-        method: "PATCH",
-        body: JSON.stringify({ isActive: !isActive }),
-        headers: {
-          "Content-Type": "application/json",
-        },
-      });
+      return apiRequest("PATCH", `/api/users/${userId}/status`, { isActive: !isActive });
     },
     onSuccess: (_, variables) => {
       toast({
@@ -78,9 +72,7 @@ export default function AdminUsers() {
 
   const deleteUserMutation = useMutation({
     mutationFn: async (userId: string) => {
-      return apiRequest(`/api/users/${userId}`, {
-        method: "DELETE",
-      });
+      return apiRequest("DELETE", `/api/users/${userId}`);
     },
     onSuccess: () => {
       toast({

@@ -320,9 +320,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/users", requireAuth, requireRole("admin"), async (req, res) => {
     try {
       const { role } = req.query;
-      const users = role 
-        ? await storage.getUsersByRole(role as string)
-        : await storage.getUsersByRole("buyer");
+      let users;
+      
+      if (role && role !== "all") {
+        users = await storage.getUsersByRole(role as string);
+      } else {
+        // Get all users except admin (to avoid showing admin in the list)
+        const allRoles = ["buyer", "seller", "rider", "agent"];
+        users = [];
+        for (const r of allRoles) {
+          const roleUsers = await storage.getUsersByRole(r);
+          users.push(...roleUsers);
+        }
+      }
       
       const usersWithoutPasswords = users.map(({ password, ...user }) => user);
       res.json(usersWithoutPasswords);

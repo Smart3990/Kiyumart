@@ -71,6 +71,21 @@ The database schema includes tables for:
 
 ## Recent Updates (November 2025)
 
+### Bug Fixes and Improvements (November 5, 2025)
+
+**Admin Dashboard Fixes:**
+- Fixed user display issue: Admin now sees ALL users (buyers, sellers, riders, agents) instead of only buyers
+- Fixed AdminUsers.tsx API call errors that prevented user status updates and deletions
+- Corrected API request syntax to use proper apiRequest method signature
+- Updated `/api/users` endpoint to return all user roles by default
+- Ensured cache invalidation works properly when admin makes changes to products/banners/users
+
+**Image Size Optimizations:**
+- Reduced product card images from aspect-[3/4] to aspect-[4/3] for better horizontal layout
+- Made product cards shorter vertically to prevent page overflow
+- Reduced ProductDetails main image to aspect-square with max-w-md for better page balance
+- Optimized thumbnail grid to show 6 images per row with aspect-[4/5]
+
 ### Platform Architecture Improvements (November 5, 2025)
 
 **Centralized Marketplace Architecture:**
