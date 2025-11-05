@@ -7,11 +7,12 @@ import { useMutation } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage, FormDescription } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
-import { Loader2, Store, ArrowLeft } from "lucide-react";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Loader2, Store, ArrowLeft, Upload, Image as ImageIcon, AlertCircle } from "lucide-react";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 
@@ -23,6 +24,10 @@ const becomeSellerSchema = z.object({
   storeName: z.string().min(3, "Store name must be at least 3 characters"),
   storeDescription: z.string().min(10, "Please provide a detailed store description"),
   businessAddress: z.string().min(5, "Business address is required"),
+  profileImage: z.string().min(1, "Profile image is required"),
+  ghanaCardFront: z.string().min(1, "Ghana Card front image is required"),
+  ghanaCardBack: z.string().min(1, "Ghana Card back image is required"),
+  nationalIdCard: z.string().min(10, "Ghana Card number is required"),
 });
 
 type BecomeSellerFormData = z.infer<typeof becomeSellerSchema>;
@@ -30,6 +35,10 @@ type BecomeSellerFormData = z.infer<typeof becomeSellerSchema>;
 export default function BecomeSellerPage() {
   const [, navigate] = useLocation();
   const { toast } = useToast();
+  const [uploading, setUploading] = useState<string | null>(null);
+  const [profilePreview, setProfilePreview] = useState<string>("");
+  const [cardFrontPreview, setCardFrontPreview] = useState<string>("");
+  const [cardBackPreview, setCardBackPreview] = useState<string>("");
 
   const form = useForm<BecomeSellerFormData>({
     resolver: zodResolver(becomeSellerSchema),
@@ -41,22 +50,76 @@ export default function BecomeSellerPage() {
       storeName: "",
       storeDescription: "",
       businessAddress: "",
+      profileImage: "",
+      ghanaCardFront: "",
+      ghanaCardBack: "",
+      nationalIdCard: "",
     },
   });
 
+  const handleImageUpload = async (file: File, fieldName: "profileImage" | "ghanaCardFront" | "ghanaCardBack") => {
+    if (!file) return;
+
+    const validTypes = ["image/jpeg", "image/png", "image/jpg", "image/webp"];
+    if (!validTypes.includes(file.type)) {
+      toast({
+        title: "Invalid file type",
+        description: "Please upload a JPEG, PNG, or WebP image",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (file.size > 5 * 1024 * 1024) {
+      toast({
+        title: "File too large",
+        description: "Image must be less than 5MB",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setUploading(fieldName);
+    const formData = new FormData();
+    formData.append("media", file);
+
+    try {
+      const response = await fetch("/api/upload/media", {
+        method: "POST",
+        body: formData,
+        credentials: "include",
+      });
+
+      if (!response.ok) throw new Error("Upload failed");
+
+      const data = await response.json();
+      form.setValue(fieldName, data.url);
+
+      if (fieldName === "profileImage") setProfilePreview(data.url);
+      if (fieldName === "ghanaCardFront") setCardFrontPreview(data.url);
+      if (fieldName === "ghanaCardBack") setCardBackPreview(data.url);
+
+      toast({
+        title: "Success",
+        description: "Image uploaded successfully",
+      });
+    } catch (error) {
+      toast({
+        title: "Upload failed",
+        description: "Failed to upload image. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setUploading(null);
+    }
+  };
+
   const applyMutation = useMutation({
     mutationFn: async (data: BecomeSellerFormData) => {
-      const applicationData = {
-        name: data.name,
-        email: data.email,
-        phone: data.phone,
-        password: data.password,
+      return apiRequest("POST", "/api/applications/seller", {
+        ...data,
         role: "seller",
-        storeName: data.storeName,
-        storeDescription: data.storeDescription,
-        businessAddress: data.businessAddress,
-      };
-      return apiRequest("POST", "/api/applications/seller", applicationData);
+      });
     },
     onSuccess: () => {
       toast({
@@ -111,110 +174,239 @@ export default function BecomeSellerPage() {
               </div>
             </CardHeader>
             <CardContent>
+              <Alert className="mb-6 border-primary/20 bg-primary/5">
+                <AlertCircle className="h-4 w-4 text-primary" />
+                <AlertDescription className="text-sm">
+                  <strong>Important:</strong> Your profile photo must be a clear image of you and must match the photo on your Ghana Card. 
+                  Ensure all information matches exactly as it appears on your Ghana Card for verification purposes.
+                </AlertDescription>
+              </Alert>
+
               <Form {...form}>
-                <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-                  <FormField
-                    control={form.control}
-                    name="name"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Full Name</FormLabel>
-                        <FormControl>
-                          <Input placeholder="John Doe" {...field} data-testid="input-name" />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
+                <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+                  <div className="space-y-4">
+                    <h3 className="text-lg font-semibold">Personal Information</h3>
+                    
+                    <FormField
+                      control={form.control}
+                      name="name"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Full Name (As on Ghana Card)</FormLabel>
+                          <FormControl>
+                            <Input placeholder="John Doe" {...field} data-testid="input-name" />
+                          </FormControl>
+                          <FormDescription>Must match your Ghana Card exactly</FormDescription>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
 
-                  <FormField
-                    control={form.control}
-                    name="email"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Email Address</FormLabel>
-                        <FormControl>
-                          <Input type="email" placeholder="john@example.com" {...field} data-testid="input-email" />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
+                    <FormField
+                      control={form.control}
+                      name="email"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Email Address</FormLabel>
+                          <FormControl>
+                            <Input type="email" placeholder="john@example.com" {...field} data-testid="input-email" />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
 
-                  <FormField
-                    control={form.control}
-                    name="phone"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Phone Number</FormLabel>
-                        <FormControl>
-                          <Input placeholder="+233 XX XXX XXXX" {...field} data-testid="input-phone" />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
+                    <FormField
+                      control={form.control}
+                      name="phone"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Phone Number</FormLabel>
+                          <FormControl>
+                            <Input placeholder="+233 XX XXX XXXX" {...field} data-testid="input-phone" />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
 
-                  <FormField
-                    control={form.control}
-                    name="password"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Password</FormLabel>
-                        <FormControl>
-                          <Input type="password" placeholder="••••••••" {...field} data-testid="input-password" />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
+                    <FormField
+                      control={form.control}
+                      name="password"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Password</FormLabel>
+                          <FormControl>
+                            <Input type="password" placeholder="••••••••" {...field} data-testid="input-password" />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                  </div>
 
-                  <FormField
-                    control={form.control}
-                    name="storeName"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Store Name</FormLabel>
-                        <FormControl>
-                          <Input placeholder="My Awesome Store" {...field} data-testid="input-store-name" />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
+                  <div className="space-y-4">
+                    <h3 className="text-lg font-semibold">Verification Documents</h3>
+                    
+                    <FormField
+                      control={form.control}
+                      name="profileImage"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Profile Photo</FormLabel>
+                          <FormControl>
+                            <div className="space-y-2">
+                              <Input
+                                type="file"
+                                accept="image/*"
+                                onChange={(e) => {
+                                  const file = e.target.files?.[0];
+                                  if (file) handleImageUpload(file, "profileImage");
+                                }}
+                                disabled={uploading === "profileImage"}
+                                data-testid="input-profile-image"
+                              />
+                              {profilePreview && (
+                                <div className="relative w-32 h-32 border rounded-lg overflow-hidden">
+                                  <img src={profilePreview} alt="Profile" className="w-full h-full object-cover" />
+                                </div>
+                              )}
+                            </div>
+                          </FormControl>
+                          <FormDescription>Clear photo of you - must match your Ghana Card photo</FormDescription>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
 
-                  <FormField
-                    control={form.control}
-                    name="storeDescription"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Store Description</FormLabel>
-                        <FormControl>
-                          <Textarea
-                            placeholder="Tell us about your store and products..."
-                            className="min-h-[100px]"
-                            {...field}
-                            data-testid="input-store-description"
-                          />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
+                    <FormField
+                      control={form.control}
+                      name="nationalIdCard"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Ghana Card Number</FormLabel>
+                          <FormControl>
+                            <Input placeholder="GHA-XXXXXXXXX-X" {...field} data-testid="input-national-id" />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
 
-                  <FormField
-                    control={form.control}
-                    name="businessAddress"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Business Address</FormLabel>
-                        <FormControl>
-                          <Input placeholder="123 Main St, Accra, Ghana" {...field} data-testid="input-business-address" />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
+                    <FormField
+                      control={form.control}
+                      name="ghanaCardFront"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Ghana Card (Front)</FormLabel>
+                          <FormControl>
+                            <div className="space-y-2">
+                              <Input
+                                type="file"
+                                accept="image/*"
+                                onChange={(e) => {
+                                  const file = e.target.files?.[0];
+                                  if (file) handleImageUpload(file, "ghanaCardFront");
+                                }}
+                                disabled={uploading === "ghanaCardFront"}
+                                data-testid="input-card-front"
+                              />
+                              {cardFrontPreview && (
+                                <div className="relative w-64 h-40 border rounded-lg overflow-hidden">
+                                  <img src={cardFrontPreview} alt="Ghana Card Front" className="w-full h-full object-cover" />
+                                </div>
+                              )}
+                            </div>
+                          </FormControl>
+                          <FormDescription>Clear photo of the front of your Ghana Card</FormDescription>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+
+                    <FormField
+                      control={form.control}
+                      name="ghanaCardBack"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Ghana Card (Back)</FormLabel>
+                          <FormControl>
+                            <div className="space-y-2">
+                              <Input
+                                type="file"
+                                accept="image/*"
+                                onChange={(e) => {
+                                  const file = e.target.files?.[0];
+                                  if (file) handleImageUpload(file, "ghanaCardBack");
+                                }}
+                                disabled={uploading === "ghanaCardBack"}
+                                data-testid="input-card-back"
+                              />
+                              {cardBackPreview && (
+                                <div className="relative w-64 h-40 border rounded-lg overflow-hidden">
+                                  <img src={cardBackPreview} alt="Ghana Card Back" className="w-full h-full object-cover" />
+                                </div>
+                              )}
+                            </div>
+                          </FormControl>
+                          <FormDescription>Clear photo of the back of your Ghana Card</FormDescription>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                  </div>
+
+                  <div className="space-y-4">
+                    <h3 className="text-lg font-semibold">Store Information</h3>
+                    
+                    <FormField
+                      control={form.control}
+                      name="storeName"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Store Name</FormLabel>
+                          <FormControl>
+                            <Input placeholder="My Awesome Store" {...field} data-testid="input-store-name" />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+
+                    <FormField
+                      control={form.control}
+                      name="storeDescription"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Store Description</FormLabel>
+                          <FormControl>
+                            <Textarea
+                              placeholder="Tell us about your store and products..."
+                              className="min-h-[100px]"
+                              {...field}
+                              data-testid="input-store-description"
+                            />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+
+                    <FormField
+                      control={form.control}
+                      name="businessAddress"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Business Address / Location</FormLabel>
+                          <FormControl>
+                            <Input placeholder="123 Main St, Accra, Ghana" {...field} data-testid="input-business-address" />
+                          </FormControl>
+                          <FormDescription>Your business location must match Ghana Card address</FormDescription>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                  </div>
 
                   <div className="flex justify-end gap-3 pt-4">
                     <Button
@@ -227,13 +419,13 @@ export default function BecomeSellerPage() {
                     </Button>
                     <Button
                       type="submit"
-                      disabled={applyMutation.isPending}
+                      disabled={applyMutation.isPending || uploading !== null}
                       data-testid="button-submit"
                     >
-                      {applyMutation.isPending && (
+                      {(applyMutation.isPending || uploading) && (
                         <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                       )}
-                      Submit Application
+                      {uploading ? "Uploading..." : "Submit Application"}
                     </Button>
                   </div>
                 </form>
