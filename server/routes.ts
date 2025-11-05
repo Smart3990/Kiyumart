@@ -514,6 +514,30 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ error: "Email already registered" });
       }
 
+      // Validate vehicle information based on vehicle type
+      if (userData.vehicleInfo) {
+        const { type, plateNumber, license, color } = userData.vehicleInfo;
+        
+        if (type === "car") {
+          if (!plateNumber || !plateNumber.trim()) {
+            return res.status(400).json({ error: "Plate number is required for car riders" });
+          }
+          if (!license || !license.trim()) {
+            return res.status(400).json({ error: "Driver's license is required for car riders" });
+          }
+          if (!color || !color.trim()) {
+            return res.status(400).json({ error: "Vehicle color is required for car riders" });
+          }
+        } else if (type === "motorcycle") {
+          if (!plateNumber || !plateNumber.trim()) {
+            return res.status(400).json({ error: "Plate number is required for motorcycle riders" });
+          }
+          if (!license || !license.trim()) {
+            return res.status(400).json({ error: "Driver's license is required for motorcycle riders" });
+          }
+        }
+      }
+
       const hashedPassword = await bcrypt.hash(password, 10);
       
       const newUser = await storage.createUser({

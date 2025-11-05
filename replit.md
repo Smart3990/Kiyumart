@@ -142,6 +142,63 @@ The database schema includes tables for:
 - Conditional "Become a Delivery Rider" button (visible when admin enables registration)
 - Both buttons hidden for existing sellers/riders/admins
 
+### Comprehensive Application Verification System (November 5, 2025)
+
+**Ghana Card Verification:**
+- All seller and rider applications now require Ghana Card verification
+- Profile picture must match Ghana Card photo for identity verification
+- Both front and back of Ghana Card must be uploaded during application
+- Ghana Card number field for manual entry
+
+**Seller Application Requirements:**
+- Profile photo (must match Ghana Card)
+- Ghana Card front and back images
+- Ghana Card number
+- Full name (must match Ghana Card)
+- Email address
+- Phone number
+- Address/Location (must match Ghana Card)
+- Password (minimum 8 characters)
+- Store name
+- Store description
+
+**Rider Application Requirements:**
+- Profile photo (must match Ghana Card)
+- Ghana Card front and back images
+- Ghana Card number
+- Full name (must match Ghana Card)
+- Email, phone, password
+- Address/Location (must match Ghana Card)
+- **Conditional Vehicle Information:**
+  - **Car**: Requires plate number, driver's license, and vehicle color
+  - **Motorcycle**: Requires plate number and driver's license
+  - **Bicycle**: No additional fields required (just vehicle type)
+
+**API Endpoints:**
+- `POST /api/applications/seller` - Submit seller application
+- `POST /api/applications/rider` - Submit rider application
+- Both endpoints create users with `isApproved: false` and notify admins
+
+**Admin Application Review:**
+- Comprehensive AdminApplications page with image previews
+- View Details dialog shows:
+  - Personal information with all form fields
+  - Profile photo preview
+  - Ghana Card front and back images (full-size previews)
+  - Vehicle information (with conditional fields)
+  - Address/location information
+- One-click approve/reject buttons
+- Applications are filtered by role (seller/rider tabs)
+- Approve action sets `isApproved: true` and notifies applicant
+- Reject action deletes the application/user from database
+
+**Database Schema Updates:**
+- `profileImage` field added to users table
+- `ghanaCardFront` field added to users table
+- `ghanaCardBack` field added to users table
+- `businessAddress` field renamed from `location` (stores address for verification)
+- `vehicleInfo` JSONB enhanced to include `color` field for cars
+
 ## Recent Updates (November 2025)
 
 ### Banner Images Library

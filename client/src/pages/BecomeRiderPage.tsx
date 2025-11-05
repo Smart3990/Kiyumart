@@ -125,12 +125,12 @@ export default function BecomeRiderPage() {
       const vehicleInfo: any = { type: data.vehicleType };
       
       if (data.vehicleType === "car") {
-        vehicleInfo.plateNumber = data.vehicleNumber;
-        vehicleInfo.license = data.licenseNumber;
-        vehicleInfo.color = data.vehicleColor;
+        if (data.vehicleNumber?.trim()) vehicleInfo.plateNumber = data.vehicleNumber.trim();
+        if (data.licenseNumber?.trim()) vehicleInfo.license = data.licenseNumber.trim();
+        if (data.vehicleColor?.trim()) vehicleInfo.color = data.vehicleColor.trim();
       } else if (data.vehicleType === "motorcycle") {
-        vehicleInfo.plateNumber = data.vehicleNumber;
-        vehicleInfo.license = data.licenseNumber;
+        if (data.vehicleNumber?.trim()) vehicleInfo.plateNumber = data.vehicleNumber.trim();
+        if (data.licenseNumber?.trim()) vehicleInfo.license = data.licenseNumber.trim();
       }
       
       return apiRequest("POST", "/api/applications/rider", {
