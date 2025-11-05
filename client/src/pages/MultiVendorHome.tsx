@@ -223,20 +223,20 @@ export default function MultiVendorHome() {
       <style>{`
         .category-grid {
           display: grid;
-          gap: 18px;
-          grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+          gap: 16px;
+          grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
           align-items: start;
         }
 
         @media (min-width: 640px) {
           .category-grid {
-            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
           }
         }
 
         @media (min-width: 1024px) {
           .category-grid {
-            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+            grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
           }
         }
       `}</style>
