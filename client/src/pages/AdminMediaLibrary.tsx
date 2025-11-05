@@ -24,11 +24,19 @@ import {
   CardContent,
 } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Upload, Trash2, Copy, Loader2, Image as ImageIcon, Check } from "lucide-react";
+import { Upload, Trash2, Copy, Loader2, Image as ImageIcon, Check, FolderOpen } from "lucide-react";
 import type { MediaLibrary } from "@shared/schema";
+
+interface AssetImage {
+  filename: string;
+  url: string;
+  path: string;
+  size: number;
+}
 
 export default function AdminMediaLibrary() {
   const { toast } = useToast();
+  const [activeTab, setActiveTab] = useState<string>("assets");
   const [selectedCategory, setSelectedCategory] = useState<string>("all");
   const [uploadDialogOpen, setUploadDialogOpen] = useState(false);
   const [uploadForm, setUploadForm] = useState({
@@ -38,9 +46,15 @@ export default function AdminMediaLibrary() {
     altText: "",
     tags: "",
   });
-  const [copiedId, setCopiedId] = useState<string | null>(null);
+  const [copiedUrl, setCopiedUrl] = useState<string | null>(null);
 
-  const { data: mediaItems = [], isLoading } = useQuery<MediaLibrary[]>({
+  // Fetch available asset images
+  const { data: assetImages = [], isLoading: assetsLoading } = useQuery<AssetImage[]>({
+    queryKey: ["/api/assets/images"],
+  });
+
+  // Fetch uploaded media from database
+  const { data: mediaItems = [], isLoading: mediaLoading } = useQuery<MediaLibrary[]>({
     queryKey: ["/api/media-library", selectedCategory],
     queryFn: async () => {
       const params = selectedCategory !== "all" ? `?category=${selectedCategory}` : "";
@@ -101,14 +115,14 @@ export default function AdminMediaLibrary() {
     },
   });
 
-  const copyToClipboard = (url: string, id: string) => {
+  const copyToClipboard = (url: string) => {
     navigator.clipboard.writeText(url);
-    setCopiedId(id);
+    setCopiedUrl(url);
     toast({
       title: "Copied!",
       description: "Image URL copied to clipboard",
     });
-    setTimeout(() => setCopiedId(null), 2000);
+    setTimeout(() => setCopiedUrl(null), 2000);
   };
 
   const categories = [
@@ -129,13 +143,13 @@ export default function AdminMediaLibrary() {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-3xl font-bold">Media Library</h1>
-          <p className="text-muted-foreground">Manage reusable images for banners, categories, logos, and products</p>
+          <p className="text-muted-foreground">Browse available assets and manage uploaded media</p>
         </div>
         <Dialog open={uploadDialogOpen} onOpenChange={setUploadDialogOpen}>
           <DialogTrigger asChild>
             <Button data-testid="button-upload-media">
               <Upload className="mr-2 h-4 w-4" />
-              Upload Media
+              Upload New Media
             </Button>
           </DialogTrigger>
           <DialogContent data-testid="dialog-upload-media">

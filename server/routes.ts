@@ -2813,6 +2813,56 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // ============ Asset Browser Route ============
+  app.get("/api/assets/images", requireAuth, requireRole("admin"), async (req: AuthRequest, res) => {
+    try {
+      const fs = await import('fs');
+      const path = await import('path');
+      
+      const assetsDir = path.join(process.cwd(), 'attached_assets');
+      const imageExtensions = ['.png', '.jpg', '.jpeg', '.gif', '.webp'];
+      
+      function getImagesFromDir(dir: string, baseDir: string = dir): any[] {
+        const images: any[] = [];
+        
+        try {
+          const items = fs.readdirSync(dir);
+          
+          for (const item of items) {
+            const fullPath = path.join(dir, item);
+            const stat = fs.statSync(fullPath);
+            
+            if (stat.isDirectory()) {
+              images.push(...getImagesFromDir(fullPath, baseDir));
+            } else if (stat.isFile()) {
+              const ext = path.extname(item).toLowerCase();
+              if (imageExtensions.includes(ext)) {
+                const relativePath = path.relative(process.cwd(), fullPath);
+                const url = '/' + relativePath.replace(/\\/g, '/');
+                
+                images.push({
+                  filename: item,
+                  url: url,
+                  path: relativePath,
+                  size: stat.size,
+                });
+              }
+            }
+          }
+        } catch (error) {
+          console.error('Error reading directory:', error);
+        }
+        
+        return images;
+      }
+      
+      const images = getImagesFromDir(assetsDir);
+      res.json(images);
+    } catch (error: any) {
+      res.status(400).json({ error: error.message });
+    }
+  });
+
   // ============ Enhanced Review Routes ============
   app.post("/api/reviews/:id/reply", requireAuth, requireRole("seller"), async (req: AuthRequest, res) => {
     try {
