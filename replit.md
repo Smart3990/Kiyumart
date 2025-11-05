@@ -78,6 +78,7 @@ The database schema includes tables for:
 - Fixed AdminUsers.tsx API call errors that prevented user status updates and deletions
 - Corrected API request syntax to use proper apiRequest method signature
 - Updated `/api/users` endpoint to return all user roles by default
+- **Fixed seller creation**: POST /api/users now automatically creates associated store when admin adds new seller
 - Ensured cache invalidation works properly when admin makes changes to products/banners/users
 
 **Image Size Optimizations:**
@@ -85,6 +86,20 @@ The database schema includes tables for:
 - Made product cards shorter vertically to prevent page overflow
 - Reduced ProductDetails main image to aspect-square with max-w-md for better page balance
 - Optimized thumbnail grid to show 6 images per row with aspect-[4/5]
+
+**Store Page Improvements:**
+- Made SellerStorePage more compact and professional:
+  - Reduced banner height from h-48/md:h-64 to h-32/md:h-40
+  - Reduced avatar size from h-24 w-24 to h-16 w-16
+  - Reduced title size from text-3xl to text-2xl
+  - Reduced overall spacing and padding for cleaner layout
+  - Smaller icons and section headings throughout
+
+**Test Data:**
+- All user types have test accounts: admin, seller, buyer, rider, agent
+- Test credentials stored in seed endpoint response
+- Default seller@kiyumart.com connected to primary "Test Store"
+- Store displayed in multi-vendor mode with real products
 
 ### Platform Architecture Improvements (November 5, 2025)
 

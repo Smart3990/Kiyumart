@@ -370,6 +370,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.post("/api/users", requireAuth, requireRole("admin"), async (req, res) => {
     try {
+      // Capture store data before schema parsing strips it
+      const { storeName, storeDescription, storeBanner } = req.body;
+      
       const validatedData = insertUserSchema.parse(req.body);
       const existingUser = await storage.getUserByEmail(validatedData.email);
       
@@ -387,18 +390,24 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       const user = await storage.createUser(userData);
       
-      // Create store for seller
+      // Create store for seller with captured store data
       if (user.role === "seller") {
-        const existingStore = await storage.getStoreByPrimarySeller(user.id);
-        if (!existingStore) {
-          await storage.createStore({
-            primarySellerId: user.id,
-            name: (validatedData as any).storeName || user.name + "'s Store",
-            description: (validatedData as any).storeDescription || "",
-            logo: (validatedData as any).storeBanner || "",
-            isActive: true,
-            isApproved: true
-          });
+        try {
+          const existingStore = await storage.getStoreByPrimarySeller(user.id);
+          if (!existingStore) {
+            await storage.createStore({
+              primarySellerId: user.id,
+              name: storeName || user.name + "'s Store",
+              description: storeDescription || "",
+              logo: storeBanner || "",
+              isActive: true,
+              isApproved: true
+            });
+          }
+        } catch (storeError: any) {
+          // If store creation fails, delete the user to avoid orphaned accounts
+          await storage.deleteUser(user.id);
+          throw new Error(`Failed to create store: ${storeError.message}`);
         }
       }
       
