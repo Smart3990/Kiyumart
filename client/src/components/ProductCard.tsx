@@ -28,7 +28,7 @@ interface ProductCardProps {
  * 
  * REQUIRED LAYOUT (top to bottom):
  * ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
- * 1. Product Image (aspect-[2/3] - compact ratio for better page fit)
+ * 1. Product Image (aspect-[4/3] - horizontal ratio to reduce vertical height)
  *    - Discount badge (top-left corner, red background)
  *    - Wishlist heart button (top-right corner)
  * 
@@ -105,7 +105,7 @@ export default function ProductCard({
       data-testid={`card-product-${id}`}
     >
       {/* Product Image Container - DO NOT MODIFY ASPECT RATIO */}
-      <div className="relative aspect-[2/3] overflow-hidden bg-muted">
+      <div className="relative aspect-[4/3] overflow-hidden bg-muted">
         <img
           src={image}
           alt={name}
