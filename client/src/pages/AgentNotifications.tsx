@@ -4,7 +4,7 @@ import { useAuth } from "@/lib/auth";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
-import DashboardSidebar from "@/components/DashboardSidebar";
+import DashboardLayout from "@/components/DashboardLayout";
 import ThemeToggle from "@/components/ThemeToggle";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -23,7 +23,6 @@ interface Notification {
 }
 
 export default function AgentNotifications() {
-  const [activeItem, setActiveItem] = useState("notifications");
   const [, navigate] = useLocation();
   const { user, isAuthenticated, isLoading: authLoading } = useAuth();
   const { toast } = useToast();
@@ -73,32 +72,6 @@ export default function AgentNotifications() {
       });
     },
   });
-
-  const handleItemClick = (id: string) => {
-    setActiveItem(id);
-    switch(id) {
-      case "dashboard":
-        navigate("/agent");
-        break;
-      case "tickets":
-        navigate("/agent/tickets");
-        break;
-      case "customers":
-        navigate("/agent/customers");
-        break;
-      case "messages":
-        navigate("/admin/messages");
-        break;
-      case "notifications":
-        navigate("/agent/notifications");
-        break;
-      case "settings":
-        navigate("/settings");
-        break;
-      default:
-        break;
-    }
-  };
 
   if (authLoading || !isAuthenticated || user?.role !== "agent") {
     return (
@@ -167,52 +140,8 @@ export default function AgentNotifications() {
   );
 
   return (
-    <div className="flex h-screen bg-background">
-      <DashboardSidebar
-        role="agent"
-        activeItem={activeItem}
-        onItemClick={handleItemClick}
-        userName={user.name}
-      />
-
-      <div className="flex-1 flex flex-col overflow-hidden">
-        <header className="border-b p-4 flex items-center justify-between">
-          <div className="flex items-center gap-4">
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={() => navigate("/agent")}
-              data-testid="button-back"
-            >
-              <ChevronLeft className="h-5 w-5" />
-            </Button>
-            <div>
-              <h1 className="text-2xl font-bold" data-testid="title-notifications">Notifications</h1>
-              <p className="text-sm text-muted-foreground">{unreadNotifications.length} unread</p>
-            </div>
-          </div>
-          <div className="flex items-center gap-4">
-            {unreadNotifications.length > 0 && (
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => markAllAsReadMutation.mutate()}
-                disabled={markAllAsReadMutation.isPending}
-                data-testid="button-mark-all-read"
-              >
-                <Check className="h-4 w-4 mr-2" />
-                Mark all as read
-              </Button>
-            )}
-            <ThemeToggle />
-            <Button variant="outline" onClick={() => navigate("/")} data-testid="button-shop">
-              Shop
-            </Button>
-          </div>
-        </header>
-
-        <main className="flex-1 overflow-y-auto p-6">
-          <div className="max-w-4xl mx-auto">
+    <DashboardLayout role="agent" showBackButton>
+      <div className="p-6">
             <Tabs defaultValue="unread" className="space-y-4">
               <TabsList>
                 <TabsTrigger value="unread" data-testid="tab-unread">
@@ -284,8 +213,6 @@ export default function AgentNotifications() {
               </TabsContent>
             </Tabs>
           </div>
-        </main>
-      </div>
-    </div>
+    </DashboardLayout>
   );
 }

@@ -1,8 +1,8 @@
-import { useState, useEffect } from "react";
+import { useEffect } from "react";
 import { useLocation } from "wouter";
 import { useQuery } from "@tanstack/react-query";
 import { useAuth } from "@/lib/auth";
-import DashboardSidebar from "@/components/DashboardSidebar";
+import DashboardLayout from "@/components/DashboardLayout";
 import { Package, Heart, MapPin, CreditCard, User, Loader2 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -17,7 +17,6 @@ interface Order {
 }
 
 export default function BuyerDashboard() {
-  const [activeItem, setActiveItem] = useState("dashboard");
   const [, navigate] = useLocation();
   const { user, isAuthenticated, isLoading: authLoading } = useAuth();
 
@@ -46,54 +45,9 @@ export default function BuyerDashboard() {
     completedOrders: orders.filter(o => o.status === "delivered").length,
   };
 
-  const handleItemClick = (id: string) => {
-    setActiveItem(id);
-    switch(id) {
-      case "dashboard":
-        navigate("/buyer");
-        break;
-      case "orders":
-        navigate("/orders");
-        break;
-      case "wishlist":
-        navigate("/wishlist");
-        break;
-      case "support":
-        navigate("/support");
-        break;
-      case "settings":
-        navigate("/settings");
-        break;
-      default:
-        break;
-    }
-  };
-
   return (
-    <div className="flex h-screen bg-background">
-      <DashboardSidebar
-        role="buyer"
-        activeItem={activeItem}
-        onItemClick={handleItemClick}
-        userName={user.name}
-      />
-
-      <div className="flex-1 flex flex-col overflow-hidden">
-        <header className="border-b p-4 flex items-center justify-between">
-          <div>
-            <h1 className="text-2xl font-bold" data-testid="title-dashboard">My Dashboard</h1>
-            <p className="text-sm text-muted-foreground">Welcome back, {user?.name}</p>
-          </div>
-          <div className="flex items-center gap-2">
-            <ThemeToggle />
-            <Button variant="outline" onClick={() => navigate("/")} data-testid="button-shop">
-              Shop
-            </Button>
-          </div>
-        </header>
-
-        <main className="flex-1 overflow-y-auto p-6">
-          <div className="max-w-7xl mx-auto space-y-6">
+    <DashboardLayout role="buyer">
+      <div className="p-6">
         <div className="grid gap-6 md:grid-cols-3 mb-8">
           <Card data-testid="card-total-orders">
             <CardHeader className="flex flex-row items-center justify-between pb-2">
@@ -216,9 +170,7 @@ export default function BuyerDashboard() {
             </CardContent>
           </Card>
         )}
-          </div>
-        </main>
       </div>
-    </div>
+    </DashboardLayout>
   );
 }

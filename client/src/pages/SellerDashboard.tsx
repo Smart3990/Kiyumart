@@ -1,5 +1,4 @@
-import { useState } from "react";
-import DashboardSidebar from "@/components/DashboardSidebar";
+import DashboardLayout from "@/components/DashboardLayout";
 import MetricCard from "@/components/MetricCard";
 import ProductCard from "@/components/ProductCard";
 import ThemeToggle from "@/components/ThemeToggle";
@@ -12,7 +11,6 @@ import sneakersImage from "@assets/generated_images/Men's_sneakers_product_photo
 import dressImage from "@assets/generated_images/Summer_dress_product_photo_9f6f8356.png";
 
 export default function SellerDashboard() {
-  const [activeItem, setActiveItem] = useState("dashboard");
 
   const myProducts = [
     {
@@ -44,24 +42,8 @@ export default function SellerDashboard() {
   ];
 
   return (
-    <div className="flex h-screen bg-background">
-      <DashboardSidebar
-        role="seller"
-        activeItem={activeItem}
-        onItemClick={setActiveItem}
-        userName="Seller Name"
-      />
-
-      <div className="flex-1 flex flex-col overflow-hidden">
-        <header className="border-b p-4 flex items-center justify-between">
-          <h1 className="text-2xl font-bold">Seller Dashboard</h1>
-          <div className="flex items-center gap-4">
-            <StoreModeToggle role="seller" />
-            <ThemeToggle />
-          </div>
-        </header>
-
-        <main className="flex-1 overflow-y-auto p-6">
+    <DashboardLayout role="seller">
+      <div className="p-6">
           <div className="max-w-7xl mx-auto space-y-6">
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
               <MetricCard
@@ -105,8 +87,7 @@ export default function SellerDashboard() {
               </div>
             </div>
           </div>
-        </main>
-      </div>
-    </div>
+        </div>
+    </DashboardLayout>
   );
 }

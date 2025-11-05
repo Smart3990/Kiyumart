@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { useLocation } from "wouter";
 import { useAuth } from "@/lib/auth";
 import { useQuery } from "@tanstack/react-query";
-import DashboardSidebar from "@/components/DashboardSidebar";
+import DashboardLayout from "@/components/DashboardLayout";
 import ThemeToggle from "@/components/ThemeToggle";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -22,7 +22,6 @@ interface Customer {
 }
 
 export default function AgentCustomers() {
-  const [activeItem, setActiveItem] = useState("customers");
   const [searchQuery, setSearchQuery] = useState("");
   const [, navigate] = useLocation();
   const { user, isAuthenticated, isLoading: authLoading } = useAuth();
@@ -38,32 +37,6 @@ export default function AgentCustomers() {
     enabled: isAuthenticated && user?.role === "agent",
     select: (data) => data.filter((u: any) => u.role === "buyer"),
   });
-
-  const handleItemClick = (id: string) => {
-    setActiveItem(id);
-    switch(id) {
-      case "dashboard":
-        navigate("/agent");
-        break;
-      case "tickets":
-        navigate("/agent/tickets");
-        break;
-      case "customers":
-        navigate("/agent/customers");
-        break;
-      case "messages":
-        navigate("/admin/messages");
-        break;
-      case "notifications":
-        navigate("/agent/notifications");
-        break;
-      case "settings":
-        navigate("/settings");
-        break;
-      default:
-        break;
-    }
-  };
 
   if (authLoading || !isAuthenticated || user?.role !== "agent") {
     return (
@@ -81,40 +54,8 @@ export default function AgentCustomers() {
   const activeCustomers = customers.filter(c => c.isActive).length;
 
   return (
-    <div className="flex h-screen bg-background">
-      <DashboardSidebar
-        role="agent"
-        activeItem={activeItem}
-        onItemClick={handleItemClick}
-        userName={user.name}
-      />
-
-      <div className="flex-1 flex flex-col overflow-hidden">
-        <header className="border-b p-4 flex items-center justify-between">
-          <div className="flex items-center gap-4">
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={() => navigate("/agent")}
-              data-testid="button-back"
-            >
-              <ChevronLeft className="h-5 w-5" />
-            </Button>
-            <div>
-              <h1 className="text-2xl font-bold" data-testid="title-customers">Customers</h1>
-              <p className="text-sm text-muted-foreground">View and manage customer information</p>
-            </div>
-          </div>
-          <div className="flex items-center gap-2">
-            <ThemeToggle />
-            <Button variant="outline" onClick={() => navigate("/")} data-testid="button-shop">
-              Shop
-            </Button>
-          </div>
-        </header>
-
-        <main className="flex-1 overflow-y-auto p-6">
-          <div className="max-w-7xl mx-auto space-y-6">
+    <DashboardLayout role="agent" showBackButton>
+      <div className="p-6">
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <Card data-testid="card-total-customers">
                 <CardContent className="pt-6">
@@ -228,8 +169,6 @@ export default function AgentCustomers() {
               </CardContent>
             </Card>
           </div>
-        </main>
-      </div>
-    </div>
+    </DashboardLayout>
   );
 }

@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { useLocation } from "wouter";
-import DashboardSidebar from "@/components/DashboardSidebar";
+import DashboardLayout from "@/components/DashboardLayout";
 import { useAuth } from "@/lib/auth";
 import { useToast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
@@ -286,13 +286,7 @@ function EditSellerDialog({ sellerData }: { sellerData: SellerData }) {
         updateData.password = data.password;
       }
 
-      return apiRequest(`/api/users/${sellerData.id}`, {
-        method: "PATCH",
-        body: JSON.stringify(updateData),
-        headers: {
-          "Content-Type": "application/json",
-        },
-      });
+      return apiRequest("PATCH", `/api/users/${sellerData.id}`, updateData);
     },
     onSuccess: () => {
       toast({
@@ -475,13 +469,7 @@ function BanActivateDialog({ sellerData }: { sellerData: SellerData }) {
 
   const toggleStatusMutation = useMutation({
     mutationFn: async () => {
-      return apiRequest(`/api/users/${sellerData.id}/status`, {
-        method: "PATCH",
-        body: JSON.stringify({ isActive: !sellerData.isActive }),
-        headers: {
-          "Content-Type": "application/json",
-        },
-      });
+      return apiRequest("PATCH", `/api/users/${sellerData.id}/status`, { isActive: !sellerData.isActive });
     },
     onSuccess: () => {
       toast({
@@ -540,7 +528,6 @@ function BanActivateDialog({ sellerData }: { sellerData: SellerData }) {
 }
 
 export default function AdminSellers() {
-  const [activeItem, setActiveItem] = useState("sellers");
   const [searchQuery, setSearchQuery] = useState("");
   const [, navigate] = useLocation();
   const { user, isAuthenticated, isLoading: authLoading } = useAuth();
@@ -556,27 +543,6 @@ export default function AdminSellers() {
     queryKey: ["/api/users"],
     enabled: isAuthenticated && user?.role === "admin",
   });
-
-  const handleItemClick = (id: string) => {
-    navigate(
-      id === "dashboard" ? "/admin" :
-      id === "store" ? "/admin/store" :
-      id === "branding" ? "/admin/branding" :
-      id === "categories" ? "/admin/categories" :
-      id === "products" ? "/admin/products" :
-      id === "orders" ? "/admin/orders" :
-      id === "users" ? "/admin/users" :
-      id === "sellers" ? "/admin/sellers" :
-      id === "riders" ? "/admin/riders" :
-      id === "applications" ? "/admin/applications" :
-      id === "zones" ? "/admin/zones" :
-      id === "notifications" ? "/notifications" :
-      id === "messages" ? "/admin/messages" :
-      id === "analytics" ? "/admin/analytics" :
-      id === "settings" ? "/admin/settings" :
-      "/admin"
-    );
-  };
 
   // Filter to show only sellers
   const sellers = users.filter(u => u.role === "seller");
@@ -596,16 +562,8 @@ export default function AdminSellers() {
   }
 
   return (
-    <div className="flex h-screen bg-background">
-      <DashboardSidebar
-        role="admin"
-        activeItem={activeItem}
-        onItemClick={handleItemClick}
-        userName={user?.name || "Admin"}
-      />
-      
-      <div className="flex-1 overflow-auto">
-        <div className="p-8">
+    <DashboardLayout role="admin" showBackButton>
+      <div className="p-8">
           <div className="flex items-center gap-4 mb-6">
             <Button
               variant="ghost"
@@ -736,7 +694,6 @@ export default function AdminSellers() {
             </div>
           )}
         </div>
-      </div>
-    </div>
+    </DashboardLayout>
   );
 }

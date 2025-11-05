@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useMutation, useQuery } from "@tanstack/react-query";
@@ -7,7 +7,7 @@ import { z } from "zod";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useAuth } from "@/lib/auth";
 import { useToast } from "@/hooks/use-toast";
-import DashboardSidebar from "@/components/DashboardSidebar";
+import DashboardLayout from "@/components/DashboardLayout";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -34,7 +34,6 @@ const editUserSchema = z.object({
 type EditUserFormData = z.infer<typeof editUserSchema>;
 
 export default function AdminUserEdit() {
-  const [activeItem, setActiveItem] = useState("users");
   const [, navigate] = useLocation();
   const { user, isAuthenticated, isLoading: authLoading } = useAuth();
   const { toast } = useToast();
@@ -101,25 +100,6 @@ export default function AdminUserEdit() {
     },
   });
 
-  const handleItemClick = (id: string) => {
-    navigate(
-      id === "dashboard" ? "/admin" :
-      id === "store" ? "/admin/store" :
-      id === "branding" ? "/admin/branding" :
-      id === "categories" ? "/admin/categories" :
-      id === "products" ? "/admin/products" :
-      id === "orders" ? "/admin/orders" :
-      id === "users" ? "/admin/users" :
-      id === "sellers" ? "/admin/sellers" :
-      id === "riders" ? "/admin/riders" :
-      id === "zones" ? "/admin/zones" :
-      id === "messages" ? "/admin/messages" :
-      id === "analytics" ? "/admin/analytics" :
-      id === "settings" ? "/admin/settings" :
-      "/admin"
-    );
-  };
-
   const onSubmit = (data: EditUserFormData) => {
     updateUserMutation.mutate(data);
   };
@@ -141,16 +121,8 @@ export default function AdminUserEdit() {
   }
 
   return (
-    <div className="flex h-screen bg-background">
-      <DashboardSidebar
-        role="admin"
-        activeItem={activeItem}
-        onItemClick={handleItemClick}
-        userName={user?.name || "Admin"}
-      />
-      
-      <div className="flex-1 overflow-auto">
-        <div className="p-8">
+    <DashboardLayout role="admin" showBackButton>
+      <div className="p-8">
           <div className="flex items-center gap-4 mb-6">
             <Button
               variant="ghost"
@@ -266,7 +238,6 @@ export default function AdminUserEdit() {
             </form>
           </Form>
         </div>
-      </div>
-    </div>
+    </DashboardLayout>
   );
 }

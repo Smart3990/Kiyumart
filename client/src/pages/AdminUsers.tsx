@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { useLocation } from "wouter";
-import DashboardSidebar from "@/components/DashboardSidebar";
+import DashboardLayout from "@/components/DashboardLayout";
 import { useAuth } from "@/lib/auth";
 import { useToast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
@@ -27,7 +27,6 @@ interface UserData {
 }
 
 export default function AdminUsers() {
-  const [activeItem, setActiveItem] = useState("users");
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedRole, setSelectedRole] = useState<string>("all");
   const [selectedStatus, setSelectedStatus] = useState<string>("all");
@@ -100,27 +99,6 @@ export default function AdminUsers() {
       setConfirmDeleteUser(null);
     },
   });
-
-  const handleItemClick = (id: string) => {
-    navigate(
-      id === "dashboard" ? "/admin" :
-      id === "store" ? "/admin/store" :
-      id === "branding" ? "/admin/branding" :
-      id === "categories" ? "/admin/categories" :
-      id === "products" ? "/admin/products" :
-      id === "orders" ? "/admin/orders" :
-      id === "users" ? "/admin/users" :
-      id === "sellers" ? "/admin/sellers" :
-      id === "riders" ? "/admin/riders" :
-      id === "applications" ? "/admin/applications" :
-      id === "zones" ? "/admin/zones" :
-      id === "notifications" ? "/notifications" :
-      id === "messages" ? "/admin/messages" :
-      id === "analytics" ? "/admin/analytics" :
-      id === "settings" ? "/admin/settings" :
-      "/admin"
-    );
-  };
 
   const handleBanUser = (userData: UserData) => {
     setConfirmBanUser({
@@ -299,16 +277,8 @@ export default function AdminUsers() {
   }
 
   return (
-    <div className="flex h-screen bg-background">
-      <DashboardSidebar
-        role="admin"
-        activeItem={activeItem}
-        onItemClick={handleItemClick}
-        userName={user?.name || "Admin"}
-      />
-      
-      <div className="flex-1 overflow-auto">
-        <div className="p-8">
+    <DashboardLayout role="admin" showBackButton>
+      <div className="p-8">
           <div className="flex items-center gap-4 mb-6">
             <Button
               variant="ghost"
@@ -394,7 +364,6 @@ export default function AdminUsers() {
             </TabsContent>
           </Tabs>
         </div>
-      </div>
 
       {/* Ban/Activate Confirmation Dialog */}
       <AlertDialog open={!!confirmBanUser} onOpenChange={(open) => !open && setConfirmBanUser(null)}>
@@ -450,6 +419,6 @@ export default function AdminUsers() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
-    </div>
+    </DashboardLayout>
   );
 }

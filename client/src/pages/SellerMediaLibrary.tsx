@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
+import DashboardLayout from "@/components/DashboardLayout";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
@@ -101,7 +102,8 @@ export default function SellerMediaLibrary() {
   };
 
   return (
-    <div className="p-6 space-y-6">
+    <DashboardLayout role="seller" showBackButton>
+      <div className="p-6 space-y-6">
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-3xl font-bold">Product Image Library</h1>
@@ -272,6 +274,7 @@ export default function SellerMediaLibrary() {
           ))}
         </div>
       )}
-    </div>
+      </div>
+    </DashboardLayout>
   );
 }

@@ -6,7 +6,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { queryClient, apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
-import DashboardSidebar from "@/components/DashboardSidebar";
+import DashboardLayout from "@/components/DashboardLayout";
 import { useAuth } from "@/lib/auth";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -67,7 +67,6 @@ export default function AdminSettings() {
   const [, navigate] = useLocation();
   const { toast } = useToast();
   const [activeTab, setActiveTab] = useState("general");
-  const [activeItem, setActiveItem] = useState("settings");
   const { user, isAuthenticated, isLoading: authLoading } = useAuth();
 
   const { data: settings, isLoading } = useQuery<PlatformSettings>({
@@ -79,48 +78,6 @@ export default function AdminSettings() {
       navigate("/auth");
     }
   }, [isAuthenticated, authLoading, user, navigate]);
-
-  const handleItemClick = (id: string) => {
-    setActiveItem(id);
-    switch(id) {
-      case "dashboard":
-        navigate("/admin");
-        break;
-      case "mode":
-        // Already on settings
-        break;
-      case "branding":
-        navigate("/admin/branding");
-        break;
-      case "categories":
-        navigate("/admin/categories");
-        break;
-      case "products":
-        navigate("/admin/products");
-        break;
-      case "orders":
-        navigate("/admin/orders");
-        break;
-      case "users":
-        navigate("/admin/users");
-        break;
-      case "riders":
-        navigate("/admin/riders");
-        break;
-      case "zones":
-        navigate("/admin/zones");
-        break;
-      case "messages":
-        navigate("/admin/messages");
-        break;
-      case "analytics":
-        navigate("/admin/analytics");
-        break;
-      case "settings":
-        // Already on settings
-        break;
-    }
-  };
 
   const form = useForm<SettingsFormData>({
     resolver: zodResolver(settingsSchema),
@@ -189,16 +146,8 @@ export default function AdminSettings() {
   }
 
   return (
-    <div className="flex h-screen bg-background">
-      <DashboardSidebar
-        role="admin"
-        activeItem={activeItem}
-        onItemClick={handleItemClick}
-        userName={user?.name || "Admin"}
-      />
-      
-      <div className="flex-1 overflow-auto">
-        <div className="p-8">
+    <DashboardLayout role="admin" showBackButton>
+      <div className="p-8">
           <div className="flex items-center gap-4 mb-6">
             <Button
               variant="ghost"
@@ -792,7 +741,6 @@ export default function AdminSettings() {
           </div>
           </form>
         </div>
-      </div>
-    </div>
+    </DashboardLayout>
   );
 }
