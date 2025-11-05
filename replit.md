@@ -86,3 +86,25 @@ Added a comprehensive collection of **30+ professional banner images** for vario
 **Access**: Admins can browse all banners via the Media Library's "Available Assets" tab, copy URLs with one click, and use them for hero banners, marketplace banners, or any promotional content.
 
 **Documentation**: See `attached_assets/BANNER_IMAGES_GUIDE.md` for complete reference.
+
+### Initial Content Populated (November 5, 2025)
+
+**Hero Banners (Single-Store Mode)** - 3 banners:
+1. Ramadan Collection - Elegant modest fashion for the holy month
+2. New Arrivals - Fresh styles for every occasion
+3. Summer Collection - Light and elegant modest wear
+
+**Marketplace Banners (Multi-Vendor Mode)** - 3 banners:
+1. Discover Multiple Vendors - Shop from diverse modest fashion stores
+2. Exclusive Collections - Unique pieces from sellers worldwide
+3. Special Offers - Amazing deals from trusted vendors
+
+**Islamic Fashion Products** - 6 initial products in single-store mode:
+1. Elegant Black Abaya with Gold Embroidery - GHS 299.99 (15% off) - 4.8★ (124 reviews)
+2. Burgundy Velvet Abaya - GHS 349.99 (20% off) - 4.9★ (87 reviews)
+3. Navy Blue Modest Dress - GHS 189.99 (10% off) - 4.7★ (156 reviews)
+4. Pink Lace Abaya Dress - GHS 279.99 (12% off) - 4.6★ (98 reviews)
+5. Emerald Green Satin Modest Dress - GHS 259.99 (18% off) - 4.8★ (142 reviews)
+6. Classic Black Abaya - GHS 199.99 - 4.9★ (203 reviews)
+
+All products feature professional stock images from `attached_assets/stock_images/` and are associated with the default seller account (`seller@kiyumart.com`).
