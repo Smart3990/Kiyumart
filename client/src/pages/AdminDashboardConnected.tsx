@@ -77,6 +77,8 @@ export default function AdminDashboardConnected() {
       setActiveItem("settings");
     } else if (path.includes("/admin/banners")) {
       setActiveItem("banners");
+    } else if (path.includes("/admin/media-library")) {
+      setActiveItem("media-library");
     } else if (path.includes("/notifications")) {
       setActiveItem("notifications");
     }
@@ -88,6 +90,7 @@ export default function AdminDashboardConnected() {
       id === "store" ? "/admin/store" :
       id === "branding" ? "/admin/branding" :
       id === "categories" ? "/admin/categories" :
+      id === "media-library" ? "/admin/media-library" :
       id === "products" ? "/admin/products" :
       id === "orders" ? "/admin/orders" :
       id === "users" ? "/admin/users" :

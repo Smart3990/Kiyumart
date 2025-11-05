@@ -17,6 +17,7 @@ import {
   Bell,
   Ticket,
   UserCog,
+  ImagePlus,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useQuery } from "@tanstack/react-query";
@@ -41,6 +42,7 @@ const menuItems: Record<string, MenuItem[]> = {
     { icon: Store, label: "Store", id: "store" },
     { icon: Palette, label: "Branding", id: "branding" },
     { icon: Grid3x3, label: "Categories", id: "categories" },
+    { icon: ImagePlus, label: "Media Library", id: "media-library" },
     { icon: Package, label: "Products", id: "products" },
     { icon: ShoppingBag, label: "Orders", id: "orders" },
     { icon: Users, label: "Users", id: "users" },
@@ -55,6 +57,7 @@ const menuItems: Record<string, MenuItem[]> = {
   ],
   seller: [
     { icon: LayoutDashboard, label: "Dashboard", id: "dashboard" },
+    { icon: ImagePlus, label: "Media Library", id: "media-library" },
     { icon: Package, label: "My Products", id: "products" },
     { icon: ShoppingBag, label: "Orders", id: "orders" },
     { icon: Tag, label: "Coupons", id: "coupons" },

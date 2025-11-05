@@ -40,6 +40,8 @@ import AdminSellers from "@/pages/AdminSellers";
 import AdminRiders from "@/pages/AdminRiders";
 import AdminMessages from "@/pages/AdminMessages";
 import AdminAnalytics from "@/pages/AdminAnalytics";
+import AdminMediaLibrary from "@/pages/AdminMediaLibrary";
+import SellerMediaLibrary from "@/pages/SellerMediaLibrary";
 import CategoryPage from "@/pages/CategoryPage";
 import Wishlist from "@/pages/Wishlist";
 import Orders from "@/pages/Orders";
@@ -91,6 +93,7 @@ function Router() {
       <Route path="/admin/delivery-zones" component={AdminDeliveryZones} />
       <Route path="/admin/banners" component={AdminBannerManager} />
       <Route path="/admin/categories" component={AdminCategoryManager} />
+      <Route path="/admin/media-library" component={AdminMediaLibrary} />
       <Route path="/admin/products/create" component={AdminProductCreate} />
       <Route path="/admin/products/:id/edit" component={AdminProductEdit} />
       <Route path="/admin/products" component={AdminProducts} />
@@ -104,6 +107,7 @@ function Router() {
       <Route path="/admin/messages" component={AdminMessages} />
       <Route path="/admin/analytics" component={AdminAnalytics} />
       <Route path="/seller" component={SellerDashboard} />
+      <Route path="/seller/media-library" component={SellerMediaLibrary} />
       <Route path="/rider" component={RiderDashboard} />
       <Route path="/buyer" component={BuyerDashboard} />
       <Route path="/agent" component={AgentDashboard} />

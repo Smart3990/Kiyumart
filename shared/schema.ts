@@ -13,6 +13,7 @@ export const notificationTypeEnum = pgEnum("notification_type", ["order", "user"
 export const adminTransactionTypeEnum = pgEnum("admin_transaction_type", ["sale", "commission", "promotion_fee"]);
 export const mediaTypeEnum = pgEnum("media_type", ["image", "video"]);
 export const deliveryAssignmentStatusEnum = pgEnum("delivery_assignment_status", ["assigned", "en_route", "delivered", "cancelled"]);
+export const mediaCategoryEnum = pgEnum("media_category", ["banner", "category", "logo", "product", "general"]);
 
 export const users = pgTable("users", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
@@ -695,6 +696,20 @@ export type LocalizationString = typeof localizationStrings.$inferSelect;
 export type InsertSecuritySetting = z.infer<typeof insertSecuritySettingSchema>;
 export type SecuritySetting = typeof securitySettings.$inferSelect;
 
+// Media Library for storing reusable images (banners, categories, logos, products)
+export const mediaLibrary = pgTable("media_library", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  url: text("url").notNull(),
+  category: mediaCategoryEnum("category").notNull(),
+  uploaderRole: userRoleEnum("uploader_role").notNull(),
+  uploaderId: varchar("uploader_id").references(() => users.id),
+  filename: text("filename").notNull(),
+  altText: text("alt_text"),
+  tags: text("tags").array(),
+  isTemporary: boolean("is_temporary").default(true), // hardcoded images are temporary
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
 // Category Fields for dynamic admin-created categories
 export const categoryFields = pgTable("category_fields", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
@@ -706,6 +721,10 @@ export const categoryFields = pgTable("category_fields", {
   displayOrder: integer("display_order").default(0),
   createdAt: timestamp("created_at").defaultNow(),
 });
+
+export const insertMediaLibrarySchema = createInsertSchema(mediaLibrary).omit({ id: true, createdAt: true });
+export type InsertMediaLibrary = z.infer<typeof insertMediaLibrarySchema>;
+export type MediaLibrary = typeof mediaLibrary.$inferSelect;
 
 export const insertCategoryFieldSchema = createInsertSchema(categoryFields).omit({ id: true, createdAt: true });
 export type InsertCategoryField = z.infer<typeof insertCategoryFieldSchema>;

@@ -2711,6 +2711,265 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // ============ Media Library Routes ============
+  app.post("/api/media-library", requireAuth, async (req: AuthRequest, res) => {
+    try {
+      // Validate role - admin can upload all types, seller can only upload product images
+      const userRole = req.user!.role;
+      const { category } = req.body;
+
+      if (userRole === "seller" && category !== "product") {
+        return res.status(403).json({ error: "Sellers can only upload product images" });
+      }
+
+      if (userRole !== "admin" && userRole !== "seller") {
+        return res.status(403).json({ error: "Unauthorized to upload media" });
+      }
+
+      const mediaItem = await storage.createMediaLibraryItem({
+        ...req.body,
+        uploaderRole: userRole,
+        uploaderId: req.user!.id,
+      });
+      res.json(mediaItem);
+    } catch (error: any) {
+      res.status(400).json({ error: error.message });
+    }
+  });
+
+  app.get("/api/media-library", requireAuth, async (req: AuthRequest, res) => {
+    try {
+      const { category, uploaderRole } = req.query;
+      const userRole = req.user!.role;
+
+      // Only admin and seller roles can access media library
+      if (userRole !== "admin" && userRole !== "seller") {
+        return res.status(403).json({ error: "Unauthorized to access media library" });
+      }
+
+      const filters: { category?: string; uploaderRole?: string; uploaderId?: string } = {};
+
+      // Add category filter if specified
+      if (category) {
+        filters.category = category as string;
+      }
+
+      // Sellers can only see their own product images or admin's media
+      if (userRole === "seller") {
+        // If category is product, show seller's own products plus admin's products
+        if (!category || category === "product") {
+          const items = await storage.getMediaLibraryItems({ category: "product" });
+          // Filter to only show seller's own or admin uploaded
+          const filtered = items.filter(
+            item => item.uploaderId === req.user!.id || item.uploaderRole === "admin"
+          );
+          return res.json(filtered);
+        } else {
+          // For non-product categories, sellers can only see admin uploads
+          filters.uploaderRole = "admin";
+        }
+      }
+
+      // Admin can see everything, optionally filtered
+      if (uploaderRole && userRole === "admin") {
+        filters.uploaderRole = uploaderRole as string;
+      }
+
+      const items = await storage.getMediaLibraryItems(filters);
+      res.json(items);
+    } catch (error: any) {
+      res.status(400).json({ error: error.message });
+    }
+  });
+
+  app.delete("/api/media-library/:id", requireAuth, async (req: AuthRequest, res) => {
+    try {
+      const userRole = req.user!.role;
+      
+      // Get the item first to check ownership
+      const items = await storage.getMediaLibraryItems({});
+      const item = items.find(i => i.id === req.params.id);
+
+      if (!item) {
+        return res.status(404).json({ error: "Media item not found" });
+      }
+
+      // Admin can delete anything, sellers can only delete their own product images
+      if (userRole === "seller") {
+        if (item.uploaderId !== req.user!.id) {
+          return res.status(403).json({ error: "Unauthorized to delete this item" });
+        }
+      } else if (userRole !== "admin") {
+        return res.status(403).json({ error: "Unauthorized" });
+      }
+
+      const success = await storage.deleteMediaLibraryItem(req.params.id);
+      if (!success) {
+        return res.status(404).json({ error: "Media item not found" });
+      }
+      res.json({ success: true });
+    } catch (error: any) {
+      res.status(400).json({ error: error.message });
+    }
+  });
+
+  // ============ Seed Media Library Route ============
+  app.post("/api/seed/media-library", requireAuth, requireRole("admin"), async (req: AuthRequest, res) => {
+    try {
+      // Seed with hardcoded images from Home.tsx and SellerDashboard.tsx
+      const mediaItems = [
+        // Banner images
+        {
+          url: "/attached_assets/generated_images/Diverse_Islamic_fashion_banner_eb13714d.png",
+          category: "banner",
+          uploaderRole: "admin",
+          uploaderId: req.user!.id,
+          filename: "hero-banner-islamic-fashion.png",
+          altText: "Diverse Islamic fashion banner showcasing modest wear",
+          tags: ["banner", "hero", "islamic", "fashion"],
+          isTemporary: true,
+        },
+        // Category images
+        {
+          url: "/attached_assets/generated_images/Abayas_category_collection_image_cbf9978c.png",
+          category: "category",
+          uploaderRole: "admin",
+          uploaderId: req.user!.id,
+          filename: "abayas-category.png",
+          altText: "Abayas category collection",
+          tags: ["category", "abayas", "collection"],
+          isTemporary: true,
+        },
+        {
+          url: "/attached_assets/generated_images/Hijabs_and_accessories_category_09f9b1a2.png",
+          category: "category",
+          uploaderRole: "admin",
+          uploaderId: req.user!.id,
+          filename: "hijabs-accessories-category.png",
+          altText: "Hijabs and accessories category",
+          tags: ["category", "hijabs", "accessories"],
+          isTemporary: true,
+        },
+        {
+          url: "/attached_assets/generated_images/Evening_wear_category_image_455c3389.png",
+          category: "category",
+          uploaderRole: "admin",
+          uploaderId: req.user!.id,
+          filename: "evening-wear-category.png",
+          altText: "Evening wear category",
+          tags: ["category", "evening", "formal"],
+          isTemporary: true,
+        },
+        // Product images
+        {
+          url: "/attached_assets/generated_images/Elegant_black_abaya_with_gold_embroidery_cc860cad.png",
+          category: "product",
+          uploaderRole: "admin",
+          uploaderId: req.user!.id,
+          filename: "elegant-black-abaya-gold.png",
+          altText: "Elegant black abaya with gold embroidery",
+          tags: ["abaya", "black", "gold", "elegant"],
+          isTemporary: true,
+        },
+        {
+          url: "/attached_assets/generated_images/Navy_blue_embroidered_modest_dress_aa08f435.png",
+          category: "product",
+          uploaderRole: "admin",
+          uploaderId: req.user!.id,
+          filename: "navy-blue-embroidered-dress.png",
+          altText: "Navy blue embroidered modest dress",
+          tags: ["dress", "navy", "embroidered", "modest"],
+          isTemporary: true,
+        },
+        {
+          url: "/attached_assets/generated_images/Pink_lace_abaya_dress_53759991.png",
+          category: "product",
+          uploaderRole: "admin",
+          uploaderId: req.user!.id,
+          filename: "pink-lace-abaya.png",
+          altText: "Pink lace abaya dress",
+          tags: ["abaya", "pink", "lace", "feminine"],
+          isTemporary: true,
+        },
+        {
+          url: "/attached_assets/generated_images/Burgundy_velvet_abaya_with_pearls_c19f2d40.png",
+          category: "product",
+          uploaderRole: "admin",
+          uploaderId: req.user!.id,
+          filename: "burgundy-velvet-abaya-pearls.png",
+          altText: "Burgundy velvet abaya with pearls",
+          tags: ["abaya", "burgundy", "velvet", "pearls", "luxury"],
+          isTemporary: true,
+        },
+        {
+          url: "/attached_assets/generated_images/Emerald_green_satin_dress_530931af.png",
+          category: "product",
+          uploaderRole: "admin",
+          uploaderId: req.user!.id,
+          filename: "emerald-green-satin-dress.png",
+          altText: "Emerald green satin dress with hijab",
+          tags: ["dress", "emerald", "green", "satin", "hijab"],
+          isTemporary: true,
+        },
+        {
+          url: "/attached_assets/generated_images/Cream_abaya_with_beige_embroidery_92e12aec.png",
+          category: "product",
+          uploaderRole: "admin",
+          uploaderId: req.user!.id,
+          filename: "cream-abaya-beige-embroidery.png",
+          altText: "Cream abaya with beige embroidery",
+          tags: ["abaya", "cream", "beige", "embroidered"],
+          isTemporary: true,
+        },
+        {
+          url: "/attached_assets/generated_images/Designer_handbag_product_photo_d9f11f99.png",
+          category: "product",
+          uploaderRole: "admin",
+          uploaderId: req.user!.id,
+          filename: "designer-handbag.png",
+          altText: "Designer leather handbag",
+          tags: ["accessories", "handbag", "leather", "designer"],
+          isTemporary: true,
+        },
+        {
+          url: "/attached_assets/generated_images/Men's_sneakers_product_photo_2c87b833.png",
+          category: "product",
+          uploaderRole: "admin",
+          uploaderId: req.user!.id,
+          filename: "mens-casual-sneakers.png",
+          altText: "Men's casual sneakers",
+          tags: ["shoes", "mens", "casual", "sneakers"],
+          isTemporary: true,
+        },
+        {
+          url: "/attached_assets/generated_images/Summer_dress_product_photo_9f6f8356.png",
+          category: "product",
+          uploaderRole: "admin",
+          uploaderId: req.user!.id,
+          filename: "summer-floral-dress.png",
+          altText: "Summer floral dress",
+          tags: ["dress", "summer", "floral", "casual"],
+          isTemporary: true,
+        },
+      ];
+
+      // Insert all media items
+      const createdItems = [];
+      for (const item of mediaItems) {
+        const created = await storage.createMediaLibraryItem(item as any);
+        createdItems.push(created);
+      }
+
+      res.json({ 
+        success: true, 
+        message: `Successfully seeded ${createdItems.length} media items to the library`,
+        count: createdItems.length
+      });
+    } catch (error: any) {
+      res.status(400).json({ error: error.message });
+    }
+  });
+
   // ============ Enhanced Review Routes ============
   app.post("/api/reviews/:id/reply", requireAuth, requireRole("seller"), async (req: AuthRequest, res) => {
     try {

@@ -3,7 +3,7 @@ import {
   users, products, orders, orderItems, deliveryZones, deliveryTracking,
   chatMessages, transactions, platformSettings, cart, wishlist, reviews,
   productVariants, heroBanners, coupons, bannerCollections, marketplaceBanners,
-  stores, categoryFields, categories, notifications,
+  stores, categoryFields, categories, notifications, mediaLibrary,
   type User, type InsertUser, type Product, type InsertProduct,
   type Order, type InsertOrder, type DeliveryZone, type InsertDeliveryZone,
   type ChatMessage, type InsertChatMessage, type Transaction, type PlatformSettings,
@@ -11,7 +11,8 @@ import {
   type Review, type InsertReview, type ProductVariant, type HeroBanner,
   type Coupon, type InsertCoupon, type BannerCollection, type InsertBannerCollection,
   type MarketplaceBanner, type InsertMarketplaceBanner, type Store, type CategoryField,
-  type Category, type Notification, type InsertNotification
+  type Category, type Notification, type InsertNotification, type MediaLibrary,
+  type InsertMediaLibrary
 } from "@shared/schema";
 import { eq, and, desc, sql, lte, gte, or, isNull } from "drizzle-orm";
 
@@ -149,6 +150,11 @@ export interface IStorage {
   // Multi-vendor homepage data
   getApprovedSellers(): Promise<User[]>;
   getFeaturedProducts(limit?: number): Promise<Product[]>;
+  
+  // Media Library operations
+  createMediaLibraryItem(data: InsertMediaLibrary): Promise<MediaLibrary>;
+  getMediaLibraryItems(filters?: { category?: string; uploaderRole?: string; uploaderId?: string }): Promise<MediaLibrary[]>;
+  deleteMediaLibraryItem(id: string): Promise<boolean>;
 }
 
 export class DbStorage implements IStorage {
@@ -994,6 +1000,38 @@ export class DbStorage implements IStorage {
 
   async deleteCategory(id: string): Promise<boolean> {
     const result = await db.delete(categories).where(eq(categories.id, id));
+    return result.rowCount !== null && result.rowCount > 0;
+  }
+
+  // Media Library operations
+  async createMediaLibraryItem(data: InsertMediaLibrary): Promise<MediaLibrary> {
+    const [newItem] = await db.insert(mediaLibrary).values(data).returning();
+    return newItem;
+  }
+
+  async getMediaLibraryItems(filters?: { category?: string; uploaderRole?: string; uploaderId?: string }): Promise<MediaLibrary[]> {
+    let query = db.select().from(mediaLibrary);
+    
+    const conditions = [];
+    if (filters?.category) {
+      conditions.push(eq(mediaLibrary.category, filters.category as any));
+    }
+    if (filters?.uploaderRole) {
+      conditions.push(eq(mediaLibrary.uploaderRole, filters.uploaderRole as any));
+    }
+    if (filters?.uploaderId) {
+      conditions.push(eq(mediaLibrary.uploaderId, filters.uploaderId));
+    }
+
+    if (conditions.length > 0) {
+      query = query.where(and(...conditions)) as any;
+    }
+
+    return query.orderBy(desc(mediaLibrary.createdAt));
+  }
+
+  async deleteMediaLibraryItem(id: string): Promise<boolean> {
+    const result = await db.delete(mediaLibrary).where(eq(mediaLibrary.id, id));
     return result.rowCount !== null && result.rowCount > 0;
   }
 }

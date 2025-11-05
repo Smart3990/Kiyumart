@@ -123,6 +123,9 @@ export default function SellerDashboardConnected() {
       case "dashboard":
         // Already on dashboard
         break;
+      case "media-library":
+        navigate("/seller/media-library");
+        break;
       case "products":
         navigate("/seller/products");
         break;
