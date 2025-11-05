@@ -81,6 +81,18 @@ The database schema includes tables for:
 - **Fixed seller creation**: POST /api/users now automatically creates associated store when admin adds new seller
 - Ensured cache invalidation works properly when admin makes changes to products/banners/users
 
+**Admin Chat System (Customer Support):**
+- Implemented fully functional AdminMessages component for customer support conversations
+- Admins can now view all support conversations (same access as agents)
+- Admins can read message history and send replies to users
+- Admins can resolve conversations with one click
+- Added conversation search by subject, customer name, or email
+- Backend updated to grant admin role same permissions as agent role for support routes:
+  - `/api/support/conversations` - View all conversations
+  - `/api/support/conversations/:id/messages` - View messages
+  - `/api/support/conversations/:id/assign` - Assign conversations
+  - `/api/support/conversations/:id/resolve` - Mark conversations as resolved
+
 **Image Size Optimizations:**
 - Reduced product card images from aspect-[3/4] to aspect-[4/3] for better horizontal layout
 - Made product cards shorter vertically to prevent page overflow
