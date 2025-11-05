@@ -2332,8 +2332,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       let conversationsQuery;
       
-      if (user.role === "agent") {
-        // Agents see all conversations
+      if (user.role === "agent" || user.role === "admin") {
+        // Agents and admins see all conversations
         conversationsQuery = db
           .select({
             id: supportConversations.id,
@@ -2432,7 +2432,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(404).json({ error: "Conversation not found" });
       }
 
-      if (user.role !== "agent" && conversation.customerId !== user.id) {
+      if (user.role !== "agent" && user.role !== "admin" && conversation.customerId !== user.id) {
         return res.status(403).json({ error: "Access denied" });
       }
 
@@ -2480,7 +2480,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(404).json({ error: "Conversation not found" });
       }
 
-      if (user.role !== "agent" && conversation.customerId !== user.id) {
+      if (user.role !== "agent" && user.role !== "admin" && conversation.customerId !== user.id) {
         return res.status(403).json({ error: "Access denied" });
       }
 
@@ -2508,8 +2508,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const { id } = req.params;
       const user = req.user!;
 
-      if (req.user?.role !== "agent") {
-        return res.status(403).json({ error: "Only agents can assign conversations" });
+      if (req.user?.role !== "agent" && req.user?.role !== "admin") {
+        return res.status(403).json({ error: "Only agents and admins can assign conversations" });
       }
 
       const { db } = await import("../db/index");
@@ -2536,8 +2536,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const { id } = req.params;
 
-      if (req.user?.role !== "agent") {
-        return res.status(403).json({ error: "Only agents can resolve conversations" });
+      if (req.user?.role !== "agent" && req.user?.role !== "admin") {
+        return res.status(403).json({ error: "Only agents and admins can resolve conversations" });
       }
 
       const { db } = await import("../db/index");
