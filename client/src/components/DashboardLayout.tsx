@@ -104,8 +104,6 @@ export default function DashboardLayout({
       setLocation(basePath);
     } else if (role === "buyer" && (id === "orders" || id === "wishlist" || id === "support")) {
       setLocation(`/${id}`);
-    } else if (id === "messages" && role === "agent") {
-      setLocation("/admin/messages");
     } else {
       setLocation(`${basePath}/${id}`);
     }
