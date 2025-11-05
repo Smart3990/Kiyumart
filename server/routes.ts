@@ -1070,7 +1070,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
           email: "admin@kiyumart.com",
           password: await bcrypt.hash("admin123", 10),
           name: "Test Admin",
-          role: "admin"
+          role: "admin",
+          isActive: true
         },
         {
           email: "seller@kiyumart.com",
@@ -1080,6 +1081,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
           storeName: "Test Store",
           storeBanner: "https://images.unsplash.com/photo-1441986300917-64674bd600d8?w=800",
           isApproved: true,
+          isActive: true
+        },
+        {
+          email: "buyer@kiyumart.com",
+          password: await bcrypt.hash("buyer123", 10),
+          name: "Test Buyer",
+          role: "buyer",
           isActive: true
         },
         {
@@ -1097,7 +1105,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
           email: "agent@kiyumart.com",
           password: await bcrypt.hash("agent123", 10),
           name: "Test Agent",
-          role: "agent"
+          role: "agent",
+          isActive: true
         }
       ];
 
@@ -1130,11 +1139,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       res.json({
         success: true,
-        message: "Test users created/verified",
+        message: "Test users created/verified for all 5 roles",
         users: created,
         credentials: {
           admin: "admin@kiyumart.com / admin123",
           seller: "seller@kiyumart.com / seller123",
+          buyer: "buyer@kiyumart.com / buyer123",
           rider: "rider@kiyumart.com / rider123",
           agent: "agent@kiyumart.com / agent123"
         }
