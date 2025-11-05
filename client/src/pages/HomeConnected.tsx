@@ -312,7 +312,7 @@ export default function HomeConnected() {
       <main className="flex-1">
         <section className="max-w-7xl mx-auto px-4 py-12">
           <h2 className="text-3xl font-bold mb-8">{t("shopByCategory")}</h2>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4">
             {categories.map((category) => (
               <CategoryCard
                 key={category.id}
