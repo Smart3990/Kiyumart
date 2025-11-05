@@ -238,101 +238,183 @@ export default function AdminMediaLibrary() {
         </Dialog>
       </div>
 
-      <Tabs value={selectedCategory} onValueChange={setSelectedCategory}>
+      <Tabs value={activeTab} onValueChange={setActiveTab}>
         <TabsList>
-          {categories.map((cat) => (
-            <TabsTrigger key={cat.value} value={cat.value} data-testid={`tab-${cat.value}`}>
-              {cat.label}
-            </TabsTrigger>
-          ))}
+          <TabsTrigger value="assets" data-testid="tab-assets">
+            <FolderOpen className="mr-2 h-4 w-4" />
+            Available Assets ({assetImages.length})
+          </TabsTrigger>
+          <TabsTrigger value="uploaded" data-testid="tab-uploaded">
+            <Upload className="mr-2 h-4 w-4" />
+            Uploaded Media ({mediaItems.length})
+          </TabsTrigger>
         </TabsList>
-      </Tabs>
 
-      {isLoading ? (
-        <div className="flex justify-center p-12">
-          <Loader2 className="h-8 w-8 animate-spin text-primary" />
-        </div>
-      ) : filteredItems.length === 0 ? (
-        <Card>
-          <CardContent className="flex flex-col items-center justify-center p-12">
-            <ImageIcon className="h-12 w-12 text-muted-foreground mb-4" />
-            <h3 className="text-lg font-semibold mb-2">No media found</h3>
-            <p className="text-muted-foreground text-center mb-4">
-              Upload your first image to get started
-            </p>
-          </CardContent>
-        </Card>
-      ) : (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-          {filteredItems.map((item) => (
-            <Card key={item.id} className="overflow-hidden" data-testid={`media-card-${item.id}`}>
-              <div className="aspect-video bg-muted relative">
-                <img
-                  src={item.url}
-                  alt={item.altText || item.filename}
-                  className="w-full h-full object-cover"
-                  onError={(e) => {
-                    e.currentTarget.src = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='100' height='100'%3E%3Crect fill='%23ddd' width='100' height='100'/%3E%3Ctext x='50%25' y='50%25' dominant-baseline='middle' text-anchor='middle' fill='%23999'%3ENo Image%3C/text%3E%3C/svg%3E";
-                  }}
-                />
-                {item.isTemporary && (
-                  <div className="absolute top-2 right-2 bg-yellow-500 text-white text-xs px-2 py-1 rounded">
-                    Temporary
-                  </div>
-                )}
-              </div>
-              <CardContent className="p-4">
-                <p className="font-semibold text-sm truncate mb-2" title={item.filename}>
-                  {item.filename}
+        {/* Available Assets Tab */}
+        <TabsContent value="assets" className="space-y-4">
+          <p className="text-sm text-muted-foreground">
+            Browse all images from your attached_assets folder. Click copy to use them in your application.
+          </p>
+          {assetsLoading ? (
+            <div className="flex justify-center p-12">
+              <Loader2 className="h-8 w-8 animate-spin text-primary" />
+            </div>
+          ) : assetImages.length === 0 ? (
+            <Card>
+              <CardContent className="flex flex-col items-center justify-center p-12">
+                <FolderOpen className="h-12 w-12 text-muted-foreground mb-4" />
+                <h3 className="text-lg font-semibold mb-2">No assets found</h3>
+                <p className="text-muted-foreground text-center">
+                  No images found in attached_assets folder
                 </p>
-                <div className="flex items-center gap-1 mb-3">
-                  <span className="text-xs bg-primary/10 text-primary px-2 py-1 rounded">
-                    {item.category}
-                  </span>
-                  {item.tags && item.tags.length > 0 && (
-                    <span className="text-xs text-muted-foreground">
-                      +{item.tags.length} tags
-                    </span>
-                  )}
-                </div>
-                <div className="flex gap-2">
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    className="flex-1"
-                    onClick={() => copyToClipboard(item.url, item.id)}
-                    data-testid={`button-copy-${item.id}`}
-                  >
-                    {copiedId === item.id ? (
-                      <>
-                        <Check className="h-4 w-4 mr-1" />
-                        Copied
-                      </>
-                    ) : (
-                      <>
-                        <Copy className="h-4 w-4 mr-1" />
-                        Copy
-                      </>
-                    )}
-                  </Button>
-                  <Button
-                    variant="destructive"
-                    size="sm"
-                    onClick={() => {
-                      if (confirm("Are you sure you want to delete this media?")) {
-                        deleteMutation.mutate(item.id);
-                      }
-                    }}
-                    data-testid={`button-delete-${item.id}`}
-                  >
-                    <Trash2 className="h-4 w-4" />
-                  </Button>
-                </div>
               </CardContent>
             </Card>
-          ))}
-        </div>
-      )}
+          ) : (
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+              {assetImages.map((asset, index) => (
+                <Card key={index} className="overflow-hidden" data-testid={`asset-card-${index}`}>
+                  <div className="aspect-video bg-muted relative">
+                    <img
+                      src={asset.url}
+                      alt={asset.filename}
+                      className="w-full h-full object-cover"
+                      onError={(e) => {
+                        e.currentTarget.src = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='100' height='100'%3E%3Crect fill='%23ddd' width='100' height='100'/%3E%3Ctext x='50%25' y='50%25' dominant-baseline='middle' text-anchor='middle' fill='%23999'%3ENo Image%3C/text%3E%3C/svg%3E";
+                      }}
+                    />
+                  </div>
+                  <CardContent className="p-4">
+                    <p className="font-semibold text-sm truncate mb-2" title={asset.filename}>
+                      {asset.filename}
+                    </p>
+                    <p className="text-xs text-muted-foreground mb-3 truncate" title={asset.path}>
+                      {asset.path}
+                    </p>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="w-full"
+                      onClick={() => copyToClipboard(asset.url)}
+                      data-testid={`button-copy-asset-${index}`}
+                    >
+                      {copiedUrl === asset.url ? (
+                        <>
+                          <Check className="h-4 w-4 mr-1" />
+                          Copied
+                        </>
+                      ) : (
+                        <>
+                          <Copy className="h-4 w-4 mr-1" />
+                          Copy URL
+                        </>
+                      )}
+                    </Button>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          )}
+        </TabsContent>
+
+        {/* Uploaded Media Tab */}
+        <TabsContent value="uploaded" className="space-y-4">
+          <Tabs value={selectedCategory} onValueChange={setSelectedCategory}>
+            <TabsList>
+              {categories.map((cat) => (
+                <TabsTrigger key={cat.value} value={cat.value} data-testid={`tab-category-${cat.value}`}>
+                  {cat.label}
+                </TabsTrigger>
+              ))}
+            </TabsList>
+          </Tabs>
+
+          {mediaLoading ? (
+            <div className="flex justify-center p-12">
+              <Loader2 className="h-8 w-8 animate-spin text-primary" />
+            </div>
+          ) : filteredItems.length === 0 ? (
+            <Card>
+              <CardContent className="flex flex-col items-center justify-center p-12">
+                <ImageIcon className="h-12 w-12 text-muted-foreground mb-4" />
+                <h3 className="text-lg font-semibold mb-2">No media found</h3>
+                <p className="text-muted-foreground text-center mb-4">
+                  Upload your first image to get started
+                </p>
+              </CardContent>
+            </Card>
+          ) : (
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+              {filteredItems.map((item) => (
+                <Card key={item.id} className="overflow-hidden" data-testid={`media-card-${item.id}`}>
+                  <div className="aspect-video bg-muted relative">
+                    <img
+                      src={item.url}
+                      alt={item.altText || item.filename}
+                      className="w-full h-full object-cover"
+                      onError={(e) => {
+                        e.currentTarget.src = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='100' height='100'%3E%3Crect fill='%23ddd' width='100' height='100'/%3E%3Ctext x='50%25' y='50%25' dominant-baseline='middle' text-anchor='middle' fill='%23999'%3ENo Image%3C/text%3E%3C/svg%3E";
+                      }}
+                    />
+                    {item.isTemporary && (
+                      <div className="absolute top-2 right-2 bg-yellow-500 text-white text-xs px-2 py-1 rounded">
+                        Temporary
+                      </div>
+                    )}
+                  </div>
+                  <CardContent className="p-4">
+                    <p className="font-semibold text-sm truncate mb-2" title={item.filename}>
+                      {item.filename}
+                    </p>
+                    <div className="flex items-center gap-1 mb-3">
+                      <span className="text-xs bg-primary/10 text-primary px-2 py-1 rounded">
+                        {item.category}
+                      </span>
+                      {item.tags && item.tags.length > 0 && (
+                        <span className="text-xs text-muted-foreground">
+                          +{item.tags.length} tags
+                        </span>
+                      )}
+                    </div>
+                    <div className="flex gap-2">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="flex-1"
+                        onClick={() => copyToClipboard(item.url)}
+                        data-testid={`button-copy-${item.id}`}
+                      >
+                        {copiedUrl === item.url ? (
+                          <>
+                            <Check className="h-4 w-4 mr-1" />
+                            Copied
+                          </>
+                        ) : (
+                          <>
+                            <Copy className="h-4 w-4 mr-1" />
+                            Copy
+                          </>
+                        )}
+                      </Button>
+                      <Button
+                        variant="destructive"
+                        size="sm"
+                        onClick={() => {
+                          if (confirm("Are you sure you want to delete this media?")) {
+                            deleteMutation.mutate(item.id);
+                          }
+                        }}
+                        data-testid={`button-delete-${item.id}`}
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          )}
+        </TabsContent>
+      </Tabs>
     </div>
   );
 }
