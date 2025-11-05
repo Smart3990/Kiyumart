@@ -465,6 +465,77 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // ============ Application Routes (Seller/Rider) ============
+  app.post("/api/applications/seller", async (req, res) => {
+    try {
+      const { password, ...userData } = req.body;
+      
+      if (!password || password.length < 8) {
+        return res.status(400).json({ error: "Password must be at least 8 characters" });
+      }
+
+      const existingUser = await storage.getUserByEmail(userData.email);
+      if (existingUser) {
+        return res.status(400).json({ error: "Email already registered" });
+      }
+
+      const hashedPassword = await bcrypt.hash(password, 10);
+      
+      const newUser = await storage.createUser({
+        ...userData,
+        password: hashedPassword,
+        role: "seller",
+        isApproved: false,
+      });
+
+      await notifyAdmins(
+        "user",
+        `New seller application`,
+        `${userData.name} has applied to become a seller`
+      );
+
+      const { password: _, ...userWithoutPassword } = newUser;
+      res.json(userWithoutPassword);
+    } catch (error: any) {
+      res.status(400).json({ error: error.message });
+    }
+  });
+
+  app.post("/api/applications/rider", async (req, res) => {
+    try {
+      const { password, ...userData } = req.body;
+      
+      if (!password || password.length < 8) {
+        return res.status(400).json({ error: "Password must be at least 8 characters" });
+      }
+
+      const existingUser = await storage.getUserByEmail(userData.email);
+      if (existingUser) {
+        return res.status(400).json({ error: "Email already registered" });
+      }
+
+      const hashedPassword = await bcrypt.hash(password, 10);
+      
+      const newUser = await storage.createUser({
+        ...userData,
+        password: hashedPassword,
+        role: "rider",
+        isApproved: false,
+      });
+
+      await notifyAdmins(
+        "user",
+        `New rider application`,
+        `${userData.name} has applied to become a delivery rider`
+      );
+
+      const { password: _, ...userWithoutPassword } = newUser;
+      res.json(userWithoutPassword);
+    } catch (error: any) {
+      res.status(400).json({ error: error.message });
+    }
+  });
+
   // ============ Product Routes ============
   app.post("/api/products", requireAuth, requireRole("admin", "seller"), upload.fields([
     { name: "images", maxCount: 5 },

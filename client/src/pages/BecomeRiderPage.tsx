@@ -7,11 +7,12 @@ import { useMutation } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage, FormDescription } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
-import { Loader2, Bike, ArrowLeft } from "lucide-react";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Loader2, Bike, ArrowLeft, AlertCircle } from "lucide-react";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 
@@ -20,10 +21,15 @@ const becomeRiderSchema = z.object({
   email: z.string().email("Invalid email address"),
   phone: z.string().min(10, "Phone number must be at least 10 characters"),
   password: z.string().min(8, "Password must be at least 8 characters"),
-  vehicleType: z.string().min(1, "Vehicle type is required"),
-  vehicleNumber: z.string().min(3, "Vehicle number is required"),
-  licenseNumber: z.string().min(3, "License number is required"),
-  nationalIdCard: z.string().min(5, "National ID card is required"),
+  profileImage: z.string().min(1, "Profile image is required"),
+  ghanaCardFront: z.string().min(1, "Ghana Card front image is required"),
+  ghanaCardBack: z.string().min(1, "Ghana Card back image is required"),
+  nationalIdCard: z.string().min(10, "Ghana Card number is required"),
+  businessAddress: z.string().min(5, "Address/Location is required"),
+  vehicleType: z.enum(["car", "motorcycle", "bicycle"], { required_error: "Vehicle type is required" }),
+  vehicleNumber: z.string().optional(),
+  licenseNumber: z.string().optional(),
+  vehicleColor: z.string().optional(),
 });
 
 type BecomeRiderFormData = z.infer<typeof becomeRiderSchema>;
@@ -31,6 +37,10 @@ type BecomeRiderFormData = z.infer<typeof becomeRiderSchema>;
 export default function BecomeRiderPage() {
   const [, navigate] = useLocation();
   const { toast } = useToast();
+  const [uploading, setUploading] = useState<string | null>(null);
+  const [profilePreview, setProfilePreview] = useState<string>("");
+  const [cardFrontPreview, setCardFrontPreview] = useState<string>("");
+  const [cardBackPreview, setCardBackPreview] = useState<string>("");
 
   const form = useForm<BecomeRiderFormData>({
     resolver: zodResolver(becomeRiderSchema),
@@ -39,29 +49,103 @@ export default function BecomeRiderPage() {
       email: "",
       phone: "",
       password: "",
-      vehicleType: "",
+      profileImage: "",
+      ghanaCardFront: "",
+      ghanaCardBack: "",
+      nationalIdCard: "",
+      businessAddress: "",
+      vehicleType: undefined,
       vehicleNumber: "",
       licenseNumber: "",
-      nationalIdCard: "",
+      vehicleColor: "",
     },
   });
 
+  const vehicleType = form.watch("vehicleType");
+
+  const handleImageUpload = async (file: File, fieldName: "profileImage" | "ghanaCardFront" | "ghanaCardBack") => {
+    if (!file) return;
+
+    const validTypes = ["image/jpeg", "image/png", "image/jpg", "image/webp"];
+    if (!validTypes.includes(file.type)) {
+      toast({
+        title: "Invalid file type",
+        description: "Please upload a JPEG, PNG, or WebP image",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (file.size > 5 * 1024 * 1024) {
+      toast({
+        title: "File too large",
+        description: "Image must be less than 5MB",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setUploading(fieldName);
+    const formData = new FormData();
+    formData.append("media", file);
+
+    try {
+      const response = await fetch("/api/upload/media", {
+        method: "POST",
+        body: formData,
+        credentials: "include",
+      });
+
+      if (!response.ok) throw new Error("Upload failed");
+
+      const data = await response.json();
+      form.setValue(fieldName, data.url);
+
+      if (fieldName === "profileImage") setProfilePreview(data.url);
+      if (fieldName === "ghanaCardFront") setCardFrontPreview(data.url);
+      if (fieldName === "ghanaCardBack") setCardBackPreview(data.url);
+
+      toast({
+        title: "Success",
+        description: "Image uploaded successfully",
+      });
+    } catch (error) {
+      toast({
+        title: "Upload failed",
+        description: "Failed to upload image. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setUploading(null);
+    }
+  };
+
   const applyMutation = useMutation({
     mutationFn: async (data: BecomeRiderFormData) => {
-      const applicationData = {
+      const vehicleInfo: any = { type: data.vehicleType };
+      
+      if (data.vehicleType === "car") {
+        vehicleInfo.plateNumber = data.vehicleNumber;
+        vehicleInfo.license = data.licenseNumber;
+        vehicleInfo.color = data.vehicleColor;
+      } else if (data.vehicleType === "motorcycle") {
+        vehicleInfo.plateNumber = data.vehicleNumber;
+        vehicleInfo.license = data.licenseNumber;
+      }
+      
+      return apiRequest("POST", "/api/applications/rider", {
         name: data.name,
         email: data.email,
         phone: data.phone,
         password: data.password,
         role: "rider",
-        vehicleInfo: {
-          type: data.vehicleType,
-          plateNumber: data.vehicleNumber,
-          license: data.licenseNumber,
-        },
+        profileImage: data.profileImage,
+        ghanaCardFront: data.ghanaCardFront,
+        ghanaCardBack: data.ghanaCardBack,
         nationalIdCard: data.nationalIdCard,
-      };
-      return apiRequest("POST", "/api/applications/rider", applicationData);
+        businessAddress: data.businessAddress,
+        vehicleInfo,
+      });
     },
     onSuccess: () => {
       toast({
@@ -82,6 +166,24 @@ export default function BecomeRiderPage() {
   });
 
   const onSubmit = (data: BecomeRiderFormData) => {
+    if (data.vehicleType === "car" && (!data.vehicleNumber || !data.licenseNumber || !data.vehicleColor)) {
+      toast({
+        title: "Missing Information",
+        description: "Car riders must provide plate number, license, and vehicle color",
+        variant: "destructive",
+      });
+      return;
+    }
+    
+    if (data.vehicleType === "motorcycle" && (!data.vehicleNumber || !data.licenseNumber)) {
+      toast({
+        title: "Missing Information",
+        description: "Motorcycle riders must provide plate number and license",
+        variant: "destructive",
+      });
+      return;
+    }
+    
     applyMutation.mutate(data);
   };
 
@@ -108,7 +210,7 @@ export default function BecomeRiderPage() {
                   <Bike className="h-6 w-6 text-primary" />
                 </div>
                 <div>
-                  <CardTitle className="text-2xl">Become a Rider</CardTitle>
+                  <CardTitle className="text-2xl">Become a Delivery Rider</CardTitle>
                   <CardDescription>
                     Join our delivery team and start earning
                   </CardDescription>
@@ -116,129 +218,315 @@ export default function BecomeRiderPage() {
               </div>
             </CardHeader>
             <CardContent>
+              <Alert className="mb-6 border-primary/20 bg-primary/5">
+                <AlertCircle className="h-4 w-4 text-primary" />
+                <AlertDescription className="text-sm">
+                  <strong>Important:</strong> Your profile photo must be a clear image of you and must match the photo on your Ghana Card. 
+                  Ensure all information matches exactly as it appears on your Ghana Card for verification purposes.
+                </AlertDescription>
+              </Alert>
+
               <Form {...form}>
-                <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-                  <FormField
-                    control={form.control}
-                    name="name"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Full Name</FormLabel>
-                        <FormControl>
-                          <Input placeholder="John Doe" {...field} data-testid="input-name" />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-
-                  <FormField
-                    control={form.control}
-                    name="email"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Email Address</FormLabel>
-                        <FormControl>
-                          <Input type="email" placeholder="john@example.com" {...field} data-testid="input-email" />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-
-                  <FormField
-                    control={form.control}
-                    name="phone"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Phone Number</FormLabel>
-                        <FormControl>
-                          <Input placeholder="+233 XX XXX XXXX" {...field} data-testid="input-phone" />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-
-                  <FormField
-                    control={form.control}
-                    name="password"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Password</FormLabel>
-                        <FormControl>
-                          <Input type="password" placeholder="••••••••" {...field} data-testid="input-password" />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-
-                  <FormField
-                    control={form.control}
-                    name="vehicleType"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Vehicle Type</FormLabel>
-                        <Select onValueChange={field.onChange} value={field.value}>
+                <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+                  <div className="space-y-4">
+                    <h3 className="text-lg font-semibold">Personal Information</h3>
+                    
+                    <FormField
+                      control={form.control}
+                      name="name"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Full Name (As on Ghana Card)</FormLabel>
                           <FormControl>
-                            <SelectTrigger data-testid="select-vehicle-type">
-                              <SelectValue placeholder="Select vehicle type" />
-                            </SelectTrigger>
+                            <Input placeholder="John Doe" {...field} data-testid="input-name" />
                           </FormControl>
-                          <SelectContent>
-                            <SelectItem value="motorcycle">Motorcycle</SelectItem>
-                            <SelectItem value="bicycle">Bicycle</SelectItem>
-                            <SelectItem value="car">Car</SelectItem>
-                            <SelectItem value="van">Van</SelectItem>
-                          </SelectContent>
-                        </Select>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
+                          <FormDescription>Must match your Ghana Card exactly</FormDescription>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
 
-                  <FormField
-                    control={form.control}
-                    name="vehicleNumber"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Vehicle Number / Plate</FormLabel>
-                        <FormControl>
-                          <Input placeholder="GR-1234-23" {...field} data-testid="input-vehicle-number" />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
+                    <FormField
+                      control={form.control}
+                      name="email"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Email Address</FormLabel>
+                          <FormControl>
+                            <Input type="email" placeholder="john@example.com" {...field} data-testid="input-email" />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
 
-                  <FormField
-                    control={form.control}
-                    name="licenseNumber"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Driver's License Number</FormLabel>
-                        <FormControl>
-                          <Input placeholder="DL-123456" {...field} data-testid="input-license-number" />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
+                    <FormField
+                      control={form.control}
+                      name="phone"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Phone Number</FormLabel>
+                          <FormControl>
+                            <Input placeholder="+233 XX XXX XXXX" {...field} data-testid="input-phone" />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
 
-                  <FormField
-                    control={form.control}
-                    name="nationalIdCard"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>National ID Card Number</FormLabel>
-                        <FormControl>
-                          <Input placeholder="GHA-123456789-0" {...field} data-testid="input-national-id" />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
+                    <FormField
+                      control={form.control}
+                      name="password"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Password</FormLabel>
+                          <FormControl>
+                            <Input type="password" placeholder="••••••••" {...field} data-testid="input-password" />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+
+                    <FormField
+                      control={form.control}
+                      name="businessAddress"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Address / Location</FormLabel>
+                          <FormControl>
+                            <Input placeholder="123 Main St, Accra, Ghana" {...field} data-testid="input-address" />
+                          </FormControl>
+                          <FormDescription>Your address must match Ghana Card</FormDescription>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                  </div>
+
+                  <div className="space-y-4">
+                    <h3 className="text-lg font-semibold">Verification Documents</h3>
+                    
+                    <FormField
+                      control={form.control}
+                      name="profileImage"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Profile Photo</FormLabel>
+                          <FormControl>
+                            <div className="space-y-2">
+                              <Input
+                                type="file"
+                                accept="image/*"
+                                onChange={(e) => {
+                                  const file = e.target.files?.[0];
+                                  if (file) handleImageUpload(file, "profileImage");
+                                }}
+                                disabled={uploading === "profileImage"}
+                                data-testid="input-profile-image"
+                              />
+                              {profilePreview && (
+                                <div className="relative w-32 h-32 border rounded-lg overflow-hidden">
+                                  <img src={profilePreview} alt="Profile" className="w-full h-full object-cover" />
+                                </div>
+                              )}
+                            </div>
+                          </FormControl>
+                          <FormDescription>Clear photo of you - must match your Ghana Card photo</FormDescription>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+
+                    <FormField
+                      control={form.control}
+                      name="nationalIdCard"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Ghana Card Number</FormLabel>
+                          <FormControl>
+                            <Input placeholder="GHA-XXXXXXXXX-X" {...field} data-testid="input-national-id" />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+
+                    <FormField
+                      control={form.control}
+                      name="ghanaCardFront"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Ghana Card (Front)</FormLabel>
+                          <FormControl>
+                            <div className="space-y-2">
+                              <Input
+                                type="file"
+                                accept="image/*"
+                                onChange={(e) => {
+                                  const file = e.target.files?.[0];
+                                  if (file) handleImageUpload(file, "ghanaCardFront");
+                                }}
+                                disabled={uploading === "ghanaCardFront"}
+                                data-testid="input-card-front"
+                              />
+                              {cardFrontPreview && (
+                                <div className="relative w-64 h-40 border rounded-lg overflow-hidden">
+                                  <img src={cardFrontPreview} alt="Ghana Card Front" className="w-full h-full object-cover" />
+                                </div>
+                              )}
+                            </div>
+                          </FormControl>
+                          <FormDescription>Clear photo of the front of your Ghana Card</FormDescription>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+
+                    <FormField
+                      control={form.control}
+                      name="ghanaCardBack"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Ghana Card (Back)</FormLabel>
+                          <FormControl>
+                            <div className="space-y-2">
+                              <Input
+                                type="file"
+                                accept="image/*"
+                                onChange={(e) => {
+                                  const file = e.target.files?.[0];
+                                  if (file) handleImageUpload(file, "ghanaCardBack");
+                                }}
+                                disabled={uploading === "ghanaCardBack"}
+                                data-testid="input-card-back"
+                              />
+                              {cardBackPreview && (
+                                <div className="relative w-64 h-40 border rounded-lg overflow-hidden">
+                                  <img src={cardBackPreview} alt="Ghana Card Back" className="w-full h-full object-cover" />
+                                </div>
+                              )}
+                            </div>
+                          </FormControl>
+                          <FormDescription>Clear photo of the back of your Ghana Card</FormDescription>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                  </div>
+
+                  <div className="space-y-4">
+                    <h3 className="text-lg font-semibold">Vehicle Information</h3>
+                    
+                    <FormField
+                      control={form.control}
+                      name="vehicleType"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Vehicle Type</FormLabel>
+                          <Select onValueChange={field.onChange} defaultValue={field.value}>
+                            <FormControl>
+                              <SelectTrigger data-testid="select-vehicle-type">
+                                <SelectValue placeholder="Select vehicle type" />
+                              </SelectTrigger>
+                            </FormControl>
+                            <SelectContent>
+                              <SelectItem value="car">Car</SelectItem>
+                              <SelectItem value="motorcycle">Motorcycle</SelectItem>
+                              <SelectItem value="bicycle">Bicycle</SelectItem>
+                            </SelectContent>
+                          </Select>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+
+                    {vehicleType === "car" && (
+                      <>
+                        <FormField
+                          control={form.control}
+                          name="vehicleNumber"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>Plate Number</FormLabel>
+                              <FormControl>
+                                <Input placeholder="GH-1234-21" {...field} data-testid="input-plate-number" />
+                              </FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+
+                        <FormField
+                          control={form.control}
+                          name="vehicleColor"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>Vehicle Color</FormLabel>
+                              <FormControl>
+                                <Input placeholder="e.g. Black, White, Red" {...field} data-testid="input-vehicle-color" />
+                              </FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+
+                        <FormField
+                          control={form.control}
+                          name="licenseNumber"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>Driver's License Number</FormLabel>
+                              <FormControl>
+                                <Input placeholder="License number" {...field} data-testid="input-license" />
+                              </FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+                      </>
                     )}
-                  />
+
+                    {vehicleType === "motorcycle" && (
+                      <>
+                        <FormField
+                          control={form.control}
+                          name="vehicleNumber"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>Plate Number</FormLabel>
+                              <FormControl>
+                                <Input placeholder="M-1234-GH" {...field} data-testid="input-plate-number" />
+                              </FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+
+                        <FormField
+                          control={form.control}
+                          name="licenseNumber"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>Driver's License Number</FormLabel>
+                              <FormControl>
+                                <Input placeholder="License number" {...field} data-testid="input-license" />
+                              </FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+                      </>
+                    )}
+
+                    {vehicleType === "bicycle" && (
+                      <Alert>
+                        <AlertDescription>
+                          No additional vehicle information required for bicycle riders.
+                        </AlertDescription>
+                      </Alert>
+                    )}
+                  </div>
 
                   <div className="flex justify-end gap-3 pt-4">
                     <Button
@@ -251,13 +539,13 @@ export default function BecomeRiderPage() {
                     </Button>
                     <Button
                       type="submit"
-                      disabled={applyMutation.isPending}
+                      disabled={applyMutation.isPending || uploading !== null}
                       data-testid="button-submit"
                     >
-                      {applyMutation.isPending && (
+                      {(applyMutation.isPending || uploading) && (
                         <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                       )}
-                      Submit Application
+                      {uploading ? "Uploading..." : "Submit Application"}
                     </Button>
                   </div>
                 </form>
