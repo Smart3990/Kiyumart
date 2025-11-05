@@ -30,6 +30,7 @@ const settingsSchema = z.object({
   allowSellerRegistration: z.boolean(),
   allowRiderRegistration: z.boolean(),
   shopDisplayMode: z.enum(["by-store", "by-category"]).optional(),
+  primaryStoreId: z.string().optional().nullable(),
   primaryColor: z.string().regex(/^#([A-Fa-f0-9]{6})$/, "Must be a valid hex color"),
   defaultCurrency: z.string(),
   paystackPublicKey: z.string().optional(),
@@ -75,6 +76,14 @@ export default function AdminSettings() {
     queryKey: ["/api/settings"],
   });
 
+  const { data: stores = [] } = useQuery<Array<{id: string; name: string; isActive: boolean}>>({
+    queryKey: ["/api/stores"],
+    queryFn: async () => {
+      const res = await fetch("/api/stores");
+      return res.json();
+    },
+  });
+
   useEffect(() => {
     if (!authLoading && (!isAuthenticated || user?.role !== "admin")) {
       navigate("/auth");
@@ -89,6 +98,7 @@ export default function AdminSettings() {
       allowSellerRegistration: (settings as any).allowSellerRegistration || false,
       allowRiderRegistration: (settings as any).allowRiderRegistration || false,
       shopDisplayMode: (settings as any).shopDisplayMode || "by-store",
+      primaryStoreId: (settings as any).primaryStoreId || null,
       primaryColor: settings.primaryColor,
       defaultCurrency: settings.defaultCurrency,
       paystackPublicKey: settings.paystackPublicKey || "",
@@ -302,6 +312,33 @@ export default function AdminSettings() {
                         </Select>
                         <p className="text-xs text-muted-foreground">
                           Choose how products are displayed on the multi-vendor homepage
+                        </p>
+                      </div>
+                    </div>
+                  )}
+
+                  {!form.watch("isMultiVendor") && (
+                    <div className="p-4 border rounded-lg bg-muted/50 space-y-4">
+                      <div className="space-y-2">
+                        <Label htmlFor="primaryStoreId">Primary Store (Single-Store Mode)</Label>
+                        <Select
+                          value={form.watch("primaryStoreId") || "none"}
+                          onValueChange={(value) => form.setValue("primaryStoreId", value === "none" ? null : value)}
+                        >
+                          <SelectTrigger id="primaryStoreId" data-testid="select-primary-store">
+                            <SelectValue placeholder="Select a store" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="none">No primary store</SelectItem>
+                            {stores.filter(s => s.isActive).map((store) => (
+                              <SelectItem key={store.id} value={store.id}>
+                                {store.name}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                        <p className="text-xs text-muted-foreground">
+                          Select the store to display in single-store mode. Only one store can be primary. Leave empty to show the first active store.
                         </p>
                       </div>
                     </div>
