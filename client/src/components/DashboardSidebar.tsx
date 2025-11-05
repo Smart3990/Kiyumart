@@ -39,7 +39,6 @@ interface DashboardSidebarProps {
 const menuItems: Record<string, MenuItem[]> = {
   admin: [
     { icon: LayoutDashboard, label: "Dashboard", id: "dashboard" },
-    { icon: Store, label: "Store", id: "store" },
     { icon: Palette, label: "Branding", id: "branding" },
     { icon: Grid3x3, label: "Categories", id: "categories" },
     { icon: ImagePlus, label: "Media Library", id: "media-library" },

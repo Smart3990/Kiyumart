@@ -27,7 +27,6 @@ const roleBasePaths: Record<string, string> = {
 
 const routeToMenuId: Record<string, string> = {
   "/admin": "dashboard",
-  "/admin/store": "store",
   "/admin/branding": "branding",
   "/admin/categories": "categories",
   "/admin/media-library": "media-library",

@@ -1,4 +1,4 @@
-import { Search, Menu, Globe, User, Bell, LayoutDashboard, ShoppingBag } from "lucide-react";
+import { Search, Menu, Globe, User, Bell, LayoutDashboard, ShoppingBag, Store as StoreIcon, Truck } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
@@ -41,7 +41,22 @@ export default function Header({
     refetchInterval: 30000, // Refetch every 30 seconds
   });
 
+  const { data: platformSettings } = useQuery<{ 
+    allowSellerRegistration: boolean; 
+    allowRiderRegistration: boolean; 
+  }>({
+    queryKey: ["/api/platform-settings"],
+  });
+
   const notificationCount = notificationData?.count || 0;
+  
+  // Show "Become a Seller" if enabled and user is not already a seller/admin
+  const showBecomeSeller = platformSettings?.allowSellerRegistration && 
+    (!isAuthenticated || (user?.role !== 'seller' && user?.role !== 'admin'));
+  
+  // Show "Become a Rider" if enabled and user is not already a rider/admin
+  const showBecomeRider = platformSettings?.allowRiderRegistration && 
+    (!isAuthenticated || (user?.role !== 'rider' && user?.role !== 'admin'));
 
   const isActive = (path: string) => location === path;
 
@@ -135,6 +150,32 @@ export default function Header({
                 ))}
               </DropdownMenuContent>
             </DropdownMenu>
+
+            {showBecomeSeller && (
+              <Button 
+                variant="outline" 
+                size="sm"
+                className="hidden md:flex"
+                onClick={() => navigate("/become-seller")}
+                data-testid="button-become-seller"
+              >
+                <StoreIcon className="h-4 w-4 mr-2" />
+                <span>Become a Seller</span>
+              </Button>
+            )}
+
+            {showBecomeRider && (
+              <Button 
+                variant="outline" 
+                size="sm"
+                className="hidden md:flex"
+                onClick={() => navigate("/become-rider")}
+                data-testid="button-become-rider"
+              >
+                <Truck className="h-4 w-4 mr-2" />
+                <span>Become a Rider</span>
+              </Button>
+            )}
 
             {isAuthenticated && (
               <Button 
