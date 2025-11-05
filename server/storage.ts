@@ -90,6 +90,7 @@ export interface IStorage {
   getUnreadNotificationCount(userId: string): Promise<number>;
   markNotificationAsRead(notificationId: string): Promise<Notification | undefined>;
   markAllNotificationsAsRead(userId: string): Promise<void>;
+  deleteNotification(notificationId: string, userId: string): Promise<boolean>;
   
   // Product Variant operations
   getProductVariants(productId: string): Promise<ProductVariant[]>;
@@ -608,6 +609,16 @@ export class DbStorage implements IStorage {
     await db.update(notifications)
       .set({ isRead: true })
       .where(eq(notifications.userId, userId));
+  }
+
+  async deleteNotification(notificationId: string, userId: string): Promise<boolean> {
+    const result = await db.delete(notifications)
+      .where(and(
+        eq(notifications.id, notificationId),
+        eq(notifications.userId, userId)
+      ))
+      .returning();
+    return result.length > 0;
   }
 
   // Product Variant operations

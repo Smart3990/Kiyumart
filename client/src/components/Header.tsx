@@ -242,7 +242,7 @@ export default function Header({
           </div>
         </div>
 
-        <div className="md:hidden mt-3">
+        <div className="md:hidden mt-3 space-y-2">
           <div className="relative w-full">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
             <Input
@@ -252,6 +252,36 @@ export default function Header({
               onChange={(e) => onSearch?.(e.target.value)}
             />
           </div>
+          
+          {(showBecomeSeller || showBecomeRider) && (
+            <div className="flex gap-2">
+              {showBecomeSeller && (
+                <Button 
+                  variant="outline" 
+                  size="sm"
+                  className="flex-1"
+                  onClick={() => navigate("/become-seller")}
+                  data-testid="button-become-seller-mobile"
+                >
+                  <StoreIcon className="h-4 w-4 mr-2" />
+                  <span>Become a Seller</span>
+                </Button>
+              )}
+              
+              {showBecomeRider && (
+                <Button 
+                  variant="outline" 
+                  size="sm"
+                  className="flex-1"
+                  onClick={() => navigate("/become-rider")}
+                  data-testid="button-become-rider-mobile"
+                >
+                  <Truck className="h-4 w-4 mr-2" />
+                  <span>Become a Rider</span>
+                </Button>
+              )}
+            </div>
+          )}
         </div>
       </div>
     </header>

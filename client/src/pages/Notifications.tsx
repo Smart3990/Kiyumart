@@ -3,13 +3,15 @@ import { useAuth } from "@/lib/auth";
 import { useLanguage } from "@/contexts/LanguageContext";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Bell, Package, ShoppingCart, Tag, Check, User, MessageSquare } from "lucide-react";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Bell, Package, ShoppingCart, Tag, Check, User, MessageSquare, Trash2, Eye } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
+import { useState } from "react";
 
 interface Notification {
   id: string;
@@ -24,6 +26,8 @@ export default function Notifications() {
   const { user } = useAuth();
   const { t } = useLanguage();
   const { toast } = useToast();
+  const [selectedNotification, setSelectedNotification] = useState<Notification | null>(null);
+  const [previewOpen, setPreviewOpen] = useState(false);
 
   const { data: notifications = [], isLoading } = useQuery<Notification[]>({
     queryKey: ["/api/notifications"],
@@ -32,9 +36,7 @@ export default function Notifications() {
 
   const markAsReadMutation = useMutation({
     mutationFn: (notificationId: string) => 
-      apiRequest(`/api/notifications/${notificationId}/read`, {
-        method: "PATCH",
-      }),
+      apiRequest("PATCH", `/api/notifications/${notificationId}/read`),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/notifications"] });
       queryClient.invalidateQueries({ queryKey: ["/api/notifications/unread-count"] });
@@ -43,9 +45,7 @@ export default function Notifications() {
 
   const markAllAsReadMutation = useMutation({
     mutationFn: () => 
-      apiRequest("/api/notifications/mark-all-read", {
-        method: "PATCH",
-      }),
+      apiRequest("PATCH", "/api/notifications/mark-all-read"),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/notifications"] });
       queryClient.invalidateQueries({ queryKey: ["/api/notifications/unread-count"] });
@@ -55,6 +55,32 @@ export default function Notifications() {
       });
     },
   });
+
+  const deleteNotificationMutation = useMutation({
+    mutationFn: (notificationId: string) =>
+      apiRequest("DELETE", `/api/notifications/${notificationId}`),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/notifications"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/notifications/unread-count"] });
+      toast({
+        title: "Deleted",
+        description: "Notification deleted successfully",
+      });
+    },
+  });
+
+  const handlePreview = (notification: Notification) => {
+    setSelectedNotification(notification);
+    setPreviewOpen(true);
+    if (!notification.isRead) {
+      markAsReadMutation.mutate(notification.id);
+    }
+  };
+
+  const handleDelete = (notificationId: string, e: React.MouseEvent) => {
+    e.stopPropagation();
+    deleteNotificationMutation.mutate(notificationId);
+  };
 
   const unreadCount = notifications.filter(n => !n.isRead).length;
 
@@ -155,34 +181,67 @@ export default function Notifications() {
               {notifications.map((notification) => (
                 <Card
                   key={notification.id}
-                  className={`hover-elevate transition-all cursor-pointer ${
-                    !notification.isRead ? "border-primary/50 bg-primary/5" : ""
+                  className={`hover:shadow-md transition-all cursor-pointer ${
+                    !notification.isRead ? "border-primary bg-primary/5" : "border-border"
                   }`}
                   data-testid={`card-notification-${notification.id}`}
-                  onClick={() => !notification.isRead && markAsReadMutation.mutate(notification.id)}
                 >
-                  <CardContent className="p-6">
+                  <CardContent className="p-4">
                     <div className="flex items-start gap-4">
                       <div className={`mt-1 ${getIconColor(notification.type)}`}>
                         {getIcon(notification.type)}
                       </div>
                       <div className="flex-1 min-w-0">
                         <div className="flex items-start justify-between gap-4 mb-1">
-                          <h3 className="font-semibold" data-testid={`text-notification-title-${notification.id}`}>
+                          <h3 className="font-semibold text-sm" data-testid={`text-notification-title-${notification.id}`}>
                             {notification.title}
                           </h3>
                           {!notification.isRead && (
-                            <Badge variant="default" className="shrink-0">
+                            <Badge variant="default" className="shrink-0 text-xs">
                               New
                             </Badge>
                           )}
                         </div>
-                        <p className="text-sm text-muted-foreground mb-2" data-testid={`text-notification-message-${notification.id}`}>
+                        <p className="text-sm text-muted-foreground line-clamp-2 mb-2" data-testid={`text-notification-message-${notification.id}`}>
                           {notification.message}
                         </p>
-                        <p className="text-xs text-muted-foreground">
-                          {formatDistanceToNow(new Date(notification.createdAt), { addSuffix: true })}
-                        </p>
+                        <div className="flex items-center gap-2">
+                          <p className="text-xs text-muted-foreground">
+                            {formatDistanceToNow(new Date(notification.createdAt), { addSuffix: true })}
+                          </p>
+                        </div>
+                      </div>
+                      <div className="flex flex-col gap-2">
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => handlePreview(notification)}
+                          data-testid={`button-preview-${notification.id}`}
+                        >
+                          <Eye className="h-4 w-4" />
+                        </Button>
+                        {!notification.isRead && (
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              markAsReadMutation.mutate(notification.id);
+                            }}
+                            data-testid={`button-mark-read-${notification.id}`}
+                          >
+                            <Check className="h-4 w-4" />
+                          </Button>
+                        )}
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={(e) => handleDelete(notification.id, e)}
+                          data-testid={`button-delete-${notification.id}`}
+                          className="text-destructive hover:text-destructive"
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
                       </div>
                     </div>
                   </CardContent>
@@ -192,6 +251,54 @@ export default function Notifications() {
           )}
         </div>
       </main>
+
+      {/* Preview Dialog */}
+      <Dialog open={previewOpen} onOpenChange={setPreviewOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              {selectedNotification && (
+                <>
+                  <span className={getIconColor(selectedNotification.type)}>
+                    {getIcon(selectedNotification.type)}
+                  </span>
+                  {selectedNotification.title}
+                </>
+              )}
+            </DialogTitle>
+          </DialogHeader>
+          {selectedNotification && (
+            <div className="space-y-4">
+              <p className="text-sm text-muted-foreground whitespace-pre-wrap">
+                {selectedNotification.message}
+              </p>
+              <p className="text-xs text-muted-foreground">
+                {formatDistanceToNow(new Date(selectedNotification.createdAt), { addSuffix: true })}
+              </p>
+              <div className="flex justify-end gap-2 pt-4">
+                <Button
+                  variant="outline"
+                  onClick={() => setPreviewOpen(false)}
+                  data-testid="button-close-preview"
+                >
+                  Close
+                </Button>
+                <Button
+                  variant="destructive"
+                  onClick={() => {
+                    handleDelete(selectedNotification.id, {} as any);
+                    setPreviewOpen(false);
+                  }}
+                  data-testid="button-delete-preview"
+                >
+                  <Trash2 className="h-4 w-4 mr-2" />
+                  Delete
+                </Button>
+              </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
 
       <Footer />
     </div>

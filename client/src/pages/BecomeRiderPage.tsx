@@ -191,7 +191,7 @@ export default function BecomeRiderPage() {
     <div className="min-h-screen bg-background flex flex-col">
       <Header />
       
-      <main className="flex-1 py-12 px-4">
+      <main className="flex-1 py-6 px-4 overflow-y-auto">
         <div className="max-w-2xl mx-auto">
           <Button
             variant="ghost"

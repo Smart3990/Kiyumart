@@ -127,7 +127,7 @@ export default function MultiVendorHome() {
                   ))}
                 </div>
               ) : sellers.length > 0 ? (
-                <div className="category-grid" data-testid="grid-sellers">
+                <div className={sellers.length === 1 ? "w-full" : "category-grid"} data-testid="grid-sellers">
                   {sellers.map((seller) => (
                     <SellerCategoryCard
                       key={seller.id}

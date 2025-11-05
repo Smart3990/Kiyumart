@@ -1900,13 +1900,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const validatedOrder = insertOrderSchema.parse(orderInput);
       const order = await storage.createOrder(validatedOrder, validatedItems);
       
-      // Notify admins about new order
-      await notifyAdmins(
-        "order",
-        "New order placed",
-        `Order #${order.orderNumber} has been placed by ${req.user!.name}`,
-        { orderId: order.id, orderNumber: order.orderNumber, buyerId: req.user!.id }
-      );
+      // NOTE: Order notification will be sent after successful payment verification
+      // See /api/payments/verify/:reference endpoint
       
       res.json(order);
     } catch (error: any) {
@@ -2308,6 +2303,25 @@ export async function registerRoutes(app: Express): Promise<Server> {
         await storage.updateOrder(orderId, {
           paymentStatus: "completed",
           status: "processing",
+        });
+        
+        // Get buyer details
+        const buyer = await storage.getUser(order.buyerId);
+        
+        // Notify admins about new paid order
+        await notifyAdmins(
+          "order",
+          "New order placed",
+          `Order #${order.orderNumber} has been placed by ${buyer?.name || 'Customer'}`,
+          { orderId: order.id, orderNumber: order.orderNumber, buyerId: order.buyerId }
+        );
+        
+        // Create notification for buyer
+        await storage.createNotification({
+          userId: order.buyerId,
+          type: "order",
+          title: "Payment Successful",
+          message: `Your payment for order #${order.orderNumber} was successful. Total: ${order.currency} ${order.total}`,
         });
         
         // Emit payment success notification to buyer
@@ -3079,6 +3093,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.patch("/api/notifications/mark-all-read", requireAuth, async (req: AuthRequest, res) => {
     try {
       await storage.markAllNotificationsAsRead(req.user!.id);
+      res.json({ success: true });
+    } catch (error: any) {
+      res.status(400).json({ error: error.message });
+    }
+  });
+
+  app.delete("/api/notifications/:id", requireAuth, async (req: AuthRequest, res) => {
+    try {
+      const success = await storage.deleteNotification(req.params.id, req.user!.id);
+      if (!success) {
+        return res.status(404).json({ error: "Notification not found or unauthorized" });
+      }
       res.json({ success: true });
     } catch (error: any) {
       res.status(400).json({ error: error.message });
