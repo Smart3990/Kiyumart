@@ -71,6 +71,37 @@ The database schema includes tables for:
 
 ## Recent Updates (November 2025)
 
+### Platform Architecture Improvements (November 5, 2025)
+
+**Centralized Marketplace Architecture:**
+- **Single-Store Mode as PRIMARY**: Default seller account (`seller@kiyumart.com`) automatically connected to primary store during initialization
+- **Multi-Vendor Mode is OPTIONAL**: Admin-controlled toggle with no automatic store/product creation
+- **Store Management**: Stores only created manually by admin or through approved seller applications
+
+**Admin Dashboard Enhancements:**
+- Removed "Store" link from admin sidebar - admins control banners, not mini stores
+- Added registration control toggles:
+  - `allowSellerRegistration`: Controls "Become a Seller" button visibility in toolbar
+  - `allowRiderRegistration`: Controls "Become a Delivery Rider" button visibility in toolbar
+
+**Seller Features:**
+- Added "Preview Store" button in Seller Dashboard header
+- Preview opens in new tab showing customer view:
+  - Single-store mode: Shows homepage (/)
+  - Multi-vendor mode: Shows seller's specific store page (/stores/:storeId)
+- New API endpoint: `GET /api/stores/my-store` for sellers to fetch their store info
+
+**Platform Settings Schema:**
+- Added `allowSellerRegistration` boolean (default: false)
+- Added `allowRiderRegistration` boolean (default: false)
+
+**Header Toolbar:**
+- Conditional "Become a Seller" button (visible when admin enables registration)
+- Conditional "Become a Delivery Rider" button (visible when admin enables registration)
+- Both buttons hidden for existing sellers/riders/admins
+
+## Recent Updates (November 2025)
+
 ### Banner Images Library
 Added a comprehensive collection of **30+ professional banner images** for various occasions and categories:
 
