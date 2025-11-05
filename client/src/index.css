@@ -355,3 +355,23 @@
     inset: -1px;
   }
 }
+
+/* Category Grid - Single Store Mode (Auto-adjusting responsive layout) */
+.category-grid-single-store {
+  display: grid;
+  gap: 1rem;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  align-items: start;
+}
+
+@media (min-width: 640px) {
+  .category-grid-single-store {
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  }
+}
+
+@media (min-width: 1024px) {
+  .category-grid-single-store {
+    grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  }
+}
