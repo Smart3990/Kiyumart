@@ -71,10 +71,10 @@ export default function SellerStorePage() {
       <Header />
 
       <main className="flex-1">
-        <div className="container max-w-7xl mx-auto px-4 py-6 space-y-8">
+        <div className="container max-w-7xl mx-auto px-4 py-4 space-y-4">
           <div className="relative">
             {seller.storeBanner ? (
-              <div className="h-48 md:h-64 rounded-lg overflow-hidden">
+              <div className="h-32 md:h-40 rounded-lg overflow-hidden">
                 <img
                   src={seller.storeBanner}
                   alt={seller.storeName || seller.name}
@@ -83,25 +83,25 @@ export default function SellerStorePage() {
                 />
               </div>
             ) : (
-              <div className="h-48 md:h-64 rounded-lg bg-gradient-to-br from-primary/20 to-primary/5 flex items-center justify-center">
-                <Store className="w-16 h-16 text-primary/40" />
+              <div className="h-32 md:h-40 rounded-lg bg-gradient-to-br from-primary/20 to-primary/5 flex items-center justify-center">
+                <Store className="w-12 h-12 text-primary/40" />
               </div>
             )}
 
-            <div className="absolute -bottom-12 left-6">
-              <Avatar className="h-24 w-24 border-4 border-background">
+            <div className="absolute -bottom-8 left-4">
+              <Avatar className="h-16 w-16 border-4 border-background">
                 <AvatarImage src={(seller as any).profilePicture || undefined} />
-                <AvatarFallback className="bg-primary text-white text-2xl">
+                <AvatarFallback className="bg-primary text-white text-lg">
                   {seller.storeName?.[0] || seller.name[0]}
                 </AvatarFallback>
               </Avatar>
             </div>
           </div>
 
-          <div className="pt-14 space-y-4">
-            <div className="flex items-start justify-between flex-wrap gap-4">
-              <div className="space-y-2">
-                <h1 className="text-3xl font-bold text-foreground dark:text-white" data-testid="text-store-name">
+          <div className="pt-10 space-y-3">
+            <div className="flex items-start justify-between flex-wrap gap-3">
+              <div className="space-y-1.5">
+                <h1 className="text-2xl font-bold text-foreground dark:text-white" data-testid="text-store-name">
                   {seller.storeName || seller.name}
                 </h1>
                 <div className="flex flex-wrap items-center gap-3 text-muted-foreground">
@@ -130,16 +130,16 @@ export default function SellerStorePage() {
             </div>
 
             {(seller as any).storeBio && (
-              <p className="text-muted-foreground max-w-3xl" data-testid="text-store-bio">
+              <p className="text-sm text-muted-foreground max-w-2xl" data-testid="text-store-bio">
                 {(seller as any).storeBio}
               </p>
             )}
           </div>
 
-          <div className="space-y-6">
-            <div className="flex items-center gap-3">
-              <Package className="w-6 h-6 text-primary" />
-              <h2 className="text-2xl font-bold text-foreground dark:text-white" data-testid="heading-products">
+          <div className="space-y-4">
+            <div className="flex items-center gap-2">
+              <Package className="w-5 h-5 text-primary" />
+              <h2 className="text-xl font-bold text-foreground dark:text-white" data-testid="heading-products">
                 Products
               </h2>
             </div>

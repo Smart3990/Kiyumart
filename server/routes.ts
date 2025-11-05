@@ -386,6 +386,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
       };
       
       const user = await storage.createUser(userData);
+      
+      // Create store for seller
+      if (user.role === "seller") {
+        const existingStore = await storage.getStoreByPrimarySeller(user.id);
+        if (!existingStore) {
+          await storage.createStore({
+            primarySellerId: user.id,
+            name: (validatedData as any).storeName || user.name + "'s Store",
+            description: (validatedData as any).storeDescription || "",
+            logo: (validatedData as any).storeBanner || "",
+            isActive: true,
+            isApproved: true
+          });
+        }
+      }
+      
       const { password, ...userWithoutPassword } = user;
 
       res.json(userWithoutPassword);
