@@ -27,6 +27,8 @@ import {
 const settingsSchema = z.object({
   platformName: z.string().min(1, "Platform name is required"),
   isMultiVendor: z.boolean(),
+  allowSellerRegistration: z.boolean(),
+  allowRiderRegistration: z.boolean(),
   shopDisplayMode: z.enum(["by-store", "by-category"]).optional(),
   primaryColor: z.string().regex(/^#([A-Fa-f0-9]{6})$/, "Must be a valid hex color"),
   defaultCurrency: z.string(),
@@ -84,6 +86,8 @@ export default function AdminSettings() {
     values: settings ? {
       platformName: settings.platformName,
       isMultiVendor: settings.isMultiVendor,
+      allowSellerRegistration: (settings as any).allowSellerRegistration || false,
+      allowRiderRegistration: (settings as any).allowRiderRegistration || false,
       shopDisplayMode: (settings as any).shopDisplayMode || "by-store",
       primaryColor: settings.primaryColor,
       defaultCurrency: settings.defaultCurrency,
@@ -231,6 +235,36 @@ export default function AdminSettings() {
                       checked={form.watch("isMultiVendor")}
                       onCheckedChange={(checked) => form.setValue("isMultiVendor", checked)}
                       data-testid="switch-multi-vendor"
+                    />
+                  </div>
+
+                  <div className="flex items-center justify-between p-4 border rounded-lg">
+                    <div className="space-y-1">
+                      <Label htmlFor="allowSellerRegistration">Allow Seller Registration</Label>
+                      <p className="text-sm text-muted-foreground">
+                        Show "Become a Seller" button on toolbar to allow new seller applications
+                      </p>
+                    </div>
+                    <Switch
+                      id="allowSellerRegistration"
+                      checked={form.watch("allowSellerRegistration")}
+                      onCheckedChange={(checked) => form.setValue("allowSellerRegistration", checked)}
+                      data-testid="switch-allow-seller-registration"
+                    />
+                  </div>
+
+                  <div className="flex items-center justify-between p-4 border rounded-lg">
+                    <div className="space-y-1">
+                      <Label htmlFor="allowRiderRegistration">Allow Rider Registration</Label>
+                      <p className="text-sm text-muted-foreground">
+                        Show "Become a Delivery Rider" button on toolbar to allow new rider applications
+                      </p>
+                    </div>
+                    <Switch
+                      id="allowRiderRegistration"
+                      checked={form.watch("allowRiderRegistration")}
+                      onCheckedChange={(checked) => form.setValue("allowRiderRegistration", checked)}
+                      data-testid="switch-allow-rider-registration"
                     />
                   </div>
 
