@@ -33,6 +33,9 @@ export default function AgentDashboard() {
       case "messages":
         navigate("/admin/messages");
         break;
+      case "notifications":
+        navigate("/agent/notifications");
+        break;
       case "settings":
         navigate("/settings");
         break;

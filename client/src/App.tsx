@@ -16,6 +16,9 @@ import SellerDashboard from "@/pages/SellerDashboardConnected";
 import RiderDashboard from "@/pages/RiderDashboard";
 import BuyerDashboard from "@/pages/BuyerDashboard";
 import AgentDashboard from "@/pages/AgentDashboard";
+import AgentTickets from "@/pages/AgentTickets";
+import AgentCustomers from "@/pages/AgentCustomers";
+import AgentNotifications from "@/pages/AgentNotifications";
 import ChatPage from "@/pages/ChatPageConnected";
 import OrderTracking from "@/pages/OrderTracking";
 import Checkout from "@/pages/CheckoutConnected";
@@ -111,6 +114,9 @@ function Router() {
       <Route path="/rider" component={RiderDashboard} />
       <Route path="/buyer" component={BuyerDashboard} />
       <Route path="/agent" component={AgentDashboard} />
+      <Route path="/agent/tickets" component={AgentTickets} />
+      <Route path="/agent/customers" component={AgentCustomers} />
+      <Route path="/agent/notifications" component={AgentNotifications} />
       <Route path="/chat" component={ChatPage} />
       <Route path="/track" component={OrderTracking} />
       <Route component={NotFound} />
