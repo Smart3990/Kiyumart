@@ -3,7 +3,6 @@ import { useLocation } from "wouter";
 import { useQuery } from "@tanstack/react-query";
 import { useAuth } from "@/lib/auth";
 import DashboardSidebar from "@/components/DashboardSidebar";
-import StoreModeToggle from "@/components/StoreModeToggle";
 import { Package, Heart, MapPin, CreditCard, User, Loader2 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -86,7 +85,6 @@ export default function BuyerDashboard() {
             <p className="text-sm text-muted-foreground">Welcome back, {user?.name}</p>
           </div>
           <div className="flex items-center gap-2">
-            <StoreModeToggle role="buyer" />
             <ThemeToggle />
             <Button variant="outline" onClick={() => navigate("/")} data-testid="button-shop">
               Shop

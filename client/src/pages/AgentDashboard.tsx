@@ -3,7 +3,6 @@ import { useLocation } from "wouter";
 import { useAuth } from "@/lib/auth";
 import DashboardSidebar from "@/components/DashboardSidebar";
 import ThemeToggle from "@/components/ThemeToggle";
-import StoreModeToggle from "@/components/StoreModeToggle";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Ticket, Users, MessageSquare, CheckCircle, Loader2 } from "lucide-react";
@@ -69,7 +68,6 @@ export default function AgentDashboard() {
             <p className="text-sm text-muted-foreground">Welcome back, {user?.name}</p>
           </div>
           <div className="flex items-center gap-2">
-            <StoreModeToggle role="agent" />
             <ThemeToggle />
             <Button variant="outline" onClick={() => navigate("/")} data-testid="button-shop">
               Shop

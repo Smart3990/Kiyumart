@@ -6,7 +6,6 @@ import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import DashboardSidebar from "@/components/DashboardSidebar";
 import ThemeToggle from "@/components/ThemeToggle";
-import StoreModeToggle from "@/components/StoreModeToggle";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -205,7 +204,6 @@ export default function AgentNotifications() {
                 Mark all as read
               </Button>
             )}
-            <StoreModeToggle role="agent" />
             <ThemeToggle />
             <Button variant="outline" onClick={() => navigate("/")} data-testid="button-shop">
               Shop

@@ -4,7 +4,6 @@ import { useAuth } from "@/lib/auth";
 import { useQuery } from "@tanstack/react-query";
 import DashboardSidebar from "@/components/DashboardSidebar";
 import ThemeToggle from "@/components/ThemeToggle";
-import StoreModeToggle from "@/components/StoreModeToggle";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -107,7 +106,6 @@ export default function AgentCustomers() {
             </div>
           </div>
           <div className="flex items-center gap-2">
-            <StoreModeToggle role="agent" />
             <ThemeToggle />
             <Button variant="outline" onClick={() => navigate("/")} data-testid="button-shop">
               Shop

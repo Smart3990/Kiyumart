@@ -1,4 +1,4 @@
-import { Search, Menu, Globe, User, Bell, Package, Heart, LayoutDashboard, ShoppingBag } from "lucide-react";
+import { Search, Menu, Globe, User, Bell, LayoutDashboard, ShoppingBag } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
@@ -25,11 +25,6 @@ interface HeaderProps {
   onSearch?: (query: string) => void;
 }
 
-interface WishlistItem {
-  id: string;
-  productId: string;
-}
-
 export default function Header({ 
   cartItemsCount = 0,
   onMenuClick,
@@ -39,11 +34,6 @@ export default function Header({
   const [location, navigate] = useLocation();
   const { language, currency, currencySymbol, countryName, setLanguage, t } = useLanguage();
   const { user, isAuthenticated } = useAuth();
-  
-  const { data: wishlist = [] } = useQuery<WishlistItem[]>({
-    queryKey: ["/api/wishlist"],
-    enabled: isAuthenticated,
-  });
 
   const { data: notificationData } = useQuery<{ count: number }>({
     queryKey: ["/api/notifications/unread-count"],
@@ -147,52 +137,23 @@ export default function Header({
             </DropdownMenu>
 
             {isAuthenticated && (
-              <>
-                <Button 
-                  variant="ghost" 
-                  size="icon"
-                  className="relative"
-                  onClick={() => navigate("/notifications")}
-                  data-testid="button-notifications"
-                >
-                  <Bell className={`h-5 w-5 ${isActive("/notifications") ? "text-primary" : ""}`} />
-                  {notificationCount > 0 && (
-                    <Badge 
-                      className="absolute -top-1 -right-1 h-5 w-5 flex items-center justify-center p-0 text-xs bg-destructive text-destructive-foreground rounded-full"
-                      data-testid="badge-notification-count"
-                    >
-                      {notificationCount > 9 ? "9+" : notificationCount}
-                    </Badge>
-                  )}
-                </Button>
-
-                <Button 
-                  variant="ghost" 
-                  size="icon"
-                  className="relative"
-                  onClick={() => navigate("/wishlist")}
-                  data-testid="button-wishlist"
-                >
-                  <Heart className={`h-5 w-5 ${isActive("/wishlist") ? "text-primary fill-primary" : ""}`} />
-                  {wishlist.length > 0 && (
-                    <Badge 
-                      className="absolute -top-1 -right-1 h-5 w-5 flex items-center justify-center p-0 text-xs bg-primary text-primary-foreground rounded-full"
-                      data-testid="badge-wishlist-count"
-                    >
-                      {wishlist.length > 9 ? "9+" : wishlist.length}
-                    </Badge>
-                  )}
-                </Button>
-
-                <Button 
-                  variant="ghost" 
-                  size="icon"
-                  onClick={() => navigate("/orders")}
-                  data-testid="button-orders"
-                >
-                  <Package className={`h-5 w-5 ${isActive("/orders") ? "text-primary" : ""}`} />
-                </Button>
-              </>
+              <Button 
+                variant="ghost" 
+                size="icon"
+                className="relative"
+                onClick={() => navigate("/notifications")}
+                data-testid="button-notifications"
+              >
+                <Bell className={`h-5 w-5 ${isActive("/notifications") ? "text-primary" : ""}`} />
+                {notificationCount > 0 && (
+                  <Badge 
+                    className="absolute -top-1 -right-1 h-5 w-5 flex items-center justify-center p-0 text-xs bg-destructive text-destructive-foreground rounded-full"
+                    data-testid="badge-notification-count"
+                  >
+                    {notificationCount > 9 ? "9+" : notificationCount}
+                  </Badge>
+                )}
+              </Button>
             )}
 
             {hasDashboard && (
