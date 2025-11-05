@@ -21,17 +21,43 @@ interface ProductCardProps {
 }
 
 /**
- * CRITICAL: This product card layout MUST remain exactly as designed below.
- * DO NOT modify the structure, spacing, or element order without explicit user approval.
+ * ⚠️ CRITICAL - MANDATORY LAYOUT - DO NOT CHANGE WITHOUT EXPLICIT USER APPROVAL ⚠️
  * 
- * Required Layout (from top to bottom):
- * 1. Image (aspect-[3/4]) with discount badge (top-left) and wishlist button (top-right)
- * 2. Product name (font-semibold, line-clamp-2)
- * 3. Rating with star icon and review count: ★ X.X (N)
- * 4. Price section: Original price (struck through) + Sale price (green, bold)
+ * This product card layout is STRICTLY DEFINED and must remain exactly as designed below.
+ * Any AI builder or developer modifying this component MUST preserve this exact structure.
  * 
- * This layout matches the approved design specification and ensures consistency
- * across all product displays. Any changes must preserve this exact structure.
+ * REQUIRED LAYOUT (top to bottom):
+ * ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+ * 1. Product Image (aspect-[3/4])
+ *    - Discount badge (top-left corner, red background)
+ *    - Wishlist heart button (top-right corner)
+ * 
+ * 2. Product Name (text-base, font-semibold, line-clamp-2, leading-tight)
+ * 
+ * 3. Rating Row (Star icon + number + review count)
+ *    - Format: ★ 4.8 (124)
+ *    - Star: h-4 w-4, filled with primary color
+ *    - Rating number: text-sm font-medium
+ *    - Review count: text-sm text-muted-foreground
+ * 
+ * 4. Price Section (strikethrough original + sale price)
+ *    - Original price: text-sm, line-through, gray (only if discounted)
+ *    - Sale price: text-xl, font-bold, primary color (green)
+ * ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+ * 
+ * SPACING & PADDING:
+ * - Card content padding: p-2.5
+ * - Vertical spacing between elements: space-y-1
+ * 
+ * ⛔ DO NOT:
+ * - Reorder elements
+ * - Change text sizes without approval
+ * - Modify spacing or padding
+ * - Remove or alter the image aspect ratio
+ * - Change the discount badge or wishlist button positions
+ * 
+ * This layout ensures consistency across the entire marketplace.
+ * All modifications MUST be approved by the product owner.
  */
 export default function ProductCard({
   id,
@@ -115,10 +141,10 @@ export default function ProductCard({
       </div>
 
       {/* Product Info Section - DO NOT REORDER ELEMENTS */}
-      <div className="p-3 space-y-1.5">
+      <div className="p-2.5 space-y-1">
         {/* Product Name */}
         <h3 
-          className="font-semibold text-sm line-clamp-2"
+          className="font-semibold text-base line-clamp-2 leading-tight"
           data-testid={`text-product-name-${id}`}
         >
           {name}
@@ -126,11 +152,11 @@ export default function ProductCard({
 
         {/* Rating Row - Star Icon + Number + (Review Count) */}
         <div className="flex items-center gap-1">
-          <Star className="h-3.5 w-3.5 fill-primary text-primary" />
-          <span className="text-xs font-medium" data-testid={`text-rating-${id}`}>
+          <Star className="h-4 w-4 fill-primary text-primary" />
+          <span className="text-sm font-medium" data-testid={`text-rating-${id}`}>
             {ratingNum.toFixed(1)}
           </span>
-          <span className="text-xs text-muted-foreground" data-testid={`text-reviews-${id}`}>
+          <span className="text-sm text-muted-foreground" data-testid={`text-reviews-${id}`}>
             ({reviewCount})
           </span>
         </div>
@@ -139,14 +165,14 @@ export default function ProductCard({
         <div className="flex items-baseline gap-2">
           {originalPrice && originalPrice > sellingPrice && (
             <span 
-              className="text-xs text-gray-500 dark:text-gray-400 line-through"
+              className="text-sm text-gray-500 dark:text-gray-400 line-through"
               data-testid={`text-cost-price-${id}`}
             >
               {currency} {originalPrice.toFixed(2)}
             </span>
           )}
           <span 
-            className="text-lg font-bold text-primary"
+            className="text-xl font-bold text-primary"
             data-testid={`text-selling-price-${id}`}
           >
             {currency} {sellingPrice.toFixed(2)}
