@@ -323,9 +323,9 @@ export default function ProductDetails() {
           */}
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
             <div className="space-y-4">
-              {/* Main Product Image - Reduced size for better layout */}
+              {/* Main Product Image - Compact size */}
               <Card className="overflow-hidden cursor-pointer" onClick={() => setIsImageExpanded(true)}>
-                <div className="relative aspect-[4/5] group">
+                <div className="relative aspect-[3/4] group">
                   <img
                     src={product.images[selectedImage] || product.images[0]}
                     alt={product.name}
@@ -351,7 +351,7 @@ export default function ProductDetails() {
 
               {/* Thumbnails Grid - Images + Video Thumbnail */}
               {(product.images.length > 1 || product.video) && (
-                <div className="grid grid-cols-5 gap-2">
+                <div className="grid grid-cols-6 gap-2">
                   {product.images.map((image, idx) => (
                     <Card
                       key={`img-${idx}`}
@@ -359,7 +359,7 @@ export default function ProductDetails() {
                       onClick={() => setSelectedImage(idx)}
                       data-testid={`img-thumbnail-${idx}`}
                     >
-                      <div className="relative aspect-square">
+                      <div className="relative aspect-[4/5]">
                         <img
                           src={image}
                           alt={`${product.name} ${idx + 1}`}
@@ -379,7 +379,7 @@ export default function ProductDetails() {
                       }}
                       data-testid="thumbnail-video"
                     >
-                      <div className="relative aspect-square bg-black flex items-center justify-center">
+                      <div className="relative aspect-[4/5] bg-black flex items-center justify-center">
                         <video
                           className="w-full h-full object-cover"
                           muted
