@@ -356,7 +356,12 @@ export default function SellerDashboardConnected() {
           <h1 className="text-2xl font-bold" data-testid="text-dashboard-title">
             {activeItem === "coupons" ? "Coupon Management" : "Seller Dashboard"}
           </h1>
-          <ThemeToggle />
+          <div className="flex items-center gap-2">
+            <ThemeToggle />
+            <Button variant="outline" onClick={() => navigate("/")} data-testid="button-shop">
+              Shop
+            </Button>
+          </div>
         </header>
 
         <main className="flex-1 overflow-y-auto p-6">

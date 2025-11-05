@@ -154,7 +154,12 @@ export default function AdminDashboardConnected() {
       <div className="flex-1 flex flex-col overflow-hidden">
         <header className="border-b p-4 flex items-center justify-between">
           <h1 className="text-2xl font-bold" data-testid="text-dashboard-title">Admin Dashboard</h1>
-          <ThemeToggle />
+          <div className="flex items-center gap-2">
+            <ThemeToggle />
+            <Button variant="outline" onClick={() => navigate("/")} data-testid="button-shop">
+              Shop
+            </Button>
+          </div>
         </header>
 
         <main className="flex-1 overflow-y-auto p-6">

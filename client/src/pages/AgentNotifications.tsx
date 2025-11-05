@@ -207,6 +207,9 @@ export default function AgentNotifications() {
             )}
             <StoreModeToggle role="agent" />
             <ThemeToggle />
+            <Button variant="outline" onClick={() => navigate("/")} data-testid="button-shop">
+              Shop
+            </Button>
           </div>
         </header>
 

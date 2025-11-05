@@ -8,6 +8,7 @@ import OrderCard from "@/components/OrderCard";
 import DeliveryTracker from "@/components/DeliveryTracker";
 import ThemeToggle from "@/components/ThemeToggle";
 import StoreModeToggle from "@/components/StoreModeToggle";
+import { Button } from "@/components/ui/button";
 import { DollarSign, Package, MapPin, Star, Loader2 } from "lucide-react";
 
 interface Order {
@@ -79,9 +80,12 @@ export default function RiderDashboard() {
       <div className="flex-1 flex flex-col overflow-hidden">
         <header className="border-b p-4 flex items-center justify-between">
           <h1 className="text-2xl font-bold">Rider Dashboard</h1>
-          <div className="flex items-center gap-4">
+          <div className="flex items-center gap-2">
             <StoreModeToggle role="rider" />
             <ThemeToggle />
+            <Button variant="outline" onClick={() => navigate("/")} data-testid="button-shop">
+              Shop
+            </Button>
           </div>
         </header>
 

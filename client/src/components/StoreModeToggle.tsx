@@ -18,7 +18,7 @@ import { Loader2, Store, Building2 } from "lucide-react";
 import type { PlatformSettings } from "@shared/schema";
 
 interface StoreModeToggleProps {
-  role: "admin" | "seller" | "buyer" | "rider";
+  role: "admin" | "seller" | "buyer" | "rider" | "agent";
   showLabel?: boolean;
   className?: string;
 }
