@@ -121,6 +121,7 @@ export default function AdminProductEdit() {
       });
       queryClient.invalidateQueries({ queryKey: ["/api/products"] });
       queryClient.invalidateQueries({ queryKey: ["/api/products", productId] });
+      queryClient.invalidateQueries({ queryKey: ["/api/homepage/featured-products"] });
       navigate("/admin/products");
     },
     onError: (error: any) => {

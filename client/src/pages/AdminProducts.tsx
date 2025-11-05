@@ -35,6 +35,7 @@ function DeleteProductDialog({ product }: { product: Product }) {
         description: "Product deleted successfully",
       });
       queryClient.invalidateQueries({ queryKey: ["/api/products"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/homepage/featured-products"] });
     },
     onError: (error: any) => {
       toast({

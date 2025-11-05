@@ -48,6 +48,8 @@ export default function AdminBannerManager() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/admin/banner-collections"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/homepage/sellers"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/homepage/featured-products"] });
       setIsCollectionDialogOpen(false);
       toast({ title: "Success", description: "Banner collection created" });
     },
@@ -70,6 +72,8 @@ export default function AdminBannerManager() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/admin/marketplace-banners"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/homepage/sellers"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/homepage/featured-products"] });
       setIsBannerDialogOpen(false);
       setEditingBanner(null);
       toast({ title: "Success", description: "Banner created" });
@@ -87,6 +91,8 @@ export default function AdminBannerManager() {
       queryClient.invalidateQueries({ 
         predicate: (query) => query.queryKey[0] === "/api/admin/marketplace-banners"
       });
+      queryClient.invalidateQueries({ queryKey: ["/api/homepage/sellers"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/homepage/featured-products"] });
       toast({ title: "Success", description: "Banner deleted" });
     },
   });

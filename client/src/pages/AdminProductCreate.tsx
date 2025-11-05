@@ -82,6 +82,7 @@ export default function AdminProductCreate() {
         description: "Product created successfully",
       });
       queryClient.invalidateQueries({ queryKey: ["/api/products"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/homepage/featured-products"] });
       navigate("/admin/products");
     },
     onError: (error: any) => {
