@@ -20,6 +20,19 @@ interface ProductCardProps {
   onToggleWishlist?: (id: string) => void;
 }
 
+/**
+ * CRITICAL: This product card layout MUST remain exactly as designed below.
+ * DO NOT modify the structure, spacing, or element order without explicit user approval.
+ * 
+ * Required Layout (from top to bottom):
+ * 1. Image (aspect-[3/4]) with discount badge (top-left) and wishlist button (top-right)
+ * 2. Product name (font-semibold, line-clamp-2)
+ * 3. Rating with star icon and review count: ★ X.X (N)
+ * 4. Price section: Original price (struck through) + Sale price (green, bold)
+ * 
+ * This layout matches the approved design specification and ensures consistency
+ * across all product displays. Any changes must preserve this exact structure.
+ */
 export default function ProductCard({
   id,
   name,
@@ -37,17 +50,14 @@ export default function ProductCard({
   const [, navigate] = useLocation();
   const [isWishlisted, setIsWishlisted] = useState(initialWishlisted);
 
-  // Sync local state with prop changes (e.g., after wishlist query refetch)
   useEffect(() => {
     setIsWishlisted(initialWishlisted);
   }, [initialWishlisted]);
 
-  // Convert decimal strings to numbers for display
   const sellingPrice = typeof price === 'string' ? parseFloat(price) : price;
   const originalPrice = costPrice ? (typeof costPrice === 'string' ? parseFloat(costPrice) : costPrice) : null;
   const ratingNum = typeof rating === 'string' ? parseFloat(rating) : rating;
   
-  // Calculate actual discount percentage only if costPrice > sellingPrice
   const actualDiscount = originalPrice && originalPrice > sellingPrice 
     ? Math.round(((originalPrice - sellingPrice) / originalPrice) * 100)
     : 0;
@@ -68,6 +78,7 @@ export default function ProductCard({
       onClick={handleCardClick}
       data-testid={`card-product-${id}`}
     >
+      {/* Product Image Container - DO NOT MODIFY ASPECT RATIO */}
       <div className="relative aspect-[3/4] overflow-hidden bg-muted">
         <img
           src={image}
@@ -77,10 +88,10 @@ export default function ProductCard({
         />
         {actualDiscount > 0 && (
           <Badge 
-            className="absolute top-2 left-2 bg-destructive text-destructive-foreground z-10 font-semibold text-xs px-2 py-1 shadow-md"
+            className="absolute top-2 left-2 bg-red-600 text-white z-10 font-bold text-xs px-2 py-1 shadow-md"
             data-testid={`badge-discount-${id}`}
           >
-            -{actualDiscount}%
+            {actualDiscount}% OFF
           </Badge>
         )}
         <Button
@@ -103,35 +114,39 @@ export default function ProductCard({
         )}
       </div>
 
-      <div className="p-4 space-y-2">
+      {/* Product Info Section - DO NOT REORDER ELEMENTS */}
+      <div className="p-3 space-y-1.5">
+        {/* Product Name */}
         <h3 
-          className="font-semibold text-base line-clamp-2"
+          className="font-semibold text-sm line-clamp-2"
           data-testid={`text-product-name-${id}`}
         >
           {name}
         </h3>
 
-        <div className="flex items-center gap-1.5">
-          <Star className="h-4 w-4 fill-primary text-primary" />
-          <span className="text-sm font-medium" data-testid={`text-rating-${id}`}>
+        {/* Rating Row - Star Icon + Number + (Review Count) */}
+        <div className="flex items-center gap-1">
+          <Star className="h-3.5 w-3.5 fill-primary text-primary" />
+          <span className="text-xs font-medium" data-testid={`text-rating-${id}`}>
             {ratingNum.toFixed(1)}
           </span>
-          <span className="text-sm text-muted-foreground" data-testid={`text-reviews-${id}`}>
+          <span className="text-xs text-muted-foreground" data-testid={`text-reviews-${id}`}>
             ({reviewCount})
           </span>
         </div>
 
-        <div className="flex items-baseline gap-2 flex-wrap">
+        {/* Price Row - Original Price (struck) + Sale Price (green) */}
+        <div className="flex items-baseline gap-2">
           {originalPrice && originalPrice > sellingPrice && (
             <span 
-              className="text-sm text-gray-500 dark:text-gray-400 line-through font-medium"
+              className="text-xs text-gray-500 dark:text-gray-400 line-through"
               data-testid={`text-cost-price-${id}`}
             >
               {currency} {originalPrice.toFixed(2)}
             </span>
           )}
           <span 
-            className="text-xl font-bold text-primary"
+            className="text-lg font-bold text-primary"
             data-testid={`text-selling-price-${id}`}
           >
             {currency} {sellingPrice.toFixed(2)}

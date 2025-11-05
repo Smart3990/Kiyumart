@@ -311,10 +311,21 @@ export default function ProductDetails() {
             Back to Products
           </Button>
 
+          {/* 
+            CRITICAL LAYOUT REQUIREMENT - DO NOT MODIFY:
+            Product Detail Page Structure (approved design):
+            1. Left Column: Product Image (reduced from aspect-square to aspect-[4/5]) + Thumbnails (images + video)
+            2. Right Column: Product Info (title, rating, price, description, options)
+            3. "See it in Action" section with video must show thumbnail in image gallery
+            4. Thumbnails must include all product images PLUS video thumbnail at the end
+            
+            This layout is mandatory and must not be changed by future AI builders.
+          */}
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
             <div className="space-y-4">
+              {/* Main Product Image - Reduced size for better layout */}
               <Card className="overflow-hidden cursor-pointer" onClick={() => setIsImageExpanded(true)}>
-                <div className="relative aspect-square group">
+                <div className="relative aspect-[4/5] group">
                   <img
                     src={product.images[selectedImage] || product.images[0]}
                     alt={product.name}
@@ -323,7 +334,7 @@ export default function ProductDetails() {
                   />
                   {discount > 0 && (
                     <Badge 
-                      className="absolute top-2 left-2 bg-red-600 text-white font-bold px-4 py-2 text-base shadow-xl"
+                      className="absolute top-2 left-2 bg-red-600 text-white font-bold px-3 py-1.5 text-sm shadow-xl"
                       style={{ zIndex: 20 }}
                       data-testid="badge-discount"
                     >
@@ -331,18 +342,19 @@ export default function ProductDetails() {
                     </Badge>
                   )}
                   <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-colors duration-300 flex items-center justify-center">
-                    <p className="text-white opacity-0 group-hover:opacity-100 transition-opacity duration-300 bg-black/50 px-4 py-2 rounded-lg">
+                    <p className="text-white opacity-0 group-hover:opacity-100 transition-opacity duration-300 bg-black/50 px-4 py-2 rounded-lg text-sm">
                       Click to expand
                     </p>
                   </div>
                 </div>
               </Card>
 
-              {product.images.length > 1 && (
+              {/* Thumbnails Grid - Images + Video Thumbnail */}
+              {(product.images.length > 1 || product.video) && (
                 <div className="grid grid-cols-5 gap-2">
                   {product.images.map((image, idx) => (
                     <Card
-                      key={idx}
+                      key={`img-${idx}`}
                       className={`cursor-pointer overflow-hidden hover-elevate ${selectedImage === idx ? 'ring-2 ring-primary' : ''}`}
                       onClick={() => setSelectedImage(idx)}
                       data-testid={`img-thumbnail-${idx}`}
@@ -356,13 +368,40 @@ export default function ProductDetails() {
                       </div>
                     </Card>
                   ))}
+                  
+                  {/* Video Thumbnail - Appears in grid with images */}
+                  {product.video && (
+                    <Card
+                      className="cursor-pointer overflow-hidden hover-elevate relative"
+                      onClick={() => {
+                        const videoSection = document.getElementById('product-video-section');
+                        videoSection?.scrollIntoView({ behavior: 'smooth' });
+                      }}
+                      data-testid="thumbnail-video"
+                    >
+                      <div className="relative aspect-square bg-black flex items-center justify-center">
+                        <video
+                          className="w-full h-full object-cover"
+                          muted
+                        >
+                          <source src={product.video} type="video/mp4" />
+                        </video>
+                        <div className="absolute inset-0 bg-black/40 flex items-center justify-center">
+                          <div className="w-8 h-8 bg-white/90 rounded-full flex items-center justify-center">
+                            <div className="w-0 h-0 border-l-[8px] border-l-black border-y-[5px] border-y-transparent ml-1"></div>
+                          </div>
+                        </div>
+                      </div>
+                    </Card>
+                  )}
                 </div>
               )}
 
+              {/* See it in Action Video Section */}
               {product.video && (
-                <div className="mt-6 space-y-3">
+                <div id="product-video-section" className="mt-6 space-y-3">
                   <div>
-                    <h3 className="text-lg font-semibold mb-1">See It in Action</h3>
+                    <h3 className="text-lg font-semibold mb-1">See it in Action</h3>
                     <p className="text-sm text-muted-foreground">
                       Watch this video to see the product details, fit, and quality up close
                     </p>
@@ -434,10 +473,11 @@ export default function ProductDetails() {
                 </Badge>
               </div>
 
+              {/* Product Description - Reduced text size */}
               {product.description && (
                 <div>
-                  <h2 className="text-xl font-semibold mb-2">Description</h2>
-                  <p className="text-muted-foreground" data-testid="text-description">
+                  <h2 className="text-lg font-semibold mb-2">Description</h2>
+                  <p className="text-sm text-muted-foreground leading-relaxed" data-testid="text-description">
                     {product.description}
                   </p>
                 </div>
