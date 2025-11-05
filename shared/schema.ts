@@ -85,6 +85,7 @@ export const platformSettings = pgTable("platform_settings", {
   productPageAdUrl: text("product_page_ad_url"),
   allowSellerRegistration: boolean("allow_seller_registration").default(false),
   allowRiderRegistration: boolean("allow_rider_registration").default(false),
+  primaryStoreId: varchar("primary_store_id"),
   updatedAt: timestamp("updated_at").defaultNow(),
 });
 
