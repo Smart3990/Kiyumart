@@ -68,3 +68,21 @@ The database schema includes tables for:
 -   **Multer**: Multipart form data handling.
 -   **React QR Code**: QR code generation.
 -   **Leaflet.js**: Interactive maps (with OpenStreetMap).
+
+## Recent Updates (November 2025)
+
+### Banner Images Library
+Added a comprehensive collection of **30+ professional banner images** for various occasions and categories:
+
+**Collections Include:**
+- Religious & Cultural: Ramadan (2), Easter (2)
+- Holidays: Christmas (2), New Year (2), Thanksgiving (2)
+- Special Occasions: Valentine's Day (2), Mother's Day (2), Breast Cancer Awareness (2), International Women's Day (2)
+- Shopping Events: Black Friday (2), Cyber Monday (2), Summer Sale (2)
+- Product Categories: Electronics/Tech (2), Fashion Sale (2), Back to School (2)
+
+**Location**: `attached_assets/stock_images/`
+
+**Access**: Admins can browse all banners via the Media Library's "Available Assets" tab, copy URLs with one click, and use them for hero banners, marketplace banners, or any promotional content.
+
+**Documentation**: See `attached_assets/BANNER_IMAGES_GUIDE.md` for complete reference.
