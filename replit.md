@@ -195,3 +195,56 @@ The database schema includes tables for:
 - Agent: agent@kiyumart.com / agent123
 
 All test accounts auto-create stores for sellers and include proper role-specific fields.
+
+## Environment Setup & Deployment
+
+### Current Status (November 5, 2025)
+
+**✅ Successfully Migrated to Replit Environment**
+
+The project has been successfully imported and configured in the Replit environment:
+
+1. **Dependencies**: All npm packages installed (566 packages)
+2. **Database**: PostgreSQL database provisioned via Replit's Neon integration
+   - All 30+ tables created and synced
+   - Environment variables automatically configured (DATABASE_URL, PGHOST, PGPORT, etc.)
+3. **Workflow**: Configured to run `npm run dev` on port 5000 with webview output
+4. **Application**: Backend Express server and frontend Vite dev server running successfully
+5. **Real-time Features**: Socket.IO connected and operational
+6. **API Endpoints**: All routes responding correctly
+
+### Development Environment
+
+- **Node.js Version**: 20.x
+- **Package Manager**: npm
+- **Database**: PostgreSQL (Neon Serverless via Replit)
+- **Port**: 5000 (both frontend and backend on same port via Vite proxy)
+- **Environment Variables**: Automatically managed by Replit Secrets
+
+### Next Steps for Full Deployment
+
+To make the platform fully operational, you'll need to configure:
+
+1. **Cloudinary** (for image/video uploads):
+   - Get credentials from cloudinary.com
+   - Configure in Admin Settings (`/admin/settings`)
+
+2. **Paystack** (for payment processing):
+   - Get API keys from paystack.com
+   - Configure in Admin Settings (`/admin/settings`)
+   - Use test keys for development
+
+3. **Platform Configuration**:
+   - Access Admin Settings at `/admin/settings`
+   - Configure platform name, contact information
+   - Set up delivery zones at `/admin/delivery-zones`
+   - Customize branding at `/admin/branding`
+
+### Deployment to Production
+
+The project is pre-configured for Replit Autoscale deployment:
+- Build command: `npm run build`
+- Start command: `npm run start`
+- Deployment type: Autoscale (for stateless web applications)
+
+Simply click the "Deploy" button in Replit to publish your application.
