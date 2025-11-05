@@ -8,7 +8,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { insertCategorySchema } from "@shared/schema";
 import { z } from "zod";
 import { useAuth } from "@/lib/auth";
-import DashboardSidebar from "@/components/DashboardSidebar";
+import DashboardLayout from "@/components/DashboardLayout";
 import MediaUploadInput from "@/components/MediaUploadInput";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -33,7 +33,6 @@ export default function AdminCategoryManager() {
   const [, navigate] = useLocation();
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingCategory, setEditingCategory] = useState<Category | null>(null);
-  const [activeItem, setActiveItem] = useState("categories");
   const { user, isAuthenticated, isLoading: authLoading } = useAuth();
 
   const { data: categories = [], isLoading } = useQuery<Category[]>({
@@ -159,48 +158,6 @@ export default function AdminCategoryManager() {
     }
   };
 
-  const handleItemClick = (id: string) => {
-    setActiveItem(id);
-    switch(id) {
-      case "dashboard":
-        navigate("/admin");
-        break;
-      case "mode":
-        navigate("/admin/settings");
-        break;
-      case "branding":
-        navigate("/admin/branding");
-        break;
-      case "categories":
-        // Already on categories
-        break;
-      case "products":
-        navigate("/admin/products");
-        break;
-      case "orders":
-        navigate("/admin/orders");
-        break;
-      case "users":
-        navigate("/admin/users");
-        break;
-      case "riders":
-        navigate("/admin/riders");
-        break;
-      case "zones":
-        navigate("/admin/zones");
-        break;
-      case "messages":
-        navigate("/admin/messages");
-        break;
-      case "analytics":
-        navigate("/admin/analytics");
-        break;
-      case "settings":
-        navigate("/admin/settings");
-        break;
-    }
-  };
-
   if (authLoading || isLoading || !isAuthenticated || user?.role !== "admin") {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
@@ -210,16 +167,8 @@ export default function AdminCategoryManager() {
   }
 
   return (
-    <div className="flex h-screen bg-background">
-      <DashboardSidebar
-        role="admin"
-        activeItem={activeItem}
-        onItemClick={handleItemClick}
-        userName={user?.name || "Admin"}
-      />
-      
-      <div className="flex-1 overflow-auto">
-        <div className="p-8">
+    <DashboardLayout role="admin">
+      <div className="p-8">
           <div className="flex items-center gap-4 mb-6">
             <Button
               variant="ghost"
@@ -472,7 +421,6 @@ export default function AdminCategoryManager() {
             </DialogContent>
           </Dialog>
         </div>
-      </div>
-    </div>
+    </DashboardLayout>
   );
 }

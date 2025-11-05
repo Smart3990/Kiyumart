@@ -8,7 +8,7 @@ import { insertProductSchema } from "@shared/schema";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useAuth } from "@/lib/auth";
 import { useToast } from "@/hooks/use-toast";
-import DashboardSidebar from "@/components/DashboardSidebar";
+import DashboardLayout from "@/components/DashboardLayout";
 import MediaUploadInput from "@/components/MediaUploadInput";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -50,9 +50,7 @@ const productFormSchema = insertProductSchema.extend({
 type ProductFormData = z.infer<typeof productFormSchema>;
 
 export default function AdminProductEdit() {
-  const [activeItem, setActiveItem] = useState("products");
   const [, navigate] = useLocation();
-  const [, params] = useLocation();
   const { user, isAuthenticated, isLoading: authLoading } = useAuth();
   const { toast } = useToast();
   const [imageUrls, setImageUrls] = useState<string[]>([]);
@@ -110,16 +108,10 @@ export default function AdminProductEdit() {
 
   const updateProductMutation = useMutation({
     mutationFn: async (data: ProductFormData) => {
-      return apiRequest(`/api/products/${productId}`, {
-        method: "PATCH",
-        body: JSON.stringify({
-          ...data,
-          images: imageUrls,
-          video: videoUrl || undefined,
-        }),
-        headers: {
-          "Content-Type": "application/json",
-        },
+      return apiRequest("PATCH", `/api/products/${productId}`, {
+        ...data,
+        images: imageUrls,
+        video: videoUrl || undefined,
       });
     },
     onSuccess: () => {
@@ -139,48 +131,6 @@ export default function AdminProductEdit() {
       });
     },
   });
-
-  const handleItemClick = (id: string) => {
-    setActiveItem(id);
-    switch(id) {
-      case "dashboard":
-        navigate("/admin");
-        break;
-      case "store":
-        navigate("/admin/store");
-        break;
-      case "categories":
-        navigate("/admin/categories");
-        break;
-      case "products":
-        navigate("/admin/products");
-        break;
-      case "orders":
-        navigate("/admin/orders");
-        break;
-      case "users":
-        navigate("/admin/users");
-        break;
-      case "riders":
-        navigate("/admin/riders");
-        break;
-      case "zones":
-        navigate("/admin/zones");
-        break;
-      case "messages":
-        navigate("/admin/messages");
-        break;
-      case "analytics":
-        navigate("/admin/analytics");
-        break;
-      case "branding":
-        navigate("/admin/branding");
-        break;
-      case "settings":
-        navigate("/admin/settings");
-        break;
-    }
-  };
 
   const onSubmit = (data: ProductFormData) => {
     if (imageUrls.length === 0) {
@@ -224,16 +174,8 @@ export default function AdminProductEdit() {
   }
 
   return (
-    <div className="flex h-screen bg-background">
-      <DashboardSidebar
-        role="admin"
-        activeItem={activeItem}
-        onItemClick={handleItemClick}
-        userName={user?.name || "Admin"}
-      />
-      
-      <div className="flex-1 overflow-auto">
-        <div className="p-8">
+    <DashboardLayout role="admin">
+      <div className="p-8">
           <div className="flex items-center gap-4 mb-6">
             <Button
               variant="ghost"
@@ -453,8 +395,7 @@ export default function AdminProductEdit() {
               </Button>
             </div>
           </form>
-        </div>
       </div>
-    </div>
+    </DashboardLayout>
   );
 }

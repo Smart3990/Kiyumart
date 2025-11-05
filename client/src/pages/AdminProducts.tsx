@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { useLocation } from "wouter";
-import DashboardSidebar from "@/components/DashboardSidebar";
+import DashboardLayout from "@/components/DashboardLayout";
 import { useAuth } from "@/lib/auth";
 import { useToast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
@@ -27,9 +27,7 @@ function DeleteProductDialog({ product }: { product: Product }) {
 
   const deleteProductMutation = useMutation({
     mutationFn: async () => {
-      return apiRequest(`/api/products/${product.id}`, {
-        method: "DELETE",
-      });
+      return apiRequest("DELETE", `/api/products/${product.id}`);
     },
     onSuccess: () => {
       toast({
@@ -81,7 +79,6 @@ function DeleteProductDialog({ product }: { product: Product }) {
 }
 
 export default function AdminProducts() {
-  const [activeItem, setActiveItem] = useState("products");
   const [searchQuery, setSearchQuery] = useState("");
   const [, navigate] = useLocation();
   const { user, isAuthenticated, isLoading: authLoading } = useAuth();
@@ -97,27 +94,6 @@ export default function AdminProducts() {
     enabled: isAuthenticated && user?.role === "admin",
   });
 
-  const handleItemClick = (id: string) => {
-    navigate(
-      id === "dashboard" ? "/admin" :
-      id === "store" ? "/admin/store" :
-      id === "branding" ? "/admin/branding" :
-      id === "categories" ? "/admin/categories" :
-      id === "products" ? "/admin/products" :
-      id === "orders" ? "/admin/orders" :
-      id === "users" ? "/admin/users" :
-      id === "sellers" ? "/admin/sellers" :
-      id === "riders" ? "/admin/riders" :
-      id === "applications" ? "/admin/applications" :
-      id === "zones" ? "/admin/zones" :
-      id === "notifications" ? "/notifications" :
-      id === "messages" ? "/admin/messages" :
-      id === "analytics" ? "/admin/analytics" :
-      id === "settings" ? "/admin/settings" :
-      "/admin"
-    );
-  };
-
   const filteredProducts = products.filter(p => 
     p.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
     p.category.toLowerCase().includes(searchQuery.toLowerCase())
@@ -132,16 +108,8 @@ export default function AdminProducts() {
   }
 
   return (
-    <div className="flex h-screen bg-background">
-      <DashboardSidebar
-        role="admin"
-        activeItem={activeItem}
-        onItemClick={handleItemClick}
-        userName={user?.name || "Admin"}
-      />
-      
-      <div className="flex-1 overflow-auto">
-        <div className="p-8">
+    <DashboardLayout role="admin">
+      <div className="p-8">
           <div className="flex items-center gap-4 mb-6">
             <Button
               variant="ghost"
@@ -246,8 +214,7 @@ export default function AdminProducts() {
               )}
             </div>
           )}
-        </div>
       </div>
-    </div>
+    </DashboardLayout>
   );
 }

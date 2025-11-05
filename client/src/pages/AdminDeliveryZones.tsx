@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { useLocation } from "wouter";
-import DashboardSidebar from "@/components/DashboardSidebar";
+import DashboardLayout from "@/components/DashboardLayout";
 import { useAuth } from "@/lib/auth";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -52,7 +52,6 @@ interface DeliveryZone {
 
 export default function AdminDeliveryZones() {
   const { toast } = useToast();
-  const [activeItem, setActiveItem] = useState("zones");
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingZone, setEditingZone] = useState<DeliveryZone | null>(null);
   const [, navigate] = useLocation();
@@ -174,45 +173,6 @@ export default function AdminDeliveryZones() {
     setIsDialogOpen(true);
   };
 
-  const handleItemClick = (id: string) => {
-    setActiveItem(id);
-    switch(id) {
-      case "dashboard":
-        navigate("/admin");
-        break;
-      case "mode":
-        navigate("/admin/settings");
-        break;
-      case "categories":
-        navigate("/admin/categories");
-        break;
-      case "products":
-        navigate("/admin/products");
-        break;
-      case "orders":
-        navigate("/admin/orders");
-        break;
-      case "users":
-        navigate("/admin/users");
-        break;
-      case "riders":
-        navigate("/admin/riders");
-        break;
-      case "zones":
-        // Already on zones page
-        break;
-      case "messages":
-        navigate("/admin/messages");
-        break;
-      case "analytics":
-        navigate("/admin/analytics");
-        break;
-      case "settings":
-        navigate("/admin/settings");
-        break;
-    }
-  };
-
   if (authLoading || isLoading || !isAuthenticated || user?.role !== "admin") {
     return (
       <div className="min-h-screen flex items-center justify-center">
@@ -222,16 +182,8 @@ export default function AdminDeliveryZones() {
   }
 
   return (
-    <div className="flex h-screen bg-background">
-      <DashboardSidebar
-        role="admin"
-        activeItem={activeItem}
-        onItemClick={handleItemClick}
-        userName={user?.name || "Admin"}
-      />
-      
-      <div className="flex-1 overflow-auto">
-        <div className="p-8">
+    <DashboardLayout role="admin">
+      <div className="p-8">
         <div className="mb-6 flex items-center justify-between">
           <div>
             <h1 className="text-3xl font-bold flex items-center gap-2" data-testid="heading-delivery-zones">
@@ -411,8 +363,7 @@ export default function AdminDeliveryZones() {
             )}
           </CardContent>
         </Card>
-        </div>
       </div>
-    </div>
+    </DashboardLayout>
   );
 }

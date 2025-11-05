@@ -1,7 +1,7 @@
-import { useState, useEffect } from "react";
+import { useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useLocation } from "wouter";
-import DashboardSidebar from "@/components/DashboardSidebar";
+import DashboardLayout from "@/components/DashboardLayout";
 import { useAuth } from "@/lib/auth";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -15,7 +15,6 @@ interface Analytics {
 }
 
 export default function AdminAnalytics() {
-  const [activeItem, setActiveItem] = useState("analytics");
   const [, navigate] = useLocation();
   const { user, isAuthenticated, isLoading: authLoading } = useAuth();
 
@@ -30,48 +29,6 @@ export default function AdminAnalytics() {
     enabled: isAuthenticated && user?.role === "admin",
   });
 
-  const handleItemClick = (id: string) => {
-    setActiveItem(id);
-    switch(id) {
-      case "dashboard":
-        navigate("/admin");
-        break;
-      case "mode":
-        navigate("/admin/settings");
-        break;
-      case "categories":
-        navigate("/admin/categories");
-        break;
-      case "products":
-        navigate("/admin/products");
-        break;
-      case "orders":
-        navigate("/admin/orders");
-        break;
-      case "users":
-        navigate("/admin/users");
-        break;
-      case "riders":
-        navigate("/admin/riders");
-        break;
-      case "zones":
-        navigate("/admin/zones");
-        break;
-      case "messages":
-        navigate("/admin/messages");
-        break;
-      case "analytics":
-        // Already on analytics page
-        break;
-      case "branding":
-        navigate("/admin/branding");
-        break;
-      case "settings":
-        navigate("/admin/settings");
-        break;
-    }
-  };
-
   if (authLoading || !isAuthenticated || user?.role !== "admin") {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
@@ -81,25 +38,9 @@ export default function AdminAnalytics() {
   }
 
   return (
-    <div className="flex h-screen bg-background">
-      <DashboardSidebar
-        role="admin"
-        activeItem={activeItem}
-        onItemClick={handleItemClick}
-        userName={user?.name || "Admin"}
-      />
-      
-      <div className="flex-1 overflow-auto">
-        <div className="p-8">
+    <DashboardLayout role="admin">
+      <div className="p-8">
           <div className="flex items-center gap-4 mb-6">
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={() => navigate("/admin")}
-              data-testid="button-back"
-            >
-              <ArrowLeft className="h-5 w-5" />
-            </Button>
             <div className="flex-1">
               <h1 className="text-3xl font-bold text-foreground" data-testid="heading-analytics">Analytics</h1>
               <p className="text-muted-foreground mt-1">Platform performance and statistics</p>
@@ -191,7 +132,6 @@ export default function AdminAnalytics() {
             </Card>
           </div>
         </div>
-      </div>
-    </div>
+    </DashboardLayout>
   );
 }

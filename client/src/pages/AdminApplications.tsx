@@ -1,7 +1,7 @@
-import { useState, useEffect } from "react";
+import { useEffect } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { useLocation } from "wouter";
-import DashboardSidebar from "@/components/DashboardSidebar";
+import DashboardLayout from "@/components/DashboardLayout";
 import { useAuth } from "@/lib/auth";
 import { useToast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
@@ -30,7 +30,6 @@ interface Application {
 }
 
 export default function AdminApplications() {
-  const [activeItem, setActiveItem] = useState("applications");
   const [, navigate] = useLocation();
   const { user, isAuthenticated, isLoading: authLoading } = useAuth();
   const { toast } = useToast();
@@ -61,13 +60,7 @@ export default function AdminApplications() {
 
   const approveApplicationMutation = useMutation({
     mutationFn: async ({ userId }: { userId: string }) => {
-      return apiRequest(`/api/users/${userId}/approve`, {
-        method: "PATCH",
-        body: JSON.stringify({ isApproved: true }),
-        headers: {
-          "Content-Type": "application/json",
-        },
-      });
+      return apiRequest("PATCH", `/api/users/${userId}/approve`, { isApproved: true });
     },
     onSuccess: () => {
       toast({
@@ -88,9 +81,7 @@ export default function AdminApplications() {
 
   const rejectApplicationMutation = useMutation({
     mutationFn: async ({ userId }: { userId: string }) => {
-      return apiRequest(`/api/users/${userId}`, {
-        method: "DELETE",
-      });
+      return apiRequest("DELETE", `/api/users/${userId}`);
     },
     onSuccess: () => {
       toast({
@@ -109,26 +100,6 @@ export default function AdminApplications() {
     },
   });
 
-  const handleItemClick = (id: string) => {
-    navigate(
-      id === "dashboard" ? "/admin" :
-      id === "store" ? "/admin/store" :
-      id === "branding" ? "/admin/branding" :
-      id === "categories" ? "/admin/categories" :
-      id === "products" ? "/admin/products" :
-      id === "orders" ? "/admin/orders" :
-      id === "users" ? "/admin/users" :
-      id === "sellers" ? "/admin/sellers" :
-      id === "riders" ? "/admin/riders" :
-      id === "applications" ? "/admin/applications" :
-      id === "zones" ? "/admin/zones" :
-      id === "messages" ? "/admin/messages" :
-      id === "analytics" ? "/admin/analytics" :
-      id === "settings" ? "/admin/settings" :
-      "/admin"
-    );
-  };
-
   if (authLoading || !isAuthenticated || user?.role !== "admin") {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
@@ -138,16 +109,8 @@ export default function AdminApplications() {
   }
 
   return (
-    <div className="flex h-screen bg-background">
-      <DashboardSidebar
-        role="admin"
-        activeItem={activeItem}
-        onItemClick={handleItemClick}
-        userName={user?.name || "Admin"}
-      />
-      
-      <div className="flex-1 overflow-auto">
-        <div className="p-8">
+    <DashboardLayout role="admin">
+      <div className="p-8">
           <div className="flex items-center gap-4 mb-6">
             <Button
               variant="ghost"
@@ -338,7 +301,6 @@ export default function AdminApplications() {
             </TabsContent>
           </Tabs>
         </div>
-      </div>
-    </div>
+    </DashboardLayout>
   );
 }

@@ -1,5 +1,4 @@
-import { useState } from "react";
-import DashboardSidebar from "@/components/DashboardSidebar";
+import DashboardLayout from "@/components/DashboardLayout";
 import MetricCard from "@/components/MetricCard";
 import OrderCard from "@/components/OrderCard";
 import ThemeToggle from "@/components/ThemeToggle";
@@ -9,8 +8,6 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 
 export default function AdminDashboard() {
-  const [activeItem, setActiveItem] = useState("dashboard");
-
   const recentOrders = [
     {
       orderId: "ORD-001",
@@ -42,15 +39,8 @@ export default function AdminDashboard() {
   ];
 
   return (
-    <div className="flex h-screen bg-background">
-      <DashboardSidebar
-        role="admin"
-        activeItem={activeItem}
-        onItemClick={setActiveItem}
-        userName="Admin User"
-      />
-
-      <div className="flex-1 flex flex-col overflow-hidden">
+    <DashboardLayout role="admin">
+      <div className="flex flex-col h-full">
         <header className="border-b p-4 flex items-center justify-between">
           <h1 className="text-2xl font-bold">Admin Dashboard</h1>
           <div className="flex items-center gap-4">
@@ -106,6 +96,6 @@ export default function AdminDashboard() {
           </div>
         </main>
       </div>
-    </div>
+    </DashboardLayout>
   );
 }

@@ -8,7 +8,7 @@ import { insertProductSchema } from "@shared/schema";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useAuth } from "@/lib/auth";
 import { useToast } from "@/hooks/use-toast";
-import DashboardSidebar from "@/components/DashboardSidebar";
+import DashboardLayout from "@/components/DashboardLayout";
 import MediaUploadInput from "@/components/MediaUploadInput";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -38,7 +38,6 @@ const productFormSchema = insertProductSchema.extend({
 type ProductFormData = z.infer<typeof productFormSchema>;
 
 export default function AdminProductCreate() {
-  const [activeItem, setActiveItem] = useState("products");
   const [, navigate] = useLocation();
   const { user, isAuthenticated, isLoading: authLoading } = useAuth();
   const { toast } = useToast();
@@ -71,16 +70,10 @@ export default function AdminProductCreate() {
 
   const createProductMutation = useMutation({
     mutationFn: async (data: ProductFormData) => {
-      return apiRequest("/api/products", {
-        method: "POST",
-        body: JSON.stringify({
-          ...data,
-          images: imageUrls,
-          video: videoUrl || undefined,
-        }),
-        headers: {
-          "Content-Type": "application/json",
-        },
+      return apiRequest("POST", "/api/products", {
+        ...data,
+        images: imageUrls,
+        video: videoUrl || undefined,
       });
     },
     onSuccess: () => {
@@ -99,48 +92,6 @@ export default function AdminProductCreate() {
       });
     },
   });
-
-  const handleItemClick = (id: string) => {
-    setActiveItem(id);
-    switch(id) {
-      case "dashboard":
-        navigate("/admin");
-        break;
-      case "store":
-        navigate("/admin/store");
-        break;
-      case "categories":
-        navigate("/admin/categories");
-        break;
-      case "products":
-        navigate("/admin/products");
-        break;
-      case "orders":
-        navigate("/admin/orders");
-        break;
-      case "users":
-        navigate("/admin/users");
-        break;
-      case "riders":
-        navigate("/admin/riders");
-        break;
-      case "zones":
-        navigate("/admin/zones");
-        break;
-      case "messages":
-        navigate("/admin/messages");
-        break;
-      case "analytics":
-        navigate("/admin/analytics");
-        break;
-      case "branding":
-        navigate("/admin/branding");
-        break;
-      case "settings":
-        navigate("/admin/settings");
-        break;
-    }
-  };
 
   const onSubmit = (data: ProductFormData) => {
     if (imageUrls.length === 0) {
@@ -176,16 +127,8 @@ export default function AdminProductCreate() {
   }
 
   return (
-    <div className="flex h-screen bg-background">
-      <DashboardSidebar
-        role="admin"
-        activeItem={activeItem}
-        onItemClick={handleItemClick}
-        userName={user?.name || "Admin"}
-      />
-      
-      <div className="flex-1 overflow-auto">
-        <div className="p-8">
+    <DashboardLayout role="admin">
+      <div className="p-8">
           <div className="flex items-center gap-4 mb-6">
             <Button
               variant="ghost"
@@ -405,8 +348,7 @@ export default function AdminProductCreate() {
               </Button>
             </div>
           </form>
-        </div>
       </div>
-    </div>
+    </DashboardLayout>
   );
 }

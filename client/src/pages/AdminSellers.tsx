@@ -75,13 +75,7 @@ function CreateSellerDialog() {
 
   const createSellerMutation = useMutation({
     mutationFn: async (data: CreateSellerFormData) => {
-      return apiRequest("/api/users", {
-        method: "POST",
-        body: JSON.stringify({ ...data, role: "seller" }),
-        headers: {
-          "Content-Type": "application/json",
-        },
-      });
+      return apiRequest("POST", "/api/users", { ...data, role: "seller" });
     },
     onSuccess: () => {
       toast({
