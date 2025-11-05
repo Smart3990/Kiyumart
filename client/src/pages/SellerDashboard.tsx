@@ -7,19 +7,45 @@ import { DollarSign, Package, ShoppingBag, TrendingUp, Eye, Plus } from "lucide-
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/lib/auth";
 import { useLocation } from "wouter";
+import { useQuery } from "@tanstack/react-query";
 
 import handbagImage from "@assets/generated_images/Designer_handbag_product_photo_d9f11f99.png";
 import sneakersImage from "@assets/generated_images/Men's_sneakers_product_photo_2c87b833.png";
 import dressImage from "@assets/generated_images/Summer_dress_product_photo_9f6f8356.png";
 
+interface Store {
+  id: string;
+  name: string;
+  primarySellerId: string;
+}
+
+interface PlatformSettings {
+  isMultiVendor: boolean;
+}
+
 export default function SellerDashboard() {
   const { user } = useAuth();
   const [, navigate] = useLocation();
 
+  // Fetch platform settings to check if multi-vendor mode is enabled
+  const { data: platformSettings } = useQuery<PlatformSettings>({
+    queryKey: ["/api/platform-settings"],
+  });
+
+  // Fetch seller's store information
+  const { data: store } = useQuery<Store>({
+    queryKey: ["/api/stores/my-store"],
+    enabled: !!user?.id,
+  });
+
   const handlePreviewStore = () => {
-    // Navigate to the home page which shows the store in single-store mode
-    // or to the seller's specific store page in multi-vendor mode
-    navigate("/");
+    if (platformSettings?.isMultiVendor && store?.id) {
+      // In multi-vendor mode, open the specific store page in a new tab
+      window.open(`/stores/${store.id}`, '_blank');
+    } else {
+      // In single-store mode, open the homepage in a new tab to show customer view
+      window.open("/", '_blank');
+    }
   };
 
   const myProducts = [

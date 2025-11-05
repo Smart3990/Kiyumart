@@ -2596,6 +2596,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Get current seller's store
+  app.get("/api/stores/my-store", requireAuth, requireRole("seller"), async (req: AuthRequest, res) => {
+    try {
+      const store = await storage.getStoreByPrimarySeller(req.user!.id);
+      if (!store) {
+        return res.status(404).json({ error: "Store not found" });
+      }
+      res.json(store);
+    } catch (error: any) {
+      res.status(500).json({ error: error.message });
+    }
+  });
+
   app.get("/api/stores/:id", async (req, res) => {
     try {
       const store = await storage.getStore(req.params.id);
