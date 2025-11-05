@@ -3,14 +3,24 @@ import MetricCard from "@/components/MetricCard";
 import ProductCard from "@/components/ProductCard";
 import ThemeToggle from "@/components/ThemeToggle";
 import StoreModeToggle from "@/components/StoreModeToggle";
-import { DollarSign, Package, ShoppingBag, TrendingUp } from "lucide-react";
+import { DollarSign, Package, ShoppingBag, TrendingUp, Eye, Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { useAuth } from "@/lib/auth";
+import { useLocation } from "wouter";
 
 import handbagImage from "@assets/generated_images/Designer_handbag_product_photo_d9f11f99.png";
 import sneakersImage from "@assets/generated_images/Men's_sneakers_product_photo_2c87b833.png";
 import dressImage from "@assets/generated_images/Summer_dress_product_photo_9f6f8356.png";
 
 export default function SellerDashboard() {
+  const { user } = useAuth();
+  const [, navigate] = useLocation();
+
+  const handlePreviewStore = () => {
+    // Navigate to the home page which shows the store in single-store mode
+    // or to the seller's specific store page in multi-vendor mode
+    navigate("/");
+  };
 
   const myProducts = [
     {
@@ -45,6 +55,18 @@ export default function SellerDashboard() {
     <DashboardLayout role="seller">
       <div className="p-6">
           <div className="max-w-7xl mx-auto space-y-6">
+            <div className="flex items-center justify-between mb-6">
+              <h1 className="text-2xl font-bold">Seller Dashboard</h1>
+              <Button 
+                variant="outline" 
+                onClick={handlePreviewStore}
+                data-testid="button-preview-store"
+              >
+                <Eye className="h-4 w-4 mr-2" />
+                Preview Store
+              </Button>
+            </div>
+
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
               <MetricCard
                 title="Total Sales"
@@ -74,7 +96,10 @@ export default function SellerDashboard() {
             <div>
               <div className="flex items-center justify-between mb-4">
                 <h2 className="text-xl font-bold">My Products</h2>
-                <Button>Add New Product</Button>
+                <Button onClick={() => navigate("/seller/products")} data-testid="button-add-product">
+                  <Plus className="h-4 w-4 mr-2" />
+                  Add New Product
+                </Button>
               </div>
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
                 {myProducts.map((product) => (
