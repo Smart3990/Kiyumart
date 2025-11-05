@@ -33,9 +33,19 @@ export default function SellerDashboard() {
   });
 
   // Fetch seller's store information
-  const { data: store } = useQuery<Store>({
+  const { data: store } = useQuery<Store | null>({
     queryKey: ["/api/stores/my-store"],
-    enabled: !!user?.id,
+    enabled: !!user?.id && user?.role === "seller",
+    queryFn: async () => {
+      const res = await fetch("/api/stores/my-store");
+      if (res.status === 404) {
+        return null; // No store yet, return null instead of throwing
+      }
+      if (!res.ok) {
+        throw new Error("Failed to fetch store");
+      }
+      return res.json();
+    },
   });
 
   const handlePreviewStore = () => {
