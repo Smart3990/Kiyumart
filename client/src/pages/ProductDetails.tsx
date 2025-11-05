@@ -324,8 +324,8 @@ export default function ProductDetails() {
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
             <div className="space-y-4">
               {/* Main Product Image - Compact size */}
-              <Card className="overflow-hidden cursor-pointer" onClick={() => setIsImageExpanded(true)}>
-                <div className="relative aspect-[9/16] group">
+              <Card className="overflow-hidden cursor-pointer max-w-md" onClick={() => setIsImageExpanded(true)}>
+                <div className="relative aspect-square group">
                   <img
                     src={product.images[selectedImage] || product.images[0]}
                     alt={product.name}
