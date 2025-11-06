@@ -2145,7 +2145,36 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.patch("/api/settings", requireAuth, requireRole("admin"), async (req, res) => {
     try {
+      const previousSettings = await storage.getPlatformSettings();
       const settings = await storage.updatePlatformSettings(req.body);
+      
+      // Handle automatic store updates when multi-vendor mode is toggled
+      if (previousSettings.isMultiVendor !== settings.isMultiVendor) {
+        if (settings.isMultiVendor) {
+          // Multi-vendor mode turned ON: Create stores for approved sellers who don't have one
+          const sellers = await storage.getUsersByRole("seller");
+          for (const seller of sellers) {
+            if (seller.isApproved) {
+              const existingStore = await storage.getStoreByPrimarySeller(seller.id);
+              if (!existingStore) {
+                await storage.createStore({
+                  primarySellerId: seller.id,
+                  name: seller.storeName || seller.name + "'s Store",
+                  description: seller.storeDescription || "",
+                  logo: seller.storeBanner || "",
+                  isActive: true,
+                  isApproved: true
+                });
+              }
+            }
+          }
+        } else {
+          // Multi-vendor mode turned OFF: Keep existing stores but set a flag or notification
+          // In single-store mode, all sellers share the platform (no action needed)
+          console.log("Multi-vendor mode disabled - operating in single-store mode");
+        }
+      }
+      
       res.json(settings);
     } catch (error: any) {
       res.status(400).json({ error: error.message });
