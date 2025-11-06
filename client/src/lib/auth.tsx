@@ -11,6 +11,7 @@ interface User {
   profileImage?: string;
   storeName?: string;
   isActive: boolean;
+  isApproved: boolean;
 }
 
 interface AuthContextType {

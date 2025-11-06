@@ -32,10 +32,10 @@ export default function SellerDashboard() {
     queryKey: ["/api/platform-settings"],
   });
 
-  // Fetch seller's store information
+  // Fetch seller's store information only if approved
   const { data: store } = useQuery<Store | null>({
     queryKey: ["/api/stores/my-store"],
-    enabled: !!user?.id && user?.role === "seller",
+    enabled: !!user?.id && user?.role === "seller" && user?.isApproved === true,
     queryFn: async () => {
       const res = await fetch("/api/stores/my-store");
       if (res.status === 404) {
@@ -47,6 +47,35 @@ export default function SellerDashboard() {
       return res.json();
     },
   });
+
+  // Show pending approval message if seller is not approved
+  if (user?.role === "seller" && !user?.isApproved) {
+    return (
+      <DashboardLayout role="seller">
+        <div className="p-6">
+          <div className="max-w-2xl mx-auto mt-12">
+            <div className="bg-card border rounded-lg p-8 text-center space-y-4">
+              <div className="mx-auto w-16 h-16 bg-yellow-500/10 rounded-full flex items-center justify-center">
+                <svg className="w-8 h-8 text-yellow-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+              </div>
+              <h2 className="text-2xl font-bold">Application Under Review</h2>
+              <p className="text-muted-foreground">
+                Thank you for registering as a seller on our platform! Your application is currently being reviewed by our team.
+              </p>
+              <p className="text-muted-foreground">
+                <strong>We will get back to you within 72 hours</strong> with an update on your application status. You will receive an email notification once your account has been approved.
+              </p>
+              <p className="text-sm text-muted-foreground mt-4">
+                If you have any questions, please contact our support team.
+              </p>
+            </div>
+          </div>
+        </div>
+      </DashboardLayout>
+    );
+  }
 
   const handlePreviewStore = () => {
     if (platformSettings?.isMultiVendor && store?.id) {

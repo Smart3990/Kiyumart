@@ -45,6 +45,7 @@ import AdminMessages from "@/pages/AdminMessages";
 import AdminAnalytics from "@/pages/AdminAnalytics";
 import AdminMediaLibrary from "@/pages/AdminMediaLibrary";
 import SellerMediaLibrary from "@/pages/SellerMediaLibrary";
+import SellerProducts from "@/pages/SellerProducts";
 import CategoryPage from "@/pages/CategoryPage";
 import Wishlist from "@/pages/Wishlist";
 import Orders from "@/pages/Orders";
@@ -110,6 +111,7 @@ function Router() {
       <Route path="/admin/messages" component={AdminMessages} />
       <Route path="/admin/analytics" component={AdminAnalytics} />
       <Route path="/seller" component={SellerDashboard} />
+      <Route path="/seller/products" component={SellerProducts} />
       <Route path="/seller/media-library" component={SellerMediaLibrary} />
       <Route path="/rider" component={RiderDashboard} />
       <Route path="/buyer" component={BuyerDashboard} />

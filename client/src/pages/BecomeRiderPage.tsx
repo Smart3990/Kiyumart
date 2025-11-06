@@ -149,8 +149,9 @@ export default function BecomeRiderPage() {
     },
     onSuccess: () => {
       toast({
-        title: "Application Submitted!",
-        description: "Your rider application has been submitted successfully. You will be notified once approved.",
+        title: "Application Submitted Successfully!",
+        description: "Thank you for applying! We will review your application and get back to you within 72 hours via email.",
+        duration: 8000,
       });
       setTimeout(() => {
         navigate("/");
