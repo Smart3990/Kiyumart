@@ -348,6 +348,26 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (!user) {
         return res.status(404).json({ error: "User not found" });
       }
+      
+      // Create store for approved seller using their application data
+      if (user.role === "seller") {
+        try {
+          const existingStore = await storage.getStoreByPrimarySeller(user.id);
+          if (!existingStore) {
+            await storage.createStore({
+              primarySellerId: user.id,
+              name: user.storeName || user.name + "'s Store",
+              description: user.storeDescription || "",
+              logo: user.storeBanner || "",
+              isActive: true,
+              isApproved: true
+            });
+          }
+        } catch (storeError: any) {
+          console.error("Failed to create store for approved seller:", storeError);
+        }
+      }
+      
       const { password, ...userWithoutPassword } = user;
       res.json(userWithoutPassword);
     } catch (error: any) {
