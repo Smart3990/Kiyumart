@@ -43,6 +43,10 @@ export default function AdminMessages() {
   const { user, isAuthenticated, isLoading: authLoading } = useAuth();
   const { toast } = useToast();
 
+  // Get userId from URL search params if present (when clicking from AdminUsers)
+  const urlParams = new URLSearchParams(window.location.search);
+  const userIdFilter = urlParams.get("userId");
+
   useEffect(() => {
     if (!authLoading && (!isAuthenticated || user?.role !== "admin")) {
       navigate("/auth");
@@ -53,6 +57,16 @@ export default function AdminMessages() {
     queryKey: ["/api/support/conversations"],
     enabled: isAuthenticated && user?.role === "admin",
   });
+
+  // Auto-select conversation when filtering by userId
+  useEffect(() => {
+    if (userIdFilter && conversations.length > 0 && !selectedConversation) {
+      const userConversation = conversations.find(c => c.customerId === userIdFilter);
+      if (userConversation) {
+        setSelectedConversation(userConversation.id);
+      }
+    }
+  }, [userIdFilter, conversations, selectedConversation]);
 
   const { data: messages = [], isLoading: messagesLoading } = useQuery<Message[]>({
     queryKey: ["/api/support/conversations", selectedConversation, "messages"],
@@ -94,12 +108,22 @@ export default function AdminMessages() {
     }
   };
 
-  const filteredConversations = conversations.filter(
-    (conv) =>
+  // Filter conversations by search query AND userId (if present)
+  const filteredConversations = conversations.filter((conv) => {
+    // Apply userId filter first if present
+    if (userIdFilter && conv.customerId !== userIdFilter) {
+      return false;
+    }
+    
+    // Then apply search filter
+    if (!searchQuery) return true;
+    
+    return (
       conv.subject.toLowerCase().includes(searchQuery.toLowerCase()) ||
       conv.customerName.toLowerCase().includes(searchQuery.toLowerCase()) ||
       conv.customerEmail.toLowerCase().includes(searchQuery.toLowerCase())
-  );
+    );
+  });
 
   const selectedConv = conversations.find((c) => c.id === selectedConversation);
 
