@@ -1932,8 +1932,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.get("/api/orders", requireAuth, async (req: AuthRequest, res) => {
     try {
-      const role = req.user!.role as "buyer" | "seller" | "rider";
-      const orders = await storage.getOrdersByUser(req.user!.id, role);
+      const userRole = req.user!.role as "admin" | "buyer" | "seller" | "rider" | "agent";
+      // Allow context override: buyers can shop, sellers/riders/agents can view purchases vs their work orders
+      const context = (req.query.context as string) || userRole;
+      
+      let orders: any[];
+      
+      // Admin sees all orders by default, unless context=buyer is specified
+      if (userRole === "admin" && context === "admin") {
+        orders = await storage.getAllOrders();
+      } else {
+        // For all other cases, use context-based filtering
+        const filterRole = context as "buyer" | "seller" | "rider";
+        orders = await storage.getOrdersByUser(req.user!.id, filterRole);
+      }
       
       // Fetch order items with product names for each order
       const ordersWithItems = await Promise.all(

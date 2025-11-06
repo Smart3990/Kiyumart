@@ -54,6 +54,7 @@ const routeToMenuId: Record<string, string> = {
   "/buyer": "dashboard",
   "/orders": "orders",
   "/wishlist": "wishlist",
+  "/cart": "my-cart",
   "/buyer/notifications": "notifications",
   "/support": "support",
   "/buyer/settings": "settings",
@@ -84,6 +85,11 @@ export default function DashboardLayout({
   });
 
   const activeItem = useMemo(() => {
+    // Handle shopping routes for all roles
+    if (location === "/cart") return "my-cart";
+    if (location === "/orders" && role !== "buyer") return "my-purchases";
+    if (location === "/wishlist" && role !== "buyer") return "my-wishlist";
+    
     const exactMatch = routeToMenuId[location];
     if (exactMatch) return exactMatch;
 
@@ -94,13 +100,22 @@ export default function DashboardLayout({
     }
 
     return "dashboard";
-  }, [location]);
+  }, [location, role]);
 
   const handleItemClick = (id: string) => {
     const basePath = roleBasePaths[role];
     
     if (id === "dashboard") {
       setLocation(basePath);
+    } else if (id === "my-cart") {
+      // All roles can access shopping cart
+      setLocation("/cart");
+    } else if (id === "my-purchases") {
+      // All non-buyer roles access their purchases at /orders
+      setLocation("/orders");
+    } else if (id === "my-wishlist") {
+      // All non-buyer roles access their wishlist at /wishlist
+      setLocation("/wishlist");
     } else if (role === "buyer" && (id === "orders" || id === "wishlist" || id === "support")) {
       setLocation(`/${id}`);
     } else {

@@ -18,6 +18,7 @@ import {
   Ticket,
   UserCog,
   ImagePlus,
+  ShoppingCart,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useQuery } from "@tanstack/react-query";
@@ -27,6 +28,7 @@ interface MenuItem {
   label: string;
   id: string;
   badge?: number | "dynamic";
+  separator?: boolean;
 }
 
 interface DashboardSidebarProps {
@@ -49,7 +51,10 @@ const menuItems: Record<string, MenuItem[]> = {
     { icon: Truck, label: "Riders", id: "riders" },
     { icon: Ticket, label: "Applications", id: "applications" },
     { icon: MapPin, label: "Delivery Zones", id: "zones" },
-    { icon: Bell, label: "Notifications", id: "notifications", badge: "dynamic" },
+    { icon: ShoppingCart, label: "Shopping Cart", id: "my-cart", separator: true },
+    { icon: ShoppingBag, label: "My Purchases", id: "my-purchases" },
+    { icon: Heart, label: "My Wishlist", id: "my-wishlist" },
+    { icon: Bell, label: "Notifications", id: "notifications", badge: "dynamic", separator: true },
     { icon: MessageSquare, label: "Messages", id: "messages" },
     { icon: BarChart3, label: "Analytics", id: "analytics" },
     { icon: Settings, label: "Settings", id: "settings" },
@@ -61,7 +66,10 @@ const menuItems: Record<string, MenuItem[]> = {
     { icon: ShoppingBag, label: "Orders", id: "orders" },
     { icon: Tag, label: "Coupons", id: "coupons" },
     { icon: Truck, label: "Deliveries", id: "deliveries" },
-    { icon: Bell, label: "Notifications", id: "notifications", badge: "dynamic" },
+    { icon: ShoppingCart, label: "Shopping Cart", id: "my-cart", separator: true },
+    { icon: ShoppingBag, label: "My Purchases", id: "my-purchases" },
+    { icon: Heart, label: "My Wishlist", id: "my-wishlist" },
+    { icon: Bell, label: "Notifications", id: "notifications", badge: "dynamic", separator: true },
     { icon: MessageSquare, label: "Messages", id: "messages" },
     { icon: BarChart3, label: "Analytics", id: "analytics" },
     { icon: Settings, label: "Settings", id: "settings" },
@@ -70,7 +78,10 @@ const menuItems: Record<string, MenuItem[]> = {
     { icon: LayoutDashboard, label: "Dashboard", id: "dashboard" },
     { icon: ShoppingBag, label: "Deliveries", id: "deliveries" },
     { icon: MapPin, label: "Active Route", id: "route" },
-    { icon: Bell, label: "Notifications", id: "notifications", badge: "dynamic" },
+    { icon: ShoppingCart, label: "Shopping Cart", id: "my-cart", separator: true },
+    { icon: ShoppingBag, label: "My Purchases", id: "my-purchases" },
+    { icon: Heart, label: "My Wishlist", id: "my-wishlist" },
+    { icon: Bell, label: "Notifications", id: "notifications", badge: "dynamic", separator: true },
     { icon: MessageSquare, label: "Messages", id: "messages" },
     { icon: BarChart3, label: "Earnings", id: "earnings" },
     { icon: Settings, label: "Settings", id: "settings" },
@@ -87,7 +98,10 @@ const menuItems: Record<string, MenuItem[]> = {
     { icon: LayoutDashboard, label: "Dashboard", id: "dashboard" },
     { icon: Ticket, label: "My Tickets", id: "tickets" },
     { icon: Users, label: "Customers", id: "customers" },
-    { icon: MessageSquare, label: "Messages", id: "messages" },
+    { icon: ShoppingCart, label: "Shopping Cart", id: "my-cart", separator: true },
+    { icon: ShoppingBag, label: "My Purchases", id: "my-purchases" },
+    { icon: Heart, label: "My Wishlist", id: "my-wishlist" },
+    { icon: MessageSquare, label: "Messages", id: "messages", separator: true },
     { icon: Bell, label: "Notifications", id: "notifications", badge: "dynamic" },
     { icon: Settings, label: "Settings", id: "settings" },
   ],
@@ -128,30 +142,34 @@ export default function DashboardSidebar({
       </div>
 
       <nav className="flex-1 p-4 space-y-1 overflow-y-auto">
-        {items.map((item) => {
+        {items.map((item, index) => {
           const Icon = item.icon;
           const isActive = activeItem === item.id;
 
           return (
-            <button
-              key={item.id}
-              onClick={() => onItemClick?.(item.id)}
-              className={cn(
-                "w-full flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium transition-colors hover-elevate active-elevate-2",
-                isActive
-                  ? "bg-primary text-primary-foreground"
-                  : "text-card-foreground"
+            <div key={item.id}>
+              {item.separator && (
+                <div className="my-3 border-t border-border" />
               )}
-              data-testid={`nav-item-${item.id}`}
-            >
-              <Icon className="h-5 w-5" />
-              <span className="flex-1 text-left">{item.label}</span>
-              {item.badge && (
-                <span className="bg-destructive text-destructive-foreground text-xs rounded-full px-2 py-0.5">
-                  {item.badge === "dynamic" ? (notificationCount > 0 ? (notificationCount > 9 ? "9+" : notificationCount) : null) : item.badge}
-                </span>
-              )}
-            </button>
+              <button
+                onClick={() => onItemClick?.(item.id)}
+                className={cn(
+                  "w-full flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium transition-colors hover-elevate active-elevate-2",
+                  isActive
+                    ? "bg-primary text-primary-foreground"
+                    : "text-card-foreground"
+                )}
+                data-testid={`nav-item-${item.id}`}
+              >
+                <Icon className="h-5 w-5" />
+                <span className="flex-1 text-left">{item.label}</span>
+                {item.badge && (
+                  <span className="bg-destructive text-destructive-foreground text-xs rounded-full px-2 py-0.5">
+                    {item.badge === "dynamic" ? (notificationCount > 0 ? (notificationCount > 9 ? "9+" : notificationCount) : null) : item.badge}
+                  </span>
+                )}
+              </button>
+            </div>
           );
         })}
       </nav>

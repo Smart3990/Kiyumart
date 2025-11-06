@@ -30,8 +30,9 @@ export default function Orders() {
   const [, navigate] = useLocation();
   const { currencySymbol } = useLanguage();
 
+  // Always fetch orders where the user is the buyer (their purchases)
   const { data: orders = [], isLoading } = useQuery<Order[]>({
-    queryKey: ["/api/orders"],
+    queryKey: ["/api/orders?context=buyer"],
   });
 
   const getStatusColor = (status: string) => {
