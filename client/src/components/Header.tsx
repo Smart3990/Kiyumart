@@ -60,15 +60,16 @@ export default function Header({
 
   const isActive = (path: string) => location === path;
 
-  // Check if user has a dashboard role (admin, seller, rider, buyer)
-  const hasDashboard = user && ['admin', 'seller', 'rider', 'buyer'].includes(user.role);
-  const isDashboardPage = location.startsWith('/admin') || location.startsWith('/seller') || location.startsWith('/rider') || location.startsWith('/buyer');
+  // Check if user has a dashboard role (admin, seller, rider, buyer, agent)
+  const hasDashboard = user && ['admin', 'seller', 'rider', 'buyer', 'agent'].includes(user.role);
+  const isDashboardPage = location.startsWith('/admin') || location.startsWith('/seller') || location.startsWith('/rider') || location.startsWith('/buyer') || location.startsWith('/agent');
   
   const getDashboardPath = () => {
     if (user?.role === 'admin') return '/admin';
     if (user?.role === 'seller') return '/seller';
     if (user?.role === 'rider') return '/rider';
     if (user?.role === 'buyer') return '/buyer';
+    if (user?.role === 'agent') return '/agent';
     return '/';
   };
   
@@ -77,6 +78,7 @@ export default function Header({
     if (user?.role === 'seller') return 'Seller Dashboard';
     if (user?.role === 'rider') return 'Rider Dashboard';
     if (user?.role === 'buyer') return 'My Dashboard';
+    if (user?.role === 'agent') return 'Agent Dashboard';
     return 'Dashboard';
   };
 
