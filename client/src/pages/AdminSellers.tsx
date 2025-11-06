@@ -30,7 +30,7 @@ interface SellerData {
   storeDescription: string | null;
   storeBanner: string | null;
   profileImage: string | null;
-  createdAt: string;
+  createdAt: string | null;
 }
 
 const createSellerSchema = z.object({
@@ -675,7 +675,7 @@ export default function AdminSellers() {
                         )}
                         
                         <span className="text-xs text-muted-foreground ml-auto" data-testid={`text-joined-${seller.id}`}>
-                          Joined {new Date(seller.createdAt).toLocaleDateString()}
+                          Joined {seller.createdAt ? new Date(seller.createdAt).toLocaleDateString() : 'N/A'}
                         </span>
                       </div>
                     </div>
