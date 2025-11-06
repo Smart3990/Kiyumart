@@ -186,8 +186,8 @@ export default function AdminMediaLibrary() {
   ];
 
   const filteredItems = selectedCategory === "all" 
-    ? mediaItems 
-    : mediaItems.filter(item => item.category === selectedCategory);
+    ? mediaItems || []
+    : (mediaItems || []).filter(item => item.category === selectedCategory);
 
   return (
     <DashboardLayout role="admin">
