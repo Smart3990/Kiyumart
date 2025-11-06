@@ -1,5 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { useAuth } from "@/lib/auth";
+import { useLocation } from "wouter";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import MarketplaceBannerCarousel from "@/components/MarketplaceBannerCarousel";
@@ -8,7 +9,8 @@ import CategoryCard from "@/components/CategoryCard";
 import ProductCard from "@/components/ProductCard";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Badge } from "@/components/ui/badge";
-import { TrendingUp, Star, ShoppingBag } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { TrendingUp, Star, ShoppingBag, ChevronRight } from "lucide-react";
 import type { User as BaseUser, Product, PlatformSettings } from "@shared/schema";
 
 type Seller = BaseUser;
@@ -25,6 +27,7 @@ interface Category {
 
 export default function MultiVendorHome() {
   const { user } = useAuth();
+  const [, navigate] = useLocation();
   
   const { data: settings } = useQuery<PlatformSettings>({
     queryKey: ["/api/platform-settings"],
@@ -83,14 +86,25 @@ export default function MultiVendorHome() {
                   {shopDisplayMode === "by-category" ? "Shop by Categories" : "Shop by Store"}
                 </h2>
               </div>
-              {isAdmin && (
-                <Badge variant="outline" className="text-sm" data-testid="badge-store-count">
-                  {shopDisplayMode === "by-store" 
-                    ? `${sellers.length} ${sellers.length === 1 ? "Store" : "Stores"}`
-                    : `${categories.length} ${categories.length === 1 ? "Category" : "Categories"}`
-                  }
-                </Badge>
-              )}
+              <div className="flex items-center gap-2">
+                {isAdmin && (
+                  <Badge variant="outline" className="text-sm" data-testid="badge-store-count">
+                    {shopDisplayMode === "by-store" 
+                      ? `${sellers.length} ${sellers.length === 1 ? "Store" : "Stores"}`
+                      : `${categories.length} ${categories.length === 1 ? "Category" : "Categories"}`
+                    }
+                  </Badge>
+                )}
+                <Button 
+                  variant="ghost" 
+                  className="gap-1"
+                  onClick={() => navigate(shopDisplayMode === "by-category" ? "/categories" : "/stores")}
+                  data-testid="button-see-all-categories"
+                >
+                  See All
+                  <ChevronRight className="w-4 h-4" />
+                </Button>
+              </div>
             </div>
 
             {shopDisplayMode === "by-category" ? (
@@ -222,21 +236,48 @@ export default function MultiVendorHome() {
 
       <style>{`
         .category-grid {
-          display: grid;
+          display: flex;
           gap: 16px;
-          grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
-          align-items: start;
+          overflow-x: auto;
+          overflow-y: hidden;
+          scroll-behavior: smooth;
+          -webkit-overflow-scrolling: touch;
+          scrollbar-width: thin;
+          scrollbar-color: rgba(155, 155, 155, 0.5) transparent;
+          padding-bottom: 8px;
+        }
+
+        .category-grid::-webkit-scrollbar {
+          height: 6px;
+        }
+
+        .category-grid::-webkit-scrollbar-track {
+          background: transparent;
+        }
+
+        .category-grid::-webkit-scrollbar-thumb {
+          background-color: rgba(155, 155, 155, 0.5);
+          border-radius: 3px;
+        }
+
+        .category-grid::-webkit-scrollbar-thumb:hover {
+          background-color: rgba(155, 155, 155, 0.7);
+        }
+
+        .category-grid > * {
+          flex: 0 0 auto;
+          width: 160px;
         }
 
         @media (min-width: 640px) {
-          .category-grid {
-            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+          .category-grid > * {
+            width: 200px;
           }
         }
 
         @media (min-width: 1024px) {
-          .category-grid {
-            grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+          .category-grid > * {
+            width: 220px;
           }
         }
       `}</style>
