@@ -210,9 +210,9 @@ export default function BecomeRiderPage() {
                   <Bike className="h-6 w-6 text-primary" />
                 </div>
                 <div>
-                  <CardTitle className="text-2xl">Become a Delivery Rider</CardTitle>
+                  <CardTitle className="text-2xl">Become a Delivery Partner</CardTitle>
                   <CardDescription>
-                    Join our delivery team and start earning
+                    Join our delivery team and start earning today
                   </CardDescription>
                 </div>
               </div>

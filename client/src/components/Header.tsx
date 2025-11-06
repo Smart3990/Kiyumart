@@ -54,7 +54,7 @@ export default function Header({
   const showBecomeSeller = platformSettings?.allowSellerRegistration && 
     (!isAuthenticated || (user?.role !== 'seller' && user?.role !== 'admin'));
   
-  // Show "Become a Rider" if enabled and user is not already a rider/admin
+  // Show "Become a Delivery Partner" if enabled and user is not already a rider/admin
   const showBecomeRider = platformSettings?.allowRiderRegistration && 
     (!isAuthenticated || (user?.role !== 'rider' && user?.role !== 'admin'));
 
@@ -173,7 +173,7 @@ export default function Header({
                 data-testid="button-become-rider"
               >
                 <Truck className="h-4 w-4 mr-2" />
-                <span>Become a Rider</span>
+                <span>Become a Delivery Partner</span>
               </Button>
             )}
 
@@ -277,7 +277,7 @@ export default function Header({
                   data-testid="button-become-rider-mobile"
                 >
                   <Truck className="h-4 w-4 mr-2" />
-                  <span>Become a Rider</span>
+                  <span>Become a Delivery Partner</span>
                 </Button>
               )}
             </div>

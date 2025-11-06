@@ -265,9 +265,9 @@ export default function AdminSettings() {
 
                   <div className="flex items-center justify-between p-4 border rounded-lg">
                     <div className="space-y-1">
-                      <Label htmlFor="allowRiderRegistration">Allow Rider Registration</Label>
+                      <Label htmlFor="allowRiderRegistration">Allow Delivery Partner Registration</Label>
                       <p className="text-sm text-muted-foreground">
-                        Show "Become a Delivery Rider" button on toolbar to allow new rider applications
+                        Show "Become a Delivery Partner" button on toolbar to allow new delivery partner applications
                       </p>
                     </div>
                     <Switch
