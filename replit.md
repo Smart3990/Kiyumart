@@ -201,6 +201,33 @@ The database schema includes tables for:
 
 ## Recent Updates (November 2025)
 
+### Bug Fixes and Enhancements (November 6, 2025)
+
+**Admin Messaging System:**
+- Fixed AdminMessages to properly filter conversations by userId from URL parameter
+- When admin clicks "Message" button on a user in AdminUsers, conversations now auto-filter and auto-select
+- Resolved "0 chat" issue - conversations now display correctly for the selected user
+
+**Terminology Updates:**
+- Renamed all "Become a Rider" references to "Become a Delivery Partner" for clarity
+- Updated Header, AdminSettings, and BecomeRiderPage components
+- Consistent terminology across entire platform
+
+**Agent Dashboard:**
+- Verified AgentDashboard exists and is properly routed at `/agent`
+- Shows metrics for open tickets, resolved tickets, total customers, unread messages
+- Includes recent activity tracking
+
+**Application Preview:**
+- Confirmed AdminApplications displays profile image preview in application cards
+- Detail dialog shows full-size profile photo, Ghana Card front, and Ghana Card back images
+- All verification images properly displayed for admin review
+
+**Documentation:**
+- Added comprehensive AI protection guidelines to README.md
+- Updated README with recent changes and critical safety rules
+- Added detailed architecture documentation to prevent accidental rebuilds
+
 ### Banner Images Library
 Added a comprehensive collection of **30+ professional banner images** for various occasions and categories:
 

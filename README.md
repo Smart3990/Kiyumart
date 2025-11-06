@@ -2,6 +2,38 @@
 
 ![KiyuMart](https://via.placeholder.com/1200x300/16a34a/ffffff?text=KiyuMart+-+Islamic+Fashion+Marketplace)
 
+> **⚠️ CRITICAL: AI DEVELOPMENT PROTECTION GUIDELINES**
+>
+> This is a **fully functional, production-ready e-commerce platform** with complex, working architecture.
+> 
+> **DO NOT:**
+> - Rebuild entire components or systems "to improve them"
+> - Refactor working code without explicit request
+> - Change database schema primary key types (breaks all data)
+> - Delete or rename core files without understanding dependencies
+> - Modify `vite.config.ts`, `drizzle.config.ts`, or `package.json` directly
+> 
+> **DO:**
+> - Make targeted, minimal changes to fix specific issues
+> - Read existing code before making changes
+> - Preserve existing patterns and conventions
+> - Test thoroughly before completing tasks
+> - Update `replit.md` when adding features
+> 
+> **Database Safety:**
+> - Use `npm run db:push` for all schema changes (NEVER write SQL migrations)
+> - Use `npm run db:push --force` if data loss warning appears (when safe to do so)
+> - NEVER change ID column types (serial ↔ varchar) - this destroys existing data
+> 
+> **If Unsure:**
+> - Ask questions before making major changes
+> - Check `replit.md` for project-specific documentation
+> - Review this README for architecture understanding
+> 
+> **Remember**: All features are working as designed. Fix what's broken, add what's requested, preserve what works.
+
+---
+
 ## 📖 Table of Contents
 
 - [Overview](#overview)
@@ -838,6 +870,28 @@ For support and questions:
 
 ---
 
+## 🔄 Recent Updates
+
+### November 6, 2025
+- **Fixed Admin Messaging**: AdminMessages now properly filters conversations by userId when clicking "Message" from AdminUsers page
+- **Renamed Delivery Partner**: Changed all "Become a Rider" references to "Become a Delivery Partner" throughout the platform
+- **Verified Agent Dashboard**: Confirmed AgentDashboard exists and is properly routed at `/agent`
+- **Added Comprehensive Documentation**: Added AI protection guidelines and detailed architecture documentation to README
+
+### November 5, 2025
+- **Fixed AdminUsers**: Now displays ALL user roles (admin, seller, buyer, rider, agent) instead of just buyers
+- **Fixed Seller Creation**: POST /api/users now automatically creates associated store when admin adds new seller
+- **Admin Chat Access**: Admins now have same permissions as agents for support conversations
+- **Ghana Card Verification**: Enhanced application system with profile photo and Ghana Card image verification
+- **Image Optimizations**: Reduced product card and detail page image sizes for better layout
+- **Primary Store Architecture**: Added centralized marketplace with primary store selection for single-store mode
+- **Registration Controls**: Added admin toggles for seller and delivery partner registrations
+
+### November 3, 2025
+- Initial production deployment with full feature set
+
+---
+
 **Built with ❤️ for the Islamic Fashion Community**
 
-*Last Updated: November 3, 2025*
+*Last Updated: November 6, 2025*
