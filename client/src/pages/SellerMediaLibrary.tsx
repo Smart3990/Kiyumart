@@ -6,6 +6,7 @@ import { useToast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Checkbox } from "@/components/ui/checkbox";
 import {
   Dialog,
   DialogContent,
@@ -30,6 +31,7 @@ export default function SellerMediaLibrary() {
     tags: "",
   });
   const [copiedId, setCopiedId] = useState<string | null>(null);
+  const [selectedImages, setSelectedImages] = useState<Set<string>>(new Set());
 
   const { data: mediaItems = [], isLoading } = useQuery<MediaLibrary[]>({
     queryKey: ["/api/media-library", "product"],
@@ -77,6 +79,7 @@ export default function SellerMediaLibrary() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/media-library"] });
+      setSelectedImages(new Set());
       toast({
         title: "Success",
         description: "Image deleted successfully",
@@ -91,6 +94,53 @@ export default function SellerMediaLibrary() {
     },
   });
 
+  const bulkDeleteMutation = useMutation({
+    mutationFn: async (ids: string[]) => {
+      await Promise.all(ids.map(id => apiRequest("DELETE", `/api/media-library/${id}`)));
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/media-library"] });
+      setSelectedImages(new Set());
+      toast({
+        title: "Success",
+        description: `${selectedImages.size} items deleted successfully`,
+      });
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to delete images",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const toggleImageSelection = (id: string) => {
+    const newSelected = new Set(selectedImages);
+    if (newSelected.has(id)) {
+      newSelected.delete(id);
+    } else {
+      newSelected.add(id);
+    }
+    setSelectedImages(newSelected);
+  };
+
+  const toggleSelectAll = () => {
+    if (selectedImages.size === mediaItems.length) {
+      setSelectedImages(new Set());
+    } else {
+      setSelectedImages(new Set(mediaItems.map(item => item.id)));
+    }
+  };
+
+  const handleBulkDelete = () => {
+    if (selectedImages.size === 0) return;
+    
+    if (confirm(`Are you sure you want to delete ${selectedImages.size} selected item(s)?`)) {
+      bulkDeleteMutation.mutate(Array.from(selectedImages));
+    }
+  };
+
   const copyToClipboard = (url: string, id: string) => {
     navigator.clipboard.writeText(url);
     setCopiedId(id);
@@ -104,18 +154,52 @@ export default function SellerMediaLibrary() {
   return (
     <DashboardLayout role="seller" showBackButton>
       <div className="p-6 space-y-6">
-      <div className="flex items-center justify-between">
+      <div className="flex items-center justify-between mb-6">
         <div>
           <h1 className="text-3xl font-bold">Product Image Library</h1>
           <p className="text-muted-foreground">Manage reusable product images for your store</p>
         </div>
-        <Dialog open={uploadDialogOpen} onOpenChange={setUploadDialogOpen}>
-          <DialogTrigger asChild>
-            <Button data-testid="button-upload-media">
-              <Upload className="mr-2 h-4 w-4" />
-              Upload Image
-            </Button>
-          </DialogTrigger>
+        <div className="flex items-center gap-2">
+          {mediaItems.length > 0 && (
+            <>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={toggleSelectAll}
+                data-testid="button-select-all"
+              >
+                {selectedImages.size === mediaItems.length ? "Deselect All" : "Select All"}
+              </Button>
+              {selectedImages.size > 0 && (
+                <Button
+                  variant="destructive"
+                  size="sm"
+                  onClick={handleBulkDelete}
+                  disabled={bulkDeleteMutation.isPending}
+                  data-testid="button-bulk-delete"
+                >
+                  {bulkDeleteMutation.isPending ? (
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      Deleting...
+                    </>
+                  ) : (
+                    <>
+                      <Trash2 className="mr-2 h-4 w-4" />
+                      Delete ({selectedImages.size})
+                    </>
+                  )}
+                </Button>
+              )}
+            </>
+          )}
+          <Dialog open={uploadDialogOpen} onOpenChange={setUploadDialogOpen}>
+            <DialogTrigger asChild>
+              <Button data-testid="button-upload-media">
+                <Upload className="mr-2 h-4 w-4" />
+                Upload Image
+              </Button>
+            </DialogTrigger>
           <DialogContent data-testid="dialog-upload-media">
             <DialogHeader>
               <DialogTitle>Upload Product Image</DialogTitle>
@@ -201,7 +285,7 @@ export default function SellerMediaLibrary() {
       ) : (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
           {mediaItems.map((item) => (
-            <Card key={item.id} className="overflow-hidden" data-testid={`media-card-${item.id}`}>
+            <Card key={item.id} className={`overflow-hidden ${selectedImages.has(item.id) ? 'ring-2 ring-primary' : ''}`} data-testid={`media-card-${item.id}`}>
               <div className="aspect-square bg-muted relative">
                 <img
                   src={item.url}
@@ -211,13 +295,21 @@ export default function SellerMediaLibrary() {
                     e.currentTarget.src = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='100' height='100'%3E%3Crect fill='%23ddd' width='100' height='100'/%3E%3Ctext x='50%25' y='50%25' dominant-baseline='middle' text-anchor='middle' fill='%23999'%3ENo Image%3C/text%3E%3C/svg%3E";
                   }}
                 />
+                <div className="absolute top-2 left-2">
+                  <Checkbox
+                    checked={selectedImages.has(item.id)}
+                    onCheckedChange={() => toggleImageSelection(item.id)}
+                    className="bg-white"
+                    data-testid={`checkbox-select-${item.id}`}
+                  />
+                </div>
                 {item.isTemporary && (
                   <div className="absolute top-2 right-2 bg-yellow-500 text-white text-xs px-2 py-1 rounded">
                     Sample
                   </div>
                 )}
                 {item.uploaderRole === "admin" && (
-                  <div className="absolute top-2 left-2 bg-blue-500 text-white text-xs px-2 py-1 rounded">
+                  <div className="absolute bottom-2 right-2 bg-blue-500 text-white text-xs px-2 py-1 rounded">
                     Platform
                   </div>
                 )}
@@ -274,6 +366,7 @@ export default function SellerMediaLibrary() {
           ))}
         </div>
       )}
+      </div>
       </div>
     </DashboardLayout>
   );

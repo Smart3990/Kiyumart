@@ -48,7 +48,18 @@ export default function PaymentPage() {
   const initializePaymentMutation = useMutation({
     mutationFn: async () => {
       const res = await apiRequest("POST", "/api/payments/initialize", { orderId });
-      return res.json();
+      const data = await res.json();
+      
+      if (!res.ok) {
+        const errorMessage = data.userMessage || data.error || "Failed to initialize payment";
+        throw new Error(errorMessage);
+      }
+      
+      if (!data.authorization_url) {
+        throw new Error("Payment system returned invalid data. Please try again.");
+      }
+      
+      return data;
     },
     onSuccess: (data) => {
       if (data.authorization_url) {
@@ -56,9 +67,10 @@ export default function PaymentPage() {
       }
     },
     onError: (error: any) => {
+      const errorMessage = error.message || "Failed to initialize payment. Please check your connection and try again.";
       toast({
         title: "Payment Initialization Failed",
-        description: error.message || "Failed to initialize payment",
+        description: errorMessage,
         variant: "destructive",
       });
       setIsInitializing(false);

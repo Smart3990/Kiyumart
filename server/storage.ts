@@ -865,36 +865,6 @@ export class DbStorage implements IStorage {
       .limit(limit);
   }
 
-  // Enhanced Review operations
-  async addSellerReply(reviewId: string, reply: string): Promise<Review | undefined> {
-    const [updated] = await db.update(reviews)
-      .set({ sellerReply: reply, sellerReplyAt: new Date() })
-      .where(eq(reviews.id, reviewId))
-      .returning();
-    return updated;
-  }
-
-  async verifyPurchaseForReview(userId: string, productId: string): Promise<{ verified: boolean; orderId?: string }> {
-    // Check if user has a delivered order containing this product
-    const result = await db.select({
-      orderId: orders.id,
-    })
-      .from(orders)
-      .innerJoin(orderItems, eq(orders.id, orderItems.orderId))
-      .where(
-        and(
-          eq(orders.buyerId, userId),
-          eq(orderItems.productId, productId),
-          eq(orders.status, "delivered")
-        )
-      )
-      .limit(1);
-
-    if (result.length > 0) {
-      return { verified: true, orderId: result[0].orderId };
-    }
-    return { verified: false };
-  }
 
   // Category Fields operations
   async createCategoryField(field: any): Promise<CategoryField> {

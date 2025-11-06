@@ -2207,78 +2207,143 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const { orderId } = req.body;
       
+      if (!orderId) {
+        return res.status(400).json({ error: "Order ID is required" });
+      }
+      
       // Get platform settings for Paystack key
       const settings = await storage.getPlatformSettings();
       if (!settings.paystackSecretKey) {
-        return res.status(400).json({ error: "Payment gateway not configured. Please contact support." });
+        return res.status(503).json({ 
+          error: "Payment gateway not configured", 
+          userMessage: "Payment system is currently unavailable. Please contact support or try again later."
+        });
       }
       
       // Load and validate the order
       const order = await storage.getOrder(orderId);
       if (!order) {
-        return res.status(404).json({ error: "Order not found" });
+        return res.status(404).json({ error: "Order not found", userMessage: "We couldn't find this order. Please check your order history." });
       }
       
       // Verify the user owns this order
       if (order.buyerId !== req.user!.id) {
-        return res.status(403).json({ error: "Unauthorized to pay for this order" });
+        return res.status(403).json({ error: "Unauthorized to pay for this order", userMessage: "You don't have permission to pay for this order." });
       }
       
       // Prevent double payment
       if (order.paymentStatus === "completed") {
-        return res.status(400).json({ error: "Order is already paid" });
+        return res.status(400).json({ error: "Order is already paid", userMessage: "This order has already been paid for." });
       }
       
-      // Initialize payment with Paystack
+      // Validate order amount
+      if (parseFloat(order.total) <= 0) {
+        return res.status(400).json({ error: "Invalid order amount", userMessage: "Order amount must be greater than zero." });
+      }
+      
+      // Initialize payment with Paystack with timeout
       const callbackUrl = `${req.protocol}://${req.get('host')}/payment/verify`;
       
-      const response = await fetch("https://api.paystack.co/transaction/initialize", {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${settings.paystackSecretKey}`,
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          email: req.user!.email,
-          amount: Math.round(parseFloat(order.total) * 100),
-          currency: order.currency,
-          callback_url: callbackUrl,
-          metadata: {
-            orderId: order.id,
-            userId: req.user!.id,
-            orderNumber: order.orderNumber,
-          },
-        }),
-      });
-
-      const data = await response.json();
+      const controller = new AbortController();
+      const timeout = setTimeout(() => controller.abort(), 15000); // 15 second timeout
       
-      if (!data.status) {
-        return res.status(400).json({ error: data.message });
+      try {
+        const response = await fetch("https://api.paystack.co/transaction/initialize", {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${settings.paystackSecretKey}`,
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            email: req.user!.email,
+            amount: Math.round(parseFloat(order.total) * 100),
+            currency: order.currency,
+            callback_url: callbackUrl,
+            metadata: {
+              orderId: order.id,
+              userId: req.user!.id,
+              orderNumber: order.orderNumber,
+            },
+          }),
+          signal: controller.signal,
+        });
+        
+        clearTimeout(timeout);
+
+        if (!response.ok) {
+          const errorData = await response.json().catch(() => ({}));
+          return res.status(502).json({ 
+            error: errorData.message || "Payment gateway error",
+            userMessage: "Unable to connect to payment gateway. Please try again in a few moments."
+          });
+        }
+
+        const data = await response.json();
+        
+        if (!data.status) {
+          return res.status(400).json({ 
+            error: data.message || "Payment initialization failed",
+            userMessage: data.message || "Unable to initialize payment. Please try again."
+          });
+        }
+
+        if (!data.data?.authorization_url || !data.data?.reference) {
+          return res.status(502).json({ 
+            error: "Invalid payment gateway response",
+            userMessage: "Payment system returned invalid data. Please try again."
+          });
+        }
+
+        // Store the payment reference on the order
+        await storage.updateOrder(orderId, {
+          paymentReference: data.data.reference,
+          paymentStatus: "processing",
+        });
+
+        res.json(data.data);
+      } catch (fetchError: any) {
+        clearTimeout(timeout);
+        
+        if (fetchError.name === 'AbortError') {
+          return res.status(504).json({ 
+            error: "Payment gateway timeout",
+            userMessage: "Payment gateway is taking too long to respond. Please check your internet connection and try again."
+          });
+        }
+        
+        return res.status(502).json({ 
+          error: "Failed to connect to payment gateway",
+          userMessage: "Unable to reach payment gateway. Please check your internet connection and try again."
+        });
       }
-
-      // Store the payment reference on the order
-      await storage.updateOrder(orderId, {
-        paymentReference: data.data.reference,
-        paymentStatus: "processing",
-      });
-
-      res.json(data.data);
     } catch (error: any) {
-      res.status(400).json({ error: error.message });
+      console.error("Payment initialization error:", error);
+      res.status(500).json({ 
+        error: error.message || "Internal server error",
+        userMessage: "An unexpected error occurred while processing your payment. Please try again or contact support."
+      });
     }
   });
 
   app.get("/api/payments/verify/:reference", requireAuth, async (req: AuthRequest, res) => {
     try {
+      const { reference } = req.params;
+      
+      if (!reference) {
+        return res.status(400).json({ error: "Payment reference is required", userMessage: "Invalid payment reference." });
+      }
+      
       // Get platform settings for Paystack key
       const settings = await storage.getPlatformSettings();
       if (!settings.paystackSecretKey) {
-        return res.status(400).json({ error: "Payment gateway not configured. Please contact support." });
+        return res.status(503).json({ 
+          error: "Payment gateway not configured",
+          userMessage: "Payment system is currently unavailable. Please contact support."
+        });
       }
       
       // Check if transaction already exists (idempotency)
-      const existingTransaction = await storage.getTransactionByReference(req.params.reference);
+      const existingTransaction = await storage.getTransactionByReference(reference);
       if (existingTransaction) {
         const order = await storage.getOrder(existingTransaction.orderId);
         return res.json({ 
@@ -2289,51 +2354,84 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
       }
 
-      const response = await fetch(
-        `https://api.paystack.co/transaction/verify/${req.params.reference}`,
-        {
-          headers: {
-            Authorization: `Bearer ${settings.paystackSecretKey}`,
-          },
+      // Verify payment with Paystack with timeout
+      const controller = new AbortController();
+      const timeout = setTimeout(() => controller.abort(), 15000);
+      
+      try {
+        const response = await fetch(
+          `https://api.paystack.co/transaction/verify/${reference}`,
+          {
+            headers: {
+              Authorization: `Bearer ${settings.paystackSecretKey}`,
+            },
+            signal: controller.signal,
+          }
+        );
+        
+        clearTimeout(timeout);
+
+        if (!response.ok) {
+          const errorData = await response.json().catch(() => ({}));
+          return res.status(502).json({ 
+            error: errorData.message || "Payment verification failed",
+            userMessage: "Unable to verify payment. Please contact support with your payment reference."
+          });
         }
-      );
 
-      const data = await response.json();
-      
-      if (!data.status) {
-        return res.status(400).json({ error: data.message });
-      }
+        const data = await response.json();
+        
+        if (!data.status) {
+          return res.status(400).json({ 
+            error: data.message || "Payment verification failed",
+            userMessage: data.message || "Unable to verify your payment. Please contact support."
+          });
+        }
 
-      const orderId = data.data.metadata.orderId;
-      const order = await storage.getOrder(orderId);
-      
-      if (!order) {
-        return res.status(404).json({ error: "Order not found" });
-      }
+        if (!data.data?.metadata?.orderId) {
+          return res.status(400).json({ 
+            error: "Invalid payment data",
+            userMessage: "Payment verification returned invalid data. Please contact support."
+          });
+        }
 
-      // Verify the user owns this order
-      if (order.buyerId !== req.user!.id) {
-        return res.status(403).json({ error: "Unauthorized to verify payment for this order" });
-      }
+        const orderId = data.data.metadata.orderId;
+        const order = await storage.getOrder(orderId);
+        
+        if (!order) {
+          return res.status(404).json({ error: "Order not found", userMessage: "Order associated with this payment could not be found." });
+        }
 
-      // Validate the payment reference matches
-      if (order.paymentReference !== req.params.reference) {
-        return res.status(400).json({ error: "Payment reference mismatch" });
-      }
+        // Verify the user owns this order
+        if (order.buyerId !== req.user!.id) {
+          return res.status(403).json({ error: "Unauthorized to verify payment for this order", userMessage: "You don't have permission to verify this payment." });
+        }
 
-      // Validate the payment amount matches the order total
-      const expectedAmount = Math.round(parseFloat(order.total) * 100);
-      if (data.data.amount !== expectedAmount) {
-        return res.status(400).json({ 
-          error: "Payment amount mismatch",
-          expected: expectedAmount / 100,
-          received: data.data.amount / 100
+        // Validate the payment reference matches
+        if (order.paymentReference !== reference) {
+          return res.status(400).json({ 
+            error: "Payment reference mismatch",
+            userMessage: "Payment reference does not match the order. Please contact support."
+          });
+        }
+
+        // Validate the payment amount matches the order total
+        const expectedAmount = Math.round(parseFloat(order.total) * 100);
+        if (data.data.amount !== expectedAmount) {
+          return res.status(400).json({ 
+            error: "Payment amount mismatch",
+            userMessage: `Payment amount (${data.data.currency} ${(data.data.amount / 100).toFixed(2)}) does not match order total (${order.currency} ${parseFloat(order.total).toFixed(2)}).`,
+            expected: expectedAmount / 100,
+            received: data.data.amount / 100
         });
       }
 
       // Validate currency
       if (data.data.currency !== order.currency) {
-        return res.status(400).json({ error: "Currency mismatch" });
+        return res.status(400).json({ 
+          error: "Currency mismatch",
+          userMessage: `Payment currency (${data.data.currency}) does not match order currency (${order.currency}). Please contact support.`
+        });
       }
 
       const transactionData = {
@@ -2408,8 +2506,27 @@ export async function registerRoutes(app: Express): Promise<Server> {
         orderId: order.id,
         message: data.data.status === "success" ? "Payment verified successfully" : data.data.gateway_response || "Payment failed"
       });
+      } catch (fetchError: any) {
+        clearTimeout(timeout);
+        
+        if (fetchError.name === 'AbortError') {
+          return res.status(504).json({ 
+            error: "Payment verification timeout",
+            userMessage: "Payment verification is taking too long. Please check your order status or contact support."
+          });
+        }
+        
+        return res.status(502).json({ 
+          error: "Failed to verify payment",
+          userMessage: "Unable to reach payment gateway for verification. Please try again or contact support."
+        });
+      }
     } catch (error: any) {
-      res.status(400).json({ error: error.message });
+      console.error("Payment verification error:", error);
+      res.status(500).json({ 
+        error: error.message || "Internal server error",
+        userMessage: "An unexpected error occurred while verifying your payment. Please contact support with your payment reference."
+      });
     }
   });
 

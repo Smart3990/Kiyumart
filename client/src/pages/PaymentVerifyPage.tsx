@@ -40,10 +40,15 @@ export default function PaymentVerifyPage() {
     queryFn: async () => {
       const res = await fetch(`/api/payments/verify/${reference}`);
       if (!res.ok) {
-        const errorData = await res.json();
-        throw new Error(errorData.error || "Verification failed");
+        const errorData = await res.json().catch(() => ({}));
+        const errorMessage = errorData.userMessage || errorData.error || "Failed to verify payment. Please contact support with your payment reference.";
+        throw new Error(errorMessage);
       }
       const result = await res.json();
+      
+      if (!result.verified && !result.message) {
+        throw new Error("Payment verification returned unexpected result. Please contact support.");
+      }
       
       if (result.verified && result.transaction) {
         queryClient.invalidateQueries({ queryKey: ["/api/orders", result.transaction.orderId] });
@@ -54,7 +59,8 @@ export default function PaymentVerifyPage() {
       return result;
     },
     enabled: !!reference && isAuthenticated,
-    retry: false,
+    retry: 2, // Retry up to 2 times for network errors
+    retryDelay: 1000, // Wait 1 second between retries
   });
 
   useEffect(() => {
