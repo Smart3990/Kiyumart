@@ -630,7 +630,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       await notifyAdmins(
         "product",
         "New product added",
-        `${req.user!.name} added a new product: ${product.name}`,
+        `A seller added a new product: ${product.name}`,
         { productId: product.id, sellerId: req.user!.id }
       );
 
@@ -964,7 +964,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       await notifyAdmins(
         "review",
         "New review posted",
-        `${req.user!.name} posted a ${validatedData.rating}-star review${product ? ` for ${product.name}` : ''}`,
+        `A customer posted a ${validatedData.rating}-star review${product ? ` for ${product.name}` : ''}`,
         { reviewId: review.id, productId: validatedData.productId, userId: req.user!.id }
       );
       
@@ -2065,7 +2065,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         await notifyAdmins(
           "message",
           "New message received",
-          `${req.user!.name} sent you a message`,
+          `You have a new message from a user`,
           { messageId: message.id, senderId: req.user!.id }
         );
       }
@@ -2990,7 +2990,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const assetsDir = path.join(process.cwd(), 'attached_assets');
       const imageExtensions = ['.png', '.jpg', '.jpeg', '.gif', '.webp'];
       
-      function getImagesFromDir(dir: string, baseDir: string = dir): any[] {
+      const getImagesFromDir = (dir: string, baseDir: string = dir): any[] => {
         const images: any[] = [];
         
         try {
@@ -3022,7 +3022,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
         
         return images;
-      }
+      };
       
       const images = getImagesFromDir(assetsDir);
       res.json(images);
