@@ -48,6 +48,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         ...validatedData,
         role: requestedRole,
         password: hashedPassword,
+        isApproved: requestedRole === "seller" || requestedRole === "rider" ? false : true,
       };
       
       const user = await storage.createUser(userData);
@@ -385,7 +386,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const userData: any = {
         ...validatedData,
         password: hashedPassword,
-        isApproved: validatedData.role === "rider" || validatedData.role === "seller" ? true : false,
+        isApproved: true,
       };
       
       const user = await storage.createUser(userData);
