@@ -41,6 +41,7 @@ const storeSettingsSchema = z.object({
   shippingZonesEnabled: z.boolean().default(true),
   isMultiVendor: z.boolean(),
   primaryStoreId: z.string().optional(),
+  shopDisplayMode: z.enum(["by-store", "by-category"]).default("by-store"),
   footerDescription: z.string().min(1, "Store description is required"),
 });
 
@@ -91,6 +92,7 @@ export default function AdminStoreManager() {
       shippingZonesEnabled: true,
       isMultiVendor: settings.isMultiVendor || false,
       primaryStoreId: settings.primaryStoreId || "",
+      shopDisplayMode: (settings.shopDisplayMode as "by-store" | "by-category") || "by-store",
       footerDescription: settings.footerDescription || "",
     } : undefined,
   });
@@ -490,6 +492,40 @@ export default function AdminStoreManager() {
                         data-testid="switch-multi-vendor"
                       />
                     </div>
+
+                    {form.watch("isMultiVendor") && (
+                      <div className="p-4 border rounded-lg bg-card space-y-3">
+                        <div className="space-y-1">
+                          <Label htmlFor="shopDisplayMode">Shop By Mode</Label>
+                          <p className="text-sm text-muted-foreground">
+                            Choose how customers browse products in multi-vendor mode
+                          </p>
+                        </div>
+                        <Select
+                          value={form.watch("shopDisplayMode") || "by-store"}
+                          onValueChange={(value) => form.setValue("shopDisplayMode", value as "by-store" | "by-category")}
+                        >
+                          <SelectTrigger id="shopDisplayMode" data-testid="select-shop-display-mode">
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="by-store">Shop by Stores</SelectItem>
+                            <SelectItem value="by-category">Shop by Categories</SelectItem>
+                          </SelectContent>
+                        </Select>
+                        <div className="p-3 bg-primary/5 rounded-md text-sm">
+                          {form.watch("shopDisplayMode") === "by-store" ? (
+                            <p className="text-muted-foreground">
+                              <strong>Shop by Stores:</strong> Customers will see all stores with their names and logos. They can browse each store individually.
+                            </p>
+                          ) : (
+                            <p className="text-muted-foreground">
+                              <strong>Shop by Categories:</strong> Customers will see product categories (electronics, fashion, etc.) from all stores combined.
+                            </p>
+                          )}
+                        </div>
+                      </div>
+                    )}
 
                     {!form.watch("isMultiVendor") && (
                       <div className="p-4 border rounded-lg bg-card space-y-3">
