@@ -64,6 +64,7 @@ import RiderEdit from "@/pages/RiderEdit";
 import AdminApplications from "@/pages/AdminApplications";
 import AdminProductEdit from "@/pages/AdminProductEdit";
 import AdminProductCreate from "@/pages/AdminProductCreate";
+import DynamicPage from "@/pages/DynamicPage";
 
 function Router() {
   // Apply branding colors from database settings
@@ -127,6 +128,7 @@ function Router() {
       <Route path="/agent/notifications" component={AgentNotifications} />
       <Route path="/chat" component={ChatPage} />
       <Route path="/track" component={OrderTracking} />
+      <Route path="/page/:slug" component={DynamicPage} />
       <Route component={NotFound} />
     </Switch>
   );
