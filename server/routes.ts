@@ -643,7 +643,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         // Delete user's orders (as buyer or rider)
         await tx.delete(orders).where(
           or(
-            eq(orders.userId, req.params.id),
+            eq(orders.buyerId, req.params.id),
             eq(orders.riderId, req.params.id)
           )
         );

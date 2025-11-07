@@ -25,13 +25,26 @@ interface Category {
   slug: string;
 }
 
+interface Product {
+  id: string;
+  category: string;
+}
+
 export default function Footer() {
   const { data: settings } = useQuery<PlatformSettings>({
     queryKey: ["/api/settings"],
   });
-  const { data: categories = [] } = useQuery<Category[]>({
-    queryKey: ["/api/categories"],
+  
+  // Fetch products to get categories dynamically (filtered by primary store in single-store mode)
+  const { data: products = [] } = useQuery<Product[]>({
+    queryKey: ["/api/products"],
   });
+  
+  // Get unique categories from products for single-store mode
+  const productCategories = Array.from(new Set(products.map(p => p.category)))
+    .filter(Boolean)
+    .slice(0, 3);
+  
   const { isAuthenticated } = useAuth();
 
   const openSocialLink = (url?: string) => {
@@ -128,9 +141,23 @@ export default function Footer() {
                 <h4 className="font-semibold mb-4">Shop</h4>
                 <ul className="space-y-2 text-muted-foreground">
                   <li><Link href="/" className="hover:text-foreground transition-colors" data-testid="link-home">Home</Link></li>
-                  <li><Link href="/category/abayas" className="hover:text-foreground transition-colors" data-testid="link-abayas">Abayas</Link></li>
-                  <li><Link href="/category/hijabs" className="hover:text-foreground transition-colors" data-testid="link-hijabs">Hijabs</Link></li>
-                  <li><Link href="/category/dresses" className="hover:text-foreground transition-colors" data-testid="link-dresses">Dresses</Link></li>
+                  {productCategories.length > 0 ? (
+                    productCategories.map((category) => (
+                      <li key={category}>
+                        <Link 
+                          href={`/category/${category.toLowerCase()}`} 
+                          className="hover:text-foreground transition-colors capitalize" 
+                          data-testid={`link-${category.toLowerCase()}`}
+                        >
+                          {category}
+                        </Link>
+                      </li>
+                    ))
+                  ) : (
+                    <>
+                      <li><Link href="/products" className="hover:text-foreground transition-colors" data-testid="link-all-products">All Products</Link></li>
+                    </>
+                  )}
                 </ul>
               </>
             )}
