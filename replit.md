@@ -6,6 +6,11 @@ KiyuMart is an e-commerce platform specializing in modest Islamic women's fashio
 
 ## Recent Changes (November 2025)
 
+### Admin Application Management Enhancements (November 7, 2025)
+- **Pending Application Filtering**: AdminSellers and AdminRiders pages now filter to show only pending applications (`isApproved === false`), automatically removing approved/rejected applications from the list. This provides a clean workflow where admins focus only on applications requiring action.
+- **Smart Notification Redirects**: Clicking notifications now intelligently redirects admins to the relevant page based on notification type and metadata (product pages, order details, user management, messages), with automatic mark-as-read. Preview dialog only shown for notifications without redirect metadata.
+- **Enhanced Store Banner Upload**: Admin create seller form now uses MediaUploadInput component for store banner images, supporting both file upload to Cloudinary and direct URL entry, replacing the basic URL input field.
+
 ### Store Creation & Product Linking (November 7, 2025)
 - **Automatic Store Creation on Seller Approval**: Refactored seller approval workflow to create stores BEFORE setting user approval status, ensuring atomicity. If store creation fails, seller remains unapproved and admin can safely retry.
 - **Product Auto-Linking**: Products created by sellers now automatically link to their store. System fetches seller's store and sets storeId, preventing orphaned products.
