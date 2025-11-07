@@ -11,7 +11,7 @@ import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Loader2, Search, User, Edit, Plus, Bike, ArrowLeft, CheckCircle, XCircle, ShieldCheck, Clock, Eye, CreditCard, MapPin } from "lucide-react";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useForm } from "react-hook-form";
@@ -484,59 +484,62 @@ function ApproveRejectDialog({ riderData }: { riderData: Rider }) {
   return (
     <>
       {!riderData.isApproved && riderData.isActive && (
-        <div className="flex gap-1">
+        <>
           <ViewApplicationDialog riderData={riderData} />
-          <Button 
-            variant="default" 
-            size="sm"
-            onClick={() => handleAction('approve')}
-            data-testid={`button-approve-${riderData.id}`}
-            className="bg-green-600 hover:bg-green-700"
-          >
-            <CheckCircle className="h-3 w-3 mr-1" />
-            Approve
-          </Button>
-          <Button 
-            variant="destructive" 
-            size="sm"
-            onClick={() => handleAction('reject')}
-            data-testid={`button-reject-${riderData.id}`}
-          >
-            <XCircle className="h-3 w-3 mr-1" />
-            Reject
-          </Button>
-        </div>
+          <AlertDialog open={open} onOpenChange={setOpen}>
+            <AlertDialogTrigger asChild>
+              <Button 
+                variant="default" 
+                size="sm"
+                onClick={() => setAction('approve')}
+                data-testid={`button-approve-${riderData.id}`}
+                className="bg-green-600 hover:bg-green-700"
+              >
+                <CheckCircle className="h-3 w-3 mr-1" />
+                Approve
+              </Button>
+            </AlertDialogTrigger>
+            <AlertDialogTrigger asChild>
+              <Button 
+                variant="destructive" 
+                size="sm"
+                onClick={() => setAction('reject')}
+                data-testid={`button-reject-${riderData.id}`}
+              >
+                <XCircle className="h-3 w-3 mr-1" />
+                Reject
+              </Button>
+            </AlertDialogTrigger>
+            <AlertDialogContent>
+              <AlertDialogHeader>
+                <AlertDialogTitle>
+                  {action === 'approve' ? 'Approve' : 'Reject'} Rider Application?
+                </AlertDialogTitle>
+                <AlertDialogDescription>
+                  {action === 'approve' 
+                    ? `Are you sure you want to approve ${riderData.name || riderData.username}'s application? This will allow them to start accepting deliveries.`
+                    : `Are you sure you want to reject ${riderData.name || riderData.username}'s application? This will deactivate their account.`
+                  }
+                </AlertDialogDescription>
+              </AlertDialogHeader>
+              <AlertDialogFooter>
+                <AlertDialogCancel data-testid="button-cancel-action">Cancel</AlertDialogCancel>
+                <AlertDialogAction
+                  onClick={confirmAction}
+                  disabled={isPending}
+                  data-testid="button-confirm-action"
+                  className={action === 'reject' ? 'bg-destructive hover:bg-destructive/90' : ''}
+                >
+                  {isPending && (
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  )}
+                  {action === 'approve' ? 'Approve' : 'Reject'}
+                </AlertDialogAction>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
+        </>
       )}
-      
-      <AlertDialog open={open} onOpenChange={setOpen}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>
-              {action === 'approve' ? 'Approve' : 'Reject'} Rider Application?
-            </AlertDialogTitle>
-            <AlertDialogDescription>
-              {action === 'approve' 
-                ? `Are you sure you want to approve ${riderData.name || riderData.username}'s application? This will allow them to start accepting deliveries.`
-                : `Are you sure you want to reject ${riderData.name || riderData.username}'s application? This will deactivate their account.`
-              }
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel data-testid="button-cancel-action">Cancel</AlertDialogCancel>
-            <AlertDialogAction
-              onClick={confirmAction}
-              disabled={isPending}
-              data-testid="button-confirm-action"
-              className={action === 'reject' ? 'bg-destructive hover:bg-destructive/90' : ''}
-            >
-              {isPending && (
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-              )}
-              {action === 'approve' ? 'Approve' : 'Reject'}
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
     </>
   );
 }
