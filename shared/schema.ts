@@ -15,6 +15,7 @@ export const mediaTypeEnum = pgEnum("media_type", ["image", "video"]);
 export const deliveryAssignmentStatusEnum = pgEnum("delivery_assignment_status", ["assigned", "en_route", "delivered", "cancelled"]);
 export const mediaCategoryEnum = pgEnum("media_category", ["banner", "category", "logo", "product", "general"]);
 export const storeTypeEnum = pgEnum("store_type", ["clothing", "electronics", "food_beverages", "beauty_cosmetics", "home_garden", "sports_fitness", "books_media", "toys_games", "automotive", "health_wellness"]);
+export const applicationStatusEnum = pgEnum("application_status", ["pending", "approved", "rejected"]);
 
 export const users = pgTable("users", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
@@ -25,6 +26,8 @@ export const users = pgTable("users", {
   phone: text("phone"),
   isActive: boolean("is_active").default(true),
   isApproved: boolean("is_approved").default(false),
+  applicationStatus: applicationStatusEnum("application_status").default("pending"),
+  rejectionReason: text("rejection_reason"),
   profileImage: text("profile_image"),
   ghanaCardFront: text("ghana_card_front"),
   ghanaCardBack: text("ghana_card_back"),
@@ -43,6 +46,7 @@ export const users = pgTable("users", {
   roleIdx: index("users_role_idx").on(table.role),
   isActiveIdx: index("users_is_active_idx").on(table.isActive),
   isApprovedIdx: index("users_is_approved_idx").on(table.isApproved),
+  applicationStatusIdx: index("users_application_status_idx").on(table.applicationStatus),
 }));
 
 export const adminPermissions = pgTable("admin_permissions", {

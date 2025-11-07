@@ -445,10 +445,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       // Now approve the user (store creation succeeded or not needed)
-      const approvedUser = await storage.updateUser(req.params.id, { isApproved: true });
+      const approvedUser = await storage.updateUser(req.params.id, { 
+        isApproved: true,
+        applicationStatus: "approved" as any,
+        rejectionReason: null // Clear any previous rejection reason
+      });
       if (!approvedUser) {
         return res.status(404).json({ error: "User not found" });
       }
+      
+      // Send approval notification
+      await storage.createNotification({
+        userId: approvedUser.id,
+        type: "system",
+        title: `${user.role === "seller" ? "Seller" : "Rider"} Application Approved`,
+        message: `Congratulations! Your ${user.role} application has been approved. You can now access your dashboard and start ${user.role === "seller" ? "selling products" : "accepting deliveries"}.`
+      });
       
       const { password, ...userWithoutPassword } = approvedUser;
       res.json(userWithoutPassword);
@@ -459,6 +471,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.patch("/api/users/:id/reject", requireAuth, requireRole("admin", "super_admin"), async (req, res) => {
     try {
+      const { reason } = req.body;
       const user = await storage.getUser(req.params.id);
       if (!user) {
         return res.status(404).json({ error: "User not found" });
@@ -471,15 +484,27 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
       }
       
-      // Deactivate and unapprove the user
+      // Mark as rejected but keep active so user can see rejection and reapply
       const rejectedUser = await storage.updateUser(req.params.id, { 
         isApproved: false,
-        isActive: false 
+        isActive: true, // Explicitly keep account active
+        applicationStatus: "rejected" as any,
+        rejectionReason: reason || null
       });
       
       if (!rejectedUser) {
         return res.status(404).json({ error: "User not found" });
       }
+      
+      // Send rejection notification
+      await storage.createNotification({
+        userId: rejectedUser.id,
+        type: "system",
+        title: `${user.role === "seller" ? "Seller" : "Rider"} Application Rejected`,
+        message: reason 
+          ? `Unfortunately, your ${user.role} application has been rejected. Reason: ${reason}` 
+          : `Unfortunately, your ${user.role} application has been rejected. Please contact support for more information.`
+      });
       
       console.log(`User ${user.id} (${user.role}) pending application rejected by admin`);
       const { password, ...userWithoutPassword } = rejectedUser;
