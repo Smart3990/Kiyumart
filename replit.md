@@ -3,8 +3,11 @@
 ## Recent Changes (November 7, 2025)
 
 ### Latest Updates
-- **Real-time Currency Conversion**: Integrated live exchange rate fetching in LanguageContext with React Query, fetching rates from `/api/currency/rates` endpoint (using exchangerate.host API). Implemented `formatPrice()` and `convertPrice()` helpers that automatically convert prices from base currency (GHS) to selected currency. Updated ProductCard, Cart, and CartPopover components to use `formatPrice()` for automatic currency conversion. Rates are cached for 1 hour with automatic hourly refresh.
-- **Test Credentials Standardization**: Updated all test credentials across TEST_ACCOUNTS.md, TEST_CREDENTIALS.md, and TESTING.md to follow consistent `usertype@kiyumart.com/usertype123` pattern (admin@kiyumart.com/admin123, seller@kiyumart.com/seller123, buyer@kiyumart.com/buyer123, rider@kiyumart.com/rider123).
+- **Currency API Fix**: Fixed critical currency conversion error by switching API from `api.frankfurter.dev` (404 errors) to `api.frankfurter.app`. Currency rates now load successfully with live exchange rates for GHS, USD, NGN, EUR, GBP, XOF, ZAR, and KES currencies.
+- **Enhanced Role Navigation**: Updated Header component to show dashboard icons for admin, super_admin, and agent roles with proper routing. All privileged roles now have quick access to their dashboards from the header.
+- **Super Admin Implementation**: Created super_admin role with elevated permissions and test account (super_admin@kiyumart.com/super_admin123). Updated all test credentials documentation to include 6 roles with standardized credentials pattern.
+- **Welcome Text Update**: Changed AuthPage welcome message from "Your Fashion Marketplace" to "Quality meet affordability" to better reflect platform value proposition.
+- **Real-time Currency Conversion**: Integrated live exchange rate fetching in LanguageContext with React Query, fetching rates from `/api/currency/rates` endpoint (using api.frankfurter.app). Implemented `formatPrice()` and `convertPrice()` helpers that automatically convert prices from base currency (GHS) to selected currency. Updated ProductCard, Cart, and CartPopover components to use `formatPrice()` for automatic currency conversion. Rates are cached for 1 hour with automatic hourly refresh.
 
 ### Bug Fixes
 - **Image Upload Fix**: Created public upload endpoint (`/api/upload/public`) for unauthenticated Ghana card and profile image uploads during seller/rider registration
@@ -38,7 +41,7 @@ The database schema includes tables for core commerce functionalities (Users, Pr
 
 -   **Cloudinary**: Media asset management and CDN.
 -   **Paystack**: Payment processing gateway.
--   **exchangerate.host**: Currency conversion API.
+-   **Frankfurter.app**: Currency conversion API for live exchange rates.
 -   **Neon Database**: Serverless PostgreSQL hosting.
 -   **Socket.IO**: Real-time bidirectional communication.
 -   **Drizzle ORM**: Type-safe database operations for PostgreSQL.
