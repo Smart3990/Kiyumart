@@ -1,5 +1,18 @@
 # KiyuMart - Islamic Women's Fashion E-commerce Marketplace
 
+## Recent Changes (November 7, 2025)
+
+### Super Admin Media Library Fix
+- **Fixed Critical 403 Permission Errors**: Resolved all "Unauthorized to access media library" errors preventing super_admin from accessing media library features
+- **Updated Media Library Endpoints**: Modified POST/GET/DELETE /api/media-library and GET /api/assets/images to authorize super_admin role alongside admin role
+- **Fixed Seller Media Filtering**: Updated seller media library filtering to properly show uploads from both admin and super_admin users while maintaining category-specific filtering
+- **All Buttons Working**: Verified all admin and super_admin dashboard navigation buttons work correctly after permission fixes
+
+### Buyer Dashboard Improvements
+- **Removed Duplicate Navigation Cards**: Eliminated redundant My Orders, Wishlist, and Profile cards from buyer dashboard main page (already exist in sidebar)
+- **Smart Payment Redirects**: Recent orders now intelligently redirect - unpaid orders go to `/payment/:orderId` with "Click to pay" indicator, paid orders go to tracking
+- **Fixed Navigation Routes**: Updated DashboardLayout to use global routes for buyer (/notifications, /settings) while preserving role-specific routes for other roles
+
 ## Overview
 
 KiyuMart is an e-commerce platform specializing in modest Islamic women's fashion, designed to operate as either a single-store or a multi-vendor marketplace. Its core purpose is to provide a comprehensive online destination with functionalities including product and order management, real-time delivery tracking with map visualization, live chat, and Paystack payment integration. The platform aims to offer a diverse and inclusive product range, supported by dynamic category management, extensive admin dashboards for user and product management, and a robust application verification system for sellers and riders.
