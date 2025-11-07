@@ -73,7 +73,7 @@ export default function AdminApplications() {
 
   const approveApplicationMutation = useMutation({
     mutationFn: async ({ userId }: { userId: string }) => {
-      return apiRequest("PATCH", `/api/users/${userId}`, { isApproved: true });
+      return apiRequest("PATCH", `/api/users/${userId}/approve`, {});
     },
     onSuccess: () => {
       toast({
