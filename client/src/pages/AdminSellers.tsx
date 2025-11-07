@@ -620,13 +620,15 @@ function ApproveRejectDialog({ sellerData }: { sellerData: SellerData }) {
     mutationFn: async () => {
       return apiRequest("PATCH", `/api/users/${sellerData.id}/approve`);
     },
-    onSuccess: () => {
+    onSuccess: async () => {
       toast({
         title: "Success",
         description: "Seller application approved successfully",
       });
-      queryClient.invalidateQueries({ queryKey: ["/api/users"] });
-      queryClient.invalidateQueries({ queryKey: ["/api/stores"] });
+      // Force immediate refetch of users data
+      await queryClient.invalidateQueries({ queryKey: ["/api/users"] });
+      await queryClient.refetchQueries({ queryKey: ["/api/users"] });
+      await queryClient.invalidateQueries({ queryKey: ["/api/stores"] });
       setOpen(false);
       setAction(null);
     },
@@ -644,12 +646,14 @@ function ApproveRejectDialog({ sellerData }: { sellerData: SellerData }) {
     mutationFn: async () => {
       return apiRequest("PATCH", `/api/users/${sellerData.id}/reject`);
     },
-    onSuccess: () => {
+    onSuccess: async () => {
       toast({
         title: "Success",
         description: "Seller application rejected successfully",
       });
-      queryClient.invalidateQueries({ queryKey: ["/api/users"] });
+      // Force immediate refetch of users data
+      await queryClient.invalidateQueries({ queryKey: ["/api/users"] });
+      await queryClient.refetchQueries({ queryKey: ["/api/users"] });
       setOpen(false);
       setAction(null);
     },
