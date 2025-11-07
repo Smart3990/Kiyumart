@@ -766,7 +766,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       // Validate vehicle information based on vehicle type
       if (userData.vehicleInfo) {
-        const { type, plateNumber, license, color } = userData.vehicleInfo;
+        const { type, plateNumber, license, color } = userData.vehicleInfo as { 
+          type?: string; 
+          plateNumber?: string; 
+          license?: string; 
+          color?: string; 
+        };
         
         if (type === "car") {
           if (!plateNumber || !plateNumber.trim()) {
@@ -786,6 +791,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
             return res.status(400).json({ error: "Driver's license is required for motorcycle riders" });
           }
         }
+        
+        // Ensure vehicleInfo has proper string types for database insertion
+        userData.vehicleInfo = {
+          type: type || "",
+          plateNumber: plateNumber || "",
+          license: license || "",
+          color: color || ""
+        };
       }
 
       const hashedPassword = await bcrypt.hash(password, 10);
