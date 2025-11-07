@@ -13,8 +13,10 @@ KiyuMart is an e-commerce platform specializing in modest Islamic women's fashio
 - **Admin Shopping Features**: Verified that admin users can access their personal shopping cart (`/cart`), wishlist (`/wishlist`), and purchase history (`/orders`) through dedicated sidebar menu items ("Shopping Cart", "My Wishlist", "My Purchases") with proper routing in DashboardLayout.
 
 ### Admin Application Management Enhancements (November 7, 2025)
-- **Smart Notification Redirects**: Clicking notifications now intelligently redirects admins to the relevant page based on notification type and metadata (product pages, order details, user management, messages), with automatic mark-as-read. Preview dialog only shown for notifications without redirect metadata.
+- **Smart Notification Redirects**: Clicking notifications now intelligently redirects admins to the relevant page based on notification type and metadata. Product notifications route to `/admin/products/:id/edit`, user notifications to `/admin/users/:id/edit`, and order notifications to `/admin/orders`, all using existing routes. Preview dialog only shown for notifications without redirect metadata.
 - **Enhanced Store Banner Upload**: Admin create seller form now uses MediaUploadInput component for store banner images, supporting both file upload to Cloudinary and direct URL entry, replacing the basic URL input field.
+- **Dual-Tab Rider Management**: AdminRiders page now features tabs for "All Riders" (default view showing all registered riders) and "Pending Applications" (unapproved riders only), matching the AdminSellers pattern. Approved riders remain visible after approval instead of disappearing from the interface.
+- **Soft-Delete User Deactivation**: Changed user deletion from hard delete to soft delete by setting `isActive=false`. This prevents foreign key constraint violations across 18+ related tables (stores, products, orders, cart, notifications, etc.). UI updated from "Delete User" to "Deactivate User" to reflect the safe, reversible nature of the operation.
 
 ### Store Creation & Product Linking (November 7, 2025)
 - **Automatic Store Creation on Seller Approval**: Refactored seller approval workflow to create stores BEFORE setting user approval status, ensuring atomicity. If store creation fails, seller remains unapproved and admin can safely retry.
