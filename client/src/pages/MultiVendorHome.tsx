@@ -4,7 +4,6 @@ import { useLocation } from "wouter";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import MarketplaceBannerCarousel from "@/components/MarketplaceBannerCarousel";
-import SellerCategoryCard from "@/components/SellerCategoryCard";
 import StoreCard from "@/components/StoreCard";
 import CategoryCard from "@/components/CategoryCard";
 import ProductCard from "@/components/ProductCard";
@@ -12,9 +11,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { TrendingUp, Star, ShoppingBag, ChevronRight } from "lucide-react";
-import type { User as BaseUser, Product, PlatformSettings } from "@shared/schema";
-
-type Seller = BaseUser;
+import type { Product, PlatformSettings } from "@shared/schema";
 
 interface Category {
   id: string;
@@ -32,10 +29,6 @@ export default function MultiVendorHome() {
   
   const { data: settings } = useQuery<PlatformSettings>({
     queryKey: ["/api/platform-settings"],
-  });
-
-  const { data: sellers = [], isLoading: sellersLoading } = useQuery<Seller[]>({
-    queryKey: ["/api/homepage/sellers"],
   });
 
   const { data: stores = [], isLoading: storesLoading } = useQuery<Array<{
@@ -68,10 +61,6 @@ export default function MultiVendorHome() {
       return res.json();
     },
   });
-
-  const getSellerProductCount = (sellerId: string) => {
-    return allProducts.filter((p) => p.sellerId === sellerId).length;
-  };
 
   const getCategoryProductCount = (categorySlug: string) => {
     return allProducts.filter((p) => p.category === categorySlug).length;
