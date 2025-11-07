@@ -77,7 +77,7 @@ export default function AdminUsers() {
     onSuccess: () => {
       toast({
         title: "Success",
-        description: "User has been deleted successfully",
+        description: "User has been deactivated successfully",
       });
       queryClient.invalidateQueries({ queryKey: ["/api/users"] });
       setConfirmDeleteUser(null);
@@ -85,7 +85,7 @@ export default function AdminUsers() {
     onError: (error: any) => {
       toast({
         title: "Error",
-        description: error.message || "Failed to delete user",
+        description: error.message || "Failed to deactivate user",
         variant: "destructive",
       });
       setConfirmDeleteUser(null);
@@ -391,9 +391,9 @@ export default function AdminUsers() {
       <AlertDialog open={!!confirmDeleteUser} onOpenChange={(open) => !open && setConfirmDeleteUser(null)}>
         <AlertDialogContent data-testid="dialog-confirm-delete">
           <AlertDialogHeader>
-            <AlertDialogTitle>Delete User</AlertDialogTitle>
+            <AlertDialogTitle>Deactivate User</AlertDialogTitle>
             <AlertDialogDescription>
-              Are you sure you want to permanently delete {confirmDeleteUser?.name}? This action cannot be undone and will remove all their data from the platform.
+              Are you sure you want to deactivate {confirmDeleteUser?.name}? This will prevent them from accessing their account. You can reactivate them later if needed.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
@@ -406,7 +406,7 @@ export default function AdminUsers() {
               {deleteUserMutation.isPending && (
                 <Loader2 className="mr-2 h-4 w-4 animate-spin" />
               )}
-              Delete User
+              Deactivate User
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

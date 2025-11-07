@@ -542,12 +542,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.delete("/api/users/:id", requireAuth, requireRole("admin"), async (req, res) => {
     try {
-      const deleted = await storage.deleteUser(req.params.id);
-      if (!deleted) {
+      // Soft delete: deactivate user instead of hard delete to preserve referential integrity
+      const user = await storage.updateUser(req.params.id, { isActive: false });
+      if (!user) {
         return res.status(404).json({ error: "User not found" });
       }
-      res.json({ success: true });
+      res.json({ success: true, message: "User deactivated successfully" });
     } catch (error: any) {
+      console.error("Error deactivating user:", error);
       res.status(400).json({ error: error.message });
     }
   });

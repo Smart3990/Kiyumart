@@ -8,7 +8,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Loader2, Search, User, Edit, Plus, Bike, ArrowLeft } from "lucide-react";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Loader2, Search, User, Edit, Plus, Bike, ArrowLeft, CheckCircle, XCircle, ShieldCheck, Clock } from "lucide-react";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -264,6 +265,7 @@ function AddRiderDialog() {
 
 export default function AdminRiders() {
   const [searchQuery, setSearchQuery] = useState("");
+  const [activeTab, setActiveTab] = useState("all");
   const [, navigate] = useLocation();
   const { user, isAuthenticated, isLoading: authLoading } = useAuth();
   const { toast } = useToast();
@@ -283,10 +285,16 @@ export default function AdminRiders() {
     enabled: isAuthenticated && user?.role === "admin",
   });
 
-  // Filter to show only pending applications (unapproved riders)
+  // All riders
+  const allRiders = riders;
+  
+  // Pending applications (unapproved riders)
   const pendingRiders = riders.filter(r => r.isApproved === false);
+  
+  // Get the appropriate rider list based on active tab
+  const displayedRiders = activeTab === "pending" ? pendingRiders : allRiders;
 
-  const filteredRiders = pendingRiders.filter(r => 
+  const filteredRiders = displayedRiders.filter(r => 
     (r.username?.toLowerCase() || '').includes(searchQuery.toLowerCase()) ||
     (r.email?.toLowerCase() || '').includes(searchQuery.toLowerCase())
   );
@@ -318,26 +326,36 @@ export default function AdminRiders() {
             <AddRiderDialog />
           </div>
 
-          <div className="mb-6">
-            <div className="relative">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-              <Input
-                placeholder="Search riders..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="pl-10"
-                data-testid="input-search-riders"
-              />
-            </div>
-          </div>
+          <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+            <TabsList className="mb-6">
+              <TabsTrigger value="all" data-testid="tab-all-riders">
+                All Riders ({allRiders.length})
+              </TabsTrigger>
+              <TabsTrigger value="pending" data-testid="tab-pending-riders">
+                Pending Applications ({pendingRiders.length})
+              </TabsTrigger>
+            </TabsList>
 
-          {isLoading ? (
-            <div className="flex justify-center py-12">
-              <Loader2 className="h-8 w-8 animate-spin text-primary" />
+            <div className="mb-6">
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                <Input
+                  placeholder="Search riders..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="pl-10"
+                  data-testid="input-search-riders"
+                />
+              </div>
             </div>
-          ) : (
-            <div className="grid gap-4">
-              {filteredRiders.map((rider) => (
+
+            {isLoading ? (
+              <div className="flex justify-center py-12">
+                <Loader2 className="h-8 w-8 animate-spin text-primary" />
+              </div>
+            ) : (
+              <div className="grid gap-4">
+                {filteredRiders.map((rider) => (
                 <Card key={rider.id} className="p-4" data-testid={`card-rider-${rider.id}`}>
                   <div className="flex items-center gap-4">
                     <div className="bg-orange-500/10 p-3 rounded-full">
@@ -347,19 +365,38 @@ export default function AdminRiders() {
                       <h3 className="font-semibold text-lg" data-testid={`text-username-${rider.id}`}>
                         {rider.username}
                       </h3>
-                      <div className="flex items-center gap-3 mt-1">
-                        <span className="text-sm text-muted-foreground" data-testid={`text-email-${rider.id}`}>
-                          {rider.email}
-                        </span>
+                      <div className="flex items-center gap-2 mt-1 text-sm text-muted-foreground">
+                        <span data-testid={`text-email-${rider.id}`}>{rider.email}</span>
                         {rider.phone && (
-                          <span className="text-sm text-muted-foreground" data-testid={`text-phone-${rider.id}`}>
-                            {rider.phone}
-                          </span>
+                          <>
+                            <span>•</span>
+                            <span data-testid={`text-phone-${rider.id}`}>{rider.phone}</span>
+                          </>
                         )}
+                      </div>
+                      <div className="flex items-center gap-2 mt-2">
                         {rider.isActive ? (
-                          <Badge className="bg-green-500" data-testid={`badge-status-${rider.id}`}>Active</Badge>
+                          <Badge className="bg-green-500" data-testid={`badge-status-${rider.id}`}>
+                            <CheckCircle className="h-3 w-3 mr-1" />
+                            Active
+                          </Badge>
                         ) : (
-                          <Badge variant="secondary" data-testid={`badge-status-${rider.id}`}>Inactive</Badge>
+                          <Badge variant="destructive" data-testid={`badge-status-${rider.id}`}>
+                            <XCircle className="h-3 w-3 mr-1" />
+                            Inactive
+                          </Badge>
+                        )}
+                        
+                        {rider.isApproved ? (
+                          <Badge className="bg-blue-500" data-testid={`badge-approval-${rider.id}`}>
+                            <ShieldCheck className="h-3 w-3 mr-1" />
+                            Approved
+                          </Badge>
+                        ) : (
+                          <Badge variant="secondary" data-testid={`badge-approval-${rider.id}`}>
+                            <Clock className="h-3 w-3 mr-1" />
+                            Pending Approval
+                          </Badge>
                         )}
                       </div>
                     </div>
@@ -377,16 +414,22 @@ export default function AdminRiders() {
                 </Card>
               ))}
               
-              {filteredRiders.length === 0 && (
-                <div className="text-center py-12">
-                  <p className="text-muted-foreground" data-testid="text-no-riders">
-                    No riders found
-                  </p>
-                </div>
-              )}
-            </div>
-          )}
-        </div>
+                {filteredRiders.length === 0 && (
+                  <div className="text-center py-12">
+                    <p className="text-muted-foreground" data-testid="text-no-riders">
+                      {searchQuery 
+                        ? "No riders found matching your search" 
+                        : activeTab === "pending"
+                          ? "No pending applications"
+                          : "No riders registered yet"
+                      }
+                    </p>
+                  </div>
+                )}
+              </div>
+            )}
+          </Tabs>
+      </div>
     </DashboardLayout>
   );
 }

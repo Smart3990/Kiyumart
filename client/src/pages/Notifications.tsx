@@ -85,23 +85,24 @@ export default function Notifications() {
     if (metadata) {
       switch (notification.type) {
         case "product":
-          if (metadata.productId) {
-            navigate(`${rolePrefix}/products/${metadata.productId}`);
+          if (metadata.productId && user?.role === "admin") {
+            // Admin: go to product edit page
+            navigate(`${rolePrefix}/products/${metadata.productId}/edit`);
           } else {
+            // Others: go to products list
             navigate(`${rolePrefix}/products`);
           }
           break;
         case "order":
-          if (metadata.orderId) {
-            navigate(`${rolePrefix}/orders/${metadata.orderId}`);
-          } else {
-            navigate(`${rolePrefix}/orders`);
-          }
+          // Orders don't have detail pages, just go to orders list
+          navigate(`${rolePrefix}/orders`);
           break;
         case "user":
-          if (metadata.userId) {
-            navigate(`${rolePrefix}/users/${metadata.userId}`);
+          if (metadata.userId && user?.role === "admin") {
+            // Admin: go to user edit page
+            navigate(`${rolePrefix}/users/${metadata.userId}/edit`);
           } else if (user?.role === "admin") {
+            // Fallback to sellers page
             navigate("/admin/sellers");
           }
           break;
