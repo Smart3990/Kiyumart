@@ -37,6 +37,10 @@ export default function Home() {
     }
   ]);
 
+  const { data: platformSettings } = useQuery<{isMultiVendor: boolean; primaryStoreId?: string}>({
+    queryKey: ["/api/platform-settings"],
+  });
+
   const { data: dbCategories = [] } = useQuery<Array<{id: string; name: string; slug: string; image: string; isActive: boolean}>>({
     queryKey: ["/api/categories"],
     queryFn: async () => {
@@ -45,13 +49,20 @@ export default function Home() {
     },
   });
 
-  const { data: dbProducts = [] } = useQuery<Array<{id: string; category: string}>>({
+  const { data: allDbProducts = [] } = useQuery<Array<{id: string; category: string; storeId?: string}>>({
     queryKey: ["/api/products"],
     queryFn: async () => {
       const res = await fetch("/api/products?isActive=true");
       return res.json();
     },
   });
+
+  // Filter products by primary store in single-store mode
+  const dbProducts = platformSettings?.isMultiVendor 
+    ? allDbProducts 
+    : platformSettings?.primaryStoreId
+      ? allDbProducts.filter(p => p.storeId === platformSettings.primaryStoreId)
+      : allDbProducts;
 
   const bannerSlides = [
     {

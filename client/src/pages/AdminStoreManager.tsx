@@ -40,6 +40,7 @@ const storeSettingsSchema = z.object({
   defaultCurrency: z.enum(["GHS", "EUR", "USD"]),
   shippingZonesEnabled: z.boolean().default(true),
   isMultiVendor: z.boolean(),
+  primaryStoreId: z.string().optional(),
   footerDescription: z.string().min(1, "Store description is required"),
 });
 
@@ -59,6 +60,11 @@ export default function AdminStoreManager() {
 
   const { data: settings, isLoading } = useQuery<PlatformSettings>({
     queryKey: ["/api/settings"],
+    enabled: isAuthenticated && user?.role === "admin",
+  });
+
+  const { data: stores = [] } = useQuery<Array<{id: string; name: string; isActive: boolean; isApproved: boolean}>>({
+    queryKey: ["/api/stores"],
     enabled: isAuthenticated && user?.role === "admin",
   });
 
@@ -84,6 +90,7 @@ export default function AdminStoreManager() {
       defaultCurrency: (settings.defaultCurrency as "GHS" | "EUR" | "USD") || "GHS",
       shippingZonesEnabled: true,
       isMultiVendor: settings.isMultiVendor || false,
+      primaryStoreId: settings.primaryStoreId || "",
       footerDescription: settings.footerDescription || "",
     } : undefined,
   });
@@ -110,7 +117,12 @@ export default function AdminStoreManager() {
   });
 
   const onSubmit = (data: StoreSettingsFormData) => {
-    updateSettingsMutation.mutate(data);
+    // Convert empty string to undefined for primaryStoreId
+    const cleanedData = {
+      ...data,
+      primaryStoreId: data.primaryStoreId && data.primaryStoreId !== "" ? data.primaryStoreId : undefined,
+    };
+    updateSettingsMutation.mutate(cleanedData);
   };
 
   const handleModeChange = (checked: boolean) => {
@@ -478,6 +490,43 @@ export default function AdminStoreManager() {
                         data-testid="switch-multi-vendor"
                       />
                     </div>
+
+                    {!form.watch("isMultiVendor") && (
+                      <div className="p-4 border rounded-lg bg-card space-y-3">
+                        <div className="space-y-1">
+                          <Label htmlFor="primaryStoreId">Primary Store</Label>
+                          <p className="text-sm text-muted-foreground">
+                            Select which store's products to display on your single-store homepage
+                          </p>
+                        </div>
+                        <Select
+                          value={form.watch("primaryStoreId") || ""}
+                          onValueChange={(value) => form.setValue("primaryStoreId", value)}
+                        >
+                          <SelectTrigger id="primaryStoreId" data-testid="select-primary-store">
+                            <SelectValue placeholder="Select a store..." />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {stores.filter(s => s.isActive && s.isApproved).length === 0 ? (
+                              <SelectItem value="none" disabled>No approved stores available</SelectItem>
+                            ) : (
+                              stores
+                                .filter(s => s.isActive && s.isApproved)
+                                .map((store) => (
+                                  <SelectItem key={store.id} value={store.id}>
+                                    {store.name}
+                                  </SelectItem>
+                                ))
+                            )}
+                          </SelectContent>
+                        </Select>
+                        {!form.watch("primaryStoreId") && stores.filter(s => s.isActive && s.isApproved).length > 0 && (
+                          <p className="text-sm text-amber-600">
+                            ⚠️ No primary store selected. All products from all stores will be shown until you select one.
+                          </p>
+                        )}
+                      </div>
+                    )}
 
                     <div className="grid gap-4 md:grid-cols-2">
                       <Card className="border-2">

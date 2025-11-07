@@ -31,6 +31,7 @@ interface Product {
   ratings: string;
   totalRatings: number;
   category: string;
+  storeId?: string;
 }
 
 interface CartItem {
@@ -59,9 +60,16 @@ export default function HomeConnected() {
     queryKey: ["/api/platform-settings"],
   });
 
-  const { data: products = [], isLoading: productsLoading } = useQuery<Product[]>({
+  const { data: allProducts = [], isLoading: productsLoading } = useQuery<Product[]>({
     queryKey: ["/api/products"],
   });
+
+  // Filter products by primary store in single-store mode
+  const products = platformSettings?.isMultiVendor 
+    ? allProducts 
+    : platformSettings?.primaryStoreId
+      ? allProducts.filter(p => p.storeId === platformSettings.primaryStoreId)
+      : allProducts;
 
   const { data: cartItems = [], isLoading: cartLoading } = useQuery<CartItem[]>({
     queryKey: ["/api/cart"],
