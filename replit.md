@@ -6,6 +6,12 @@ KiyuMart is an e-commerce platform specializing in modest Islamic women's fashio
 
 ## Recent Changes (November 2025)
 
+### User Management & Application Verification (November 7, 2025)
+- **Transactional Hard Delete**: Implemented atomic hard delete for users with complete cascade handling. All related data (chat messages, cart items, wishlist items, notifications, products, stores, orders) is deleted within a single database transaction using `db.transaction()`. If any delete operation fails, the entire transaction rolls back, preventing partial deletions and maintaining data integrity. UI updated from "Deactivate User" to "Delete User" with clear warning about permanent removal.
+- **Ghana Card Display in Application Preview**: Created `ViewApplicationDialog` component that displays comprehensive seller/rider application details including profile photo, personal information, Ghana Card front/back verification images in a responsive grid layout, and store/business information. "View Application" button appears for all pending seller/rider applications in admin management pages.
+- **Enhanced Rejection Workflow**: Application rejection now properly invalidates TanStack Query cache using `queryClient.invalidateQueries(["/api/users"])`, ensuring rejected applications immediately disappear from the pending applications list without requiring manual page refresh.
+- **Verified Shopping Pages**: Confirmed that cart (`/cart`), wishlist (`/wishlist`), and order history (`/orders`) pages are fully functional with proper routing in App.tsx and accessible to all user roles including admins.
+
 ### Admin Seller Management Improvements (November 7, 2025)
 - **Dual-View Seller Management**: AdminSellers page now features tabs for "All Sellers" (default view showing all registered sellers) and "Pending Applications" (unapproved sellers only). This fixes the issue where admin-created sellers (auto-approved with `isApproved=true`) were not visible in the management interface. Admins can now view the complete seller roster while still having dedicated access to pending applications requiring approval.
 - **Quick Store View Button**: Each seller card in AdminSellers page now includes a "View Store" button that directly navigates to the seller's store page (`/seller/{storeId}`). The button only appears for sellers who have an associated store, using the sellerToStoreMap lookup for efficient store ID retrieval.
