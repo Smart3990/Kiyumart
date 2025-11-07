@@ -2164,7 +2164,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/settings", async (req, res) => {
     try {
       const settings = await storage.getPlatformSettings();
-      res.json(settings);
+      // Mask sensitive credentials in the response
+      const sanitizedSettings = {
+        ...settings,
+        cloudinaryApiSecret: settings.cloudinaryApiSecret ? "••••••••••••••••" : "",
+      };
+      res.json(sanitizedSettings);
     } catch (error: any) {
       res.status(400).json({ error: error.message });
     }
@@ -2174,7 +2179,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/platform-settings", async (req, res) => {
     try {
       const settings = await storage.getPlatformSettings();
-      res.json(settings);
+      // Mask sensitive credentials in the response
+      const sanitizedSettings = {
+        ...settings,
+        cloudinaryApiSecret: settings.cloudinaryApiSecret ? "••••••••••••••••" : "",
+      };
+      res.json(sanitizedSettings);
     } catch (error: any) {
       res.status(400).json({ error: error.message });
     }
@@ -2183,7 +2193,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.patch("/api/settings", requireAuth, requireRole("admin"), async (req, res) => {
     try {
       const previousSettings = await storage.getPlatformSettings();
-      const settings = await storage.updatePlatformSettings(req.body);
+      
+      // Handle cloudinaryApiSecret: preserve existing if placeholder or empty is sent
+      const updateData = { ...req.body };
+      if (!updateData.cloudinaryApiSecret || updateData.cloudinaryApiSecret === "••••••••••••••••") {
+        updateData.cloudinaryApiSecret = previousSettings.cloudinaryApiSecret;
+      }
+      
+      const settings = await storage.updatePlatformSettings(updateData);
       
       // Handle automatic store updates when multi-vendor mode is toggled
       if (previousSettings.isMultiVendor !== settings.isMultiVendor) {

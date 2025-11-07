@@ -100,13 +100,7 @@ export default function RiderEdit() {
         },
         nationalIdCard: data.nationalIdCard,
       };
-      return apiRequest(`/api/users/${riderId}`, {
-        method: "PATCH",
-        body: JSON.stringify(updateData),
-        headers: {
-          "Content-Type": "application/json",
-        },
-      });
+      return apiRequest("PATCH", `/api/users/${riderId}`, updateData);
     },
     onSuccess: () => {
       toast({

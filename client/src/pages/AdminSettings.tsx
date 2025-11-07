@@ -15,7 +15,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Loader2, Save, Settings2, CreditCard, Mail, Palette, DollarSign, Image as ImageIcon, ArrowLeft } from "lucide-react";
+import { Loader2, Save, Settings2, CreditCard, Mail, Palette, DollarSign, Image as ImageIcon, ArrowLeft, Cloud } from "lucide-react";
 import {
   Select,
   SelectContent,
@@ -36,6 +36,9 @@ const settingsSchema = z.object({
   paystackPublicKey: z.string().optional(),
   paystackSecretKey: z.string().optional(),
   processingFeePercent: z.string().min(0),
+  cloudinaryCloudName: z.string().optional(),
+  cloudinaryApiKey: z.string().optional(),
+  cloudinaryApiSecret: z.string().optional(),
   contactPhone: z.string().min(1, "Contact phone is required"),
   contactEmail: z.string().email("Must be a valid email"),
   contactAddress: z.string().min(1, "Contact address is required"),
@@ -101,6 +104,9 @@ export default function AdminSettings() {
       paystackPublicKey: settings.paystackPublicKey || "",
       paystackSecretKey: settings.paystackSecretKey || "",
       processingFeePercent: settings.processingFeePercent,
+      cloudinaryCloudName: (settings as any).cloudinaryCloudName || "",
+      cloudinaryApiKey: (settings as any).cloudinaryApiKey || "",
+      cloudinaryApiSecret: (settings as any).cloudinaryApiSecret || "",
       contactPhone: settings.contactPhone,
       contactEmail: settings.contactEmail,
       contactAddress: settings.contactAddress,
@@ -176,7 +182,7 @@ export default function AdminSettings() {
 
           <form onSubmit={form.handleSubmit(onSubmit)}>
           <Tabs value={activeTab} onValueChange={setActiveTab}>
-            <TabsList className="grid w-full grid-cols-6 mb-6">
+            <TabsList className="grid w-full grid-cols-7 mb-6">
               <TabsTrigger value="general" data-testid="tab-general">
                 <Settings2 className="h-4 w-4 mr-2" />
                 General
@@ -184,6 +190,10 @@ export default function AdminSettings() {
               <TabsTrigger value="payments" data-testid="tab-payments">
                 <CreditCard className="h-4 w-4 mr-2" />
                 Payments
+              </TabsTrigger>
+              <TabsTrigger value="storage" data-testid="tab-storage">
+                <Cloud className="h-4 w-4 mr-2" />
+                Storage
               </TabsTrigger>
               <TabsTrigger value="contact" data-testid="tab-contact">
                 <Mail className="h-4 w-4 mr-2" />
@@ -399,6 +409,9 @@ export default function AdminSettings() {
                 </CardContent>
               </Card>
 
+            </TabsContent>
+
+            <TabsContent value="storage" className="space-y-4">
               <Card>
                 <CardHeader>
                   <CardTitle>Cloudinary Storage</CardTitle>
@@ -407,33 +420,58 @@ export default function AdminSettings() {
                   </CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-4">
-                  <div className="bg-blue-50 dark:bg-blue-950 border border-blue-200 dark:border-blue-800 rounded-lg p-4">
+                  <div className="bg-blue-50 dark:bg-blue-950 border border-blue-200 dark:border-blue-800 rounded-lg p-4 mb-4">
                     <div className="flex items-start gap-3">
                       <ImageIcon className="h-5 w-5 text-blue-600 dark:text-blue-400 mt-0.5" />
                       <div className="flex-1">
                         <h4 className="text-sm font-medium text-blue-900 dark:text-blue-100 mb-1">
                           Cloudinary Configuration
                         </h4>
-                        <p className="text-sm text-blue-700 dark:text-blue-300 mb-3">
+                        <p className="text-sm text-blue-700 dark:text-blue-300">
                           For security reasons, Cloudinary API credentials must be configured using environment variables (Replit Secrets), not stored in the database.
-                        </p>
-                        <div className="bg-white dark:bg-gray-900 rounded border border-blue-200 dark:border-blue-700 p-3 mb-3">
-                          <p className="text-xs font-mono text-gray-700 dark:text-gray-300 mb-2">
-                            Required environment variables:
-                          </p>
-                          <div className="space-y-1 text-xs font-mono text-gray-600 dark:text-gray-400">
-                            <div>• CLOUDINARY_CLOUD_NAME</div>
-                            <div>• CLOUDINARY_API_KEY</div>
-                            <div>• CLOUDINARY_API_SECRET</div>
-                          </div>
-                        </div>
-                        <p className="text-xs text-blue-600 dark:text-blue-400">
-                          {typeof window !== 'undefined' && (window as any).REPLIT_ENV 
-                            ? '✓ Credentials are configured via Replit Secrets' 
-                            : 'Configure these in the Secrets tab (Tools → Secrets)'}
                         </p>
                       </div>
                     </div>
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="cloudinaryCloudName">Cloud Name</Label>
+                    <Input
+                      id="cloudinaryCloudName"
+                      {...form.register("cloudinaryCloudName")}
+                      placeholder="your-cloud-name"
+                      data-testid="input-cloudinary-cloud-name"
+                    />
+                    <p className="text-xs text-muted-foreground">
+                      Your Cloudinary cloud name (found in your Cloudinary dashboard)
+                    </p>
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="cloudinaryApiKey">API Key</Label>
+                    <Input
+                      id="cloudinaryApiKey"
+                      {...form.register("cloudinaryApiKey")}
+                      placeholder="123456789012345"
+                      data-testid="input-cloudinary-api-key"
+                    />
+                    <p className="text-xs text-muted-foreground">
+                      Your Cloudinary API key
+                    </p>
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="cloudinaryApiSecret">API Secret</Label>
+                    <Input
+                      id="cloudinaryApiSecret"
+                      type="password"
+                      {...form.register("cloudinaryApiSecret")}
+                      placeholder="••••••••••••••••••••••••"
+                      data-testid="input-cloudinary-api-secret"
+                    />
+                    <p className="text-xs text-muted-foreground">
+                      Your Cloudinary API secret (keep this confidential)
+                    </p>
                   </div>
                 </CardContent>
               </Card>

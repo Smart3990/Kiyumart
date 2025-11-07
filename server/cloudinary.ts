@@ -1,16 +1,39 @@
 import { v2 as cloudinary } from "cloudinary";
 import { Readable } from "stream";
+import { storage } from "./storage";
 
+// Initialize with environment variables as default
 cloudinary.config({
   cloud_name: process.env.CLOUDINARY_CLOUD_NAME || "",
   api_key: process.env.CLOUDINARY_API_KEY || "",
   api_secret: process.env.CLOUDINARY_API_SECRET || "",
 });
 
+// Helper function to configure cloudinary with database settings or env vars
+async function ensureCloudinaryConfig() {
+  try {
+    const settings = await storage.getPlatformSettings();
+    
+    // Use database settings if available, otherwise keep env vars
+    const config = {
+      cloud_name: settings.cloudinaryCloudName || process.env.CLOUDINARY_CLOUD_NAME || "",
+      api_key: settings.cloudinaryApiKey || process.env.CLOUDINARY_API_KEY || "",
+      api_secret: settings.cloudinaryApiSecret || process.env.CLOUDINARY_API_SECRET || "",
+    };
+    
+    cloudinary.config(config);
+  } catch (error) {
+    // If database query fails, keep using env vars
+    console.error("Failed to load Cloudinary config from database:", error);
+  }
+}
+
 export async function uploadToCloudinary(
   buffer: Buffer,
   folder: string = "kiyumart"
 ): Promise<string> {
+  await ensureCloudinaryConfig();
+  
   return new Promise((resolve, reject) => {
     const uploadStream = cloudinary.uploader.upload_stream(
       {
@@ -35,6 +58,8 @@ export async function uploadWithMetadata(
   buffer: Buffer,
   folder: string = "kiyumart"
 ): Promise<{ url: string; duration?: number; format?: string; resource_type?: string }> {
+  await ensureCloudinaryConfig();
+  
   return new Promise((resolve, reject) => {
     const uploadStream = cloudinary.uploader.upload_stream(
       {
@@ -60,6 +85,7 @@ export async function uploadWithMetadata(
 }
 
 export async function deleteFromCloudinary(publicId: string): Promise<void> {
+  await ensureCloudinaryConfig();
   await cloudinary.uploader.destroy(publicId);
 }
 

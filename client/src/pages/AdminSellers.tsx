@@ -544,8 +544,16 @@ export default function AdminSellers() {
     enabled: isAuthenticated && user?.role === "admin",
   });
 
+  const { data: stores = [] } = useQuery<Array<{ id: string; primarySellerId: string }>>({
+    queryKey: ["/api/stores"],
+    enabled: isAuthenticated && user?.role === "admin",
+  });
+
   // Filter to show only sellers
   const sellers = users.filter(u => u.role === "seller");
+  
+  // Create a map of sellerId to storeId for quick lookup
+  const sellerToStoreMap = new Map(stores.map(store => [store.primarySellerId, store.id]));
   
   const filteredSellers = sellers.filter(s => 
     (s.name?.toLowerCase() || '').includes(searchQuery.toLowerCase()) ||
@@ -618,12 +626,13 @@ export default function AdminSellers() {
                         <div className="flex gap-2 flex-shrink-0">
                           <EditSellerDialog sellerData={seller} />
                           <BanActivateDialog sellerData={seller} />
-                          {seller.storeName && (
+                          {seller.storeName && sellerToStoreMap.has(seller.id) && (
                             <Button 
                               variant="outline" 
                               size="icon"
-                              onClick={() => navigate(`/seller/${seller.id}`)}
+                              onClick={() => navigate(`/seller/${sellerToStoreMap.get(seller.id)}`)}
                               data-testid={`button-view-store-${seller.id}`}
+                              title="View Store"
                             >
                               <Store className="h-4 w-4" />
                             </Button>
