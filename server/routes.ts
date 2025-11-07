@@ -343,6 +343,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  app.get("/api/users/:id", requireAuth, requireRole("admin"), async (req, res) => {
+    try {
+      const user = await storage.getUser(req.params.id);
+      if (!user) {
+        return res.status(404).json({ error: "User not found" });
+      }
+      const { password, ...userWithoutPassword } = user;
+      res.json(userWithoutPassword);
+    } catch (error: any) {
+      res.status(400).json({ error: error.message });
+    }
+  });
+
   app.patch("/api/users/:id/approve", requireAuth, requireRole("admin"), async (req, res) => {
     try {
       const user = await storage.updateUser(req.params.id, { isApproved: true });

@@ -74,13 +74,7 @@ export default function AdminUserEdit() {
 
   const updateUserMutation = useMutation({
     mutationFn: async (data: EditUserFormData) => {
-      return apiRequest(`/api/users/${userId}`, {
-        method: "PATCH",
-        body: JSON.stringify(data),
-        headers: {
-          "Content-Type": "application/json",
-        },
-      });
+      return apiRequest("PATCH", `/api/users/${userId}`, data);
     },
     onSuccess: () => {
       toast({
