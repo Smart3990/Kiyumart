@@ -43,6 +43,7 @@ interface DashboardSidebarProps {
 const menuItems: Record<string, MenuItem[]> = {
   super_admin: [
     { icon: LayoutDashboard, label: "Dashboard", id: "dashboard" },
+    { icon: Truck, label: "Live Delivery", id: "delivery-tracking" },
     { icon: Palette, label: "Branding", id: "branding" },
     { icon: Grid3x3, label: "Categories", id: "categories" },
     { icon: ImagePlus, label: "Media Library", id: "media-library" },
@@ -64,6 +65,7 @@ const menuItems: Record<string, MenuItem[]> = {
   ],
   admin: [
     { icon: LayoutDashboard, label: "Dashboard", id: "dashboard" },
+    { icon: Palette, label: "Branding", id: "branding" },
     { icon: Grid3x3, label: "Categories", id: "categories" },
     { icon: Package, label: "Products", id: "products" },
     { icon: ShoppingBag, label: "Orders", id: "orders" },

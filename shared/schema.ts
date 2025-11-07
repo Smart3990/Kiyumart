@@ -298,6 +298,7 @@ export const chatMessages = pgTable("chat_messages", {
   message: text("message").notNull(),
   messageType: text("message_type").default("text"),
   isRead: boolean("is_read").default(false),
+  readAt: timestamp("read_at"),
   createdAt: timestamp("created_at").defaultNow(),
 });
 
