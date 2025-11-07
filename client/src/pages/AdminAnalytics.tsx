@@ -3,6 +3,7 @@ import { useQuery } from "@tanstack/react-query";
 import { useLocation } from "wouter";
 import DashboardLayout from "@/components/DashboardLayout";
 import { useAuth } from "@/lib/auth";
+import { useLanguage } from "@/contexts/LanguageContext";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Loader2, TrendingUp, DollarSign, ShoppingCart, Users, ArrowLeft } from "lucide-react";
@@ -17,6 +18,7 @@ interface Analytics {
 export default function AdminAnalytics() {
   const [, navigate] = useLocation();
   const { user, isAuthenticated, isLoading: authLoading } = useAuth();
+  const { formatPrice } = useLanguage();
 
   useEffect(() => {
     if (!authLoading && (!isAuthenticated || user?.role !== "admin")) {
@@ -60,7 +62,7 @@ export default function AdminAnalytics() {
                 </CardHeader>
                 <CardContent>
                   <div className="text-2xl font-bold" data-testid="text-revenue">
-                    GHS {analytics ? analytics.totalRevenue.toFixed(2) : "0.00"}
+                    {formatPrice(analytics ? analytics.totalRevenue : 0)}
                   </div>
                   <p className="text-xs text-muted-foreground mt-1">
                     <TrendingUp className="inline h-3 w-3 mr-1" />

@@ -4,6 +4,7 @@ import { useLocation } from "wouter";
 import DashboardLayout from "@/components/DashboardLayout";
 import { useAuth } from "@/lib/auth";
 import { useToast } from "@/hooks/use-toast";
+import { useLanguage } from "@/contexts/LanguageContext";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card } from "@/components/ui/card";
@@ -33,6 +34,7 @@ interface Order {
 function ViewOrderDialog({ orderId }: { orderId: string }) {
   const [open, setOpen] = useState(false);
   const { toast } = useToast();
+  const { formatPrice } = useLanguage();
 
   const { data: orderDetails, isLoading } = useQuery({
     queryKey: ["/api/orders", orderId],
@@ -125,7 +127,7 @@ function ViewOrderDialog({ orderId }: { orderId: string }) {
               </div>
               <div>
                 <p className="text-sm font-medium text-muted-foreground">Total</p>
-                <p className="font-semibold text-primary">GHS {orderDetails.total}</p>
+                <p className="font-semibold text-primary">{formatPrice(parseFloat(orderDetails.total))}</p>
               </div>
             </div>
 
@@ -144,19 +146,19 @@ function ViewOrderDialog({ orderId }: { orderId: string }) {
               <div className="space-y-2">
                 <div className="flex justify-between">
                   <span className="text-muted-foreground">Subtotal</span>
-                  <span>GHS {orderDetails.subtotal}</span>
+                  <span>{formatPrice(parseFloat(orderDetails.subtotal))}</span>
                 </div>
                 <div className="flex justify-between">
                   <span className="text-muted-foreground">Delivery Fee</span>
-                  <span>GHS {orderDetails.deliveryFee}</span>
+                  <span>{formatPrice(parseFloat(orderDetails.deliveryFee))}</span>
                 </div>
                 <div className="flex justify-between">
                   <span className="text-muted-foreground">Processing Fee</span>
-                  <span>GHS {orderDetails.processingFee}</span>
+                  <span>{formatPrice(parseFloat(orderDetails.processingFee))}</span>
                 </div>
                 <div className="flex justify-between font-bold text-lg border-t pt-2">
                   <span>Total</span>
-                  <span className="text-primary">GHS {orderDetails.total}</span>
+                  <span className="text-primary">{formatPrice(parseFloat(orderDetails.total))}</span>
                 </div>
               </div>
             </div>
@@ -173,6 +175,7 @@ export default function AdminOrders() {
   const [searchQuery, setSearchQuery] = useState("");
   const [, navigate] = useLocation();
   const { user, isAuthenticated, isLoading: authLoading } = useAuth();
+  const { formatPrice } = useLanguage();
 
   useEffect(() => {
     if (!authLoading && (!isAuthenticated || user?.role !== "admin")) {
@@ -258,7 +261,7 @@ export default function AdminOrders() {
                       </h3>
                       <div className="flex items-center gap-3 mt-1">
                         <span className="text-primary font-bold" data-testid={`text-total-${order.id}`}>
-                          GHS {order.total}
+                          {formatPrice(parseFloat(order.total))}
                         </span>
                         <Badge className={getStatusColor(order.status)} data-testid={`badge-status-${order.id}`}>
                           {order.status}

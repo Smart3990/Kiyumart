@@ -8,6 +8,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { queryClient, apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
+import { useLanguage } from "@/contexts/LanguageContext";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -52,6 +53,7 @@ interface DeliveryZone {
 
 export default function AdminDeliveryZones() {
   const { toast } = useToast();
+  const { formatPrice, currency } = useLanguage();
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingZone, setEditingZone] = useState<DeliveryZone | null>(null);
   const [, navigate] = useLocation();
@@ -232,7 +234,7 @@ export default function AdminDeliveryZones() {
                   </div>
 
                   <div className="space-y-2">
-                    <Label htmlFor="fee">Delivery Fee (GHS)</Label>
+                    <Label htmlFor="fee">Delivery Fee ({currency})</Label>
                     <Input
                       id="fee"
                       type="number"
@@ -322,7 +324,7 @@ export default function AdminDeliveryZones() {
                   {zones.map((zone) => (
                     <TableRow key={zone.id} data-testid={`row-zone-${zone.id}`}>
                       <TableCell className="font-medium">{zone.name}</TableCell>
-                      <TableCell>GHS {parseFloat(zone.fee).toFixed(2)}</TableCell>
+                      <TableCell>{formatPrice(parseFloat(zone.fee))}</TableCell>
                       <TableCell>
                         <span
                           className={`px-2 py-1 rounded-full text-xs font-medium ${

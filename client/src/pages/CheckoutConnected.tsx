@@ -47,7 +47,7 @@ export default function CheckoutConnected() {
   const [, navigate] = useLocation();
   const { user, isAuthenticated, isLoading: authLoading } = useAuth();
   const { toast } = useToast();
-  const { formatPrice } = useLanguage();
+  const { formatPrice, currency } = useLanguage();
   const [deliveryMethod, setDeliveryMethod] = useState<"pickup" | "bus" | "rider">("pickup");
   const [deliveryAddress, setDeliveryAddress] = useState("");
   const [selectedZoneId, setSelectedZoneId] = useState("");
@@ -94,7 +94,7 @@ export default function CheckoutConnected() {
         setAppliedCoupon(data.coupon);
         toast({
           title: "Coupon Applied",
-          description: `${data.coupon.discountType === "percentage" ? `${data.coupon.discountValue}%` : `GHS ${data.coupon.discountValue}`} discount applied successfully!`,
+          description: `${data.coupon.discountType === "percentage" ? `${data.coupon.discountValue}%` : formatPrice(parseFloat(data.coupon.discountValue))} discount applied successfully!`,
         });
       } else {
         toast({
@@ -286,7 +286,7 @@ export default function CheckoutConnected() {
       couponDiscount: couponDiscount > 0 ? couponDiscount.toFixed(2) : null,
       processingFee: processingFee.toFixed(2),
       total: total.toFixed(2),
-      currency: "GHS",
+      currency: currency,
     };
 
     createOrderMutation.mutate(orderData);
