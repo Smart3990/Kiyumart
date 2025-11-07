@@ -9,14 +9,27 @@ import logoDark from "@assets/photo_2025-09-24_21-19-48-removebg-preview_1762169
 
 export default function AuthPage() {
   const [, navigate] = useLocation();
-  const { login, signup, isAuthenticated } = useAuth();
+  const { login, signup, isAuthenticated, user } = useAuth();
   const { toast } = useToast();
 
   useEffect(() => {
-    if (isAuthenticated) {
-      navigate("/");
+    if (isAuthenticated && user) {
+      // Redirect based on user role
+      if (user.role === 'super_admin' || user.role === 'admin') {
+        navigate("/admin");
+      } else if (user.role === 'seller') {
+        navigate("/seller");
+      } else if (user.role === 'rider') {
+        navigate("/rider");
+      } else if (user.role === 'buyer') {
+        navigate("/buyer");
+      } else if (user.role === 'agent') {
+        navigate("/agent");
+      } else {
+        navigate("/");
+      }
     }
-  }, [isAuthenticated, navigate]);
+  }, [isAuthenticated, user, navigate]);
 
   const handleLogin = async (email: string, password: string) => {
     try {
