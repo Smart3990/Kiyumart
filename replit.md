@@ -4,6 +4,14 @@
 
 KiyuMart is an e-commerce platform specializing in modest Islamic women's fashion. It operates in two modes: a single-store model and a multi-vendor marketplace, controlled by an admin feature flag (`isMultiVendor`). The platform offers comprehensive e-commerce functionalities including product/order management, real-time delivery tracking with map visualization, live chat, and Paystack payment integration. KiyuMart aims to be a premier online destination for modest Islamic fashion, providing a diverse and inclusive product range.
 
+## Recent Changes (November 2025)
+
+### Admin Dashboard Enhancements
+- **Fixed AdminUserEdit Page**: Corrected API request syntax to properly load and update user information. The edit form now successfully fetches user data via `GET /api/users/:id` and updates via `PATCH /api/users/:id`.
+- **Redesigned AdminMessages Page**: Completely overhauled the messaging interface to list all platform users organized by role categories (All, Sellers, Buyers, Riders, Admins, Agents). Admin can now search for users, filter by role, select any user to view message history, and start conversations directly from the admin dashboard.
+- **Added Backend User Endpoint**: New `GET /api/users/:id` route with admin authorization for fetching individual user details, supporting the edit user functionality.
+- **Dynamic Platform Branding**: Implemented `useBranding` hook that synchronizes primary color from platform settings to CSS custom properties (`--primary`, `--ring`, `--sidebar-*`, `--chart-1`), enabling instant platform-wide theme updates when admin changes branding colors.
+
 ## User Preferences
 
 Preferred communication style: Simple, everyday language.
