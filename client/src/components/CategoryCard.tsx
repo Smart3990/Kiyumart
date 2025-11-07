@@ -67,7 +67,7 @@ export default function CategoryCard({
           <h3 className="text-lg font-semibold mb-1 drop-shadow-lg" data-testid={`text-category-name-${id || category?.id}`}>
             {name}
           </h3>
-          {productCount !== undefined && (
+          {productCount !== undefined && productCount > 0 && (
             <div className="flex items-center gap-1 text-sm text-white/90">
               <Package className="w-3.5 h-3.5" />
               <span data-testid={`text-product-count-${id || category?.id}`}>
