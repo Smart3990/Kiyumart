@@ -4,6 +4,7 @@ import { useLocation } from "wouter";
 import DashboardLayout from "@/components/DashboardLayout";
 import { useAuth } from "@/lib/auth";
 import { useToast } from "@/hooks/use-toast";
+import { useLanguage } from "@/contexts/LanguageContext";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card } from "@/components/ui/card";
@@ -128,6 +129,7 @@ export default function AdminProducts() {
   const [searchQuery, setSearchQuery] = useState("");
   const [, navigate] = useLocation();
   const { user, isAuthenticated, isLoading: authLoading } = useAuth();
+  const { formatPrice } = useLanguage();
 
   useEffect(() => {
     if (!authLoading && (!isAuthenticated || user?.role !== "admin")) {
@@ -205,7 +207,7 @@ export default function AdminProducts() {
                       </h3>
                       <div className="flex items-center gap-3 mt-1">
                         <span className="text-primary font-bold" data-testid={`text-price-${product.id}`}>
-                          GHS {product.price}
+                          {formatPrice(parseFloat(product.price))}
                         </span>
                         <Badge variant="outline" data-testid={`badge-category-${product.id}`}>
                           {product.category}
