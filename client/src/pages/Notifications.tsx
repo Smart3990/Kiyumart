@@ -1,6 +1,7 @@
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { useAuth } from "@/lib/auth";
 import { useLanguage } from "@/contexts/LanguageContext";
+import { useLocation } from "wouter";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import { Card, CardContent } from "@/components/ui/card";
@@ -20,12 +21,14 @@ interface Notification {
   message: string;
   isRead: boolean;
   createdAt: string;
+  metadata?: Record<string, any>;
 }
 
 export default function Notifications() {
   const { user } = useAuth();
   const { t } = useLanguage();
   const { toast } = useToast();
+  const [, navigate] = useLocation();
   const [selectedNotification, setSelectedNotification] = useState<Notification | null>(null);
   const [previewOpen, setPreviewOpen] = useState(false);
 
@@ -68,6 +71,55 @@ export default function Notifications() {
       });
     },
   });
+
+  const handleNotificationClick = (notification: Notification) => {
+    // Mark as read
+    if (!notification.isRead) {
+      markAsReadMutation.mutate(notification.id);
+    }
+
+    // Redirect based on notification type and metadata
+    const { metadata } = notification;
+    const rolePrefix = user?.role === "admin" ? "/admin" : `/${user?.role}`;
+
+    if (metadata) {
+      switch (notification.type) {
+        case "product":
+          if (metadata.productId) {
+            navigate(`${rolePrefix}/products/${metadata.productId}`);
+          } else {
+            navigate(`${rolePrefix}/products`);
+          }
+          break;
+        case "order":
+          if (metadata.orderId) {
+            navigate(`${rolePrefix}/orders/${metadata.orderId}`);
+          } else {
+            navigate(`${rolePrefix}/orders`);
+          }
+          break;
+        case "user":
+          if (metadata.userId) {
+            navigate(`${rolePrefix}/users/${metadata.userId}`);
+          } else if (user?.role === "admin") {
+            navigate("/admin/sellers");
+          }
+          break;
+        case "message":
+          navigate(`${rolePrefix}/messages`);
+          break;
+        default:
+          // Open preview dialog for other types
+          setSelectedNotification(notification);
+          setPreviewOpen(true);
+          break;
+      }
+    } else {
+      // No metadata, just open preview
+      setSelectedNotification(notification);
+      setPreviewOpen(true);
+    }
+  };
 
   const handlePreview = (notification: Notification) => {
     setSelectedNotification(notification);
@@ -184,6 +236,7 @@ export default function Notifications() {
                   className={`hover:shadow-md transition-all cursor-pointer ${
                     !notification.isRead ? "border-primary bg-primary/5" : "border-border"
                   }`}
+                  onClick={() => handleNotificationClick(notification)}
                   data-testid={`card-notification-${notification.id}`}
                 >
                   <CardContent className="p-4">
@@ -215,7 +268,10 @@ export default function Notifications() {
                         <Button
                           variant="ghost"
                           size="sm"
-                          onClick={() => handlePreview(notification)}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handlePreview(notification);
+                          }}
                           data-testid={`button-preview-${notification.id}`}
                         >
                           <Eye className="h-4 w-4" />

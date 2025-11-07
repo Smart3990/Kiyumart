@@ -17,6 +17,7 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { apiRequest, queryClient } from "@/lib/queryClient";
+import MediaUploadInput from "@/components/MediaUploadInput";
 
 interface SellerData {
   id: string;
@@ -214,9 +215,17 @@ function CreateSellerDialog() {
               name="storeBanner"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Store Banner URL</FormLabel>
+                  <FormLabel>Store Banner Image</FormLabel>
                   <FormControl>
-                    <Input placeholder="https://..." {...field} data-testid="input-create-store-banner" />
+                    <MediaUploadInput
+                      id="store-banner"
+                      label=""
+                      value={field.value || ""}
+                      onChange={field.onChange}
+                      accept="image"
+                      placeholder="Upload or enter image URL..."
+                      description="Store banner image (optional)"
+                    />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -549,8 +558,8 @@ export default function AdminSellers() {
     enabled: isAuthenticated && user?.role === "admin",
   });
 
-  // Filter to show only sellers
-  const sellers = users.filter(u => u.role === "seller");
+  // Filter to show only sellers (applications = unapproved only)
+  const sellers = users.filter(u => u.role === "seller" && u.isApproved === false);
   
   // Create a map of sellerId to storeId for quick lookup
   const sellerToStoreMap = new Map(stores.map(store => [store.primarySellerId, store.id]));

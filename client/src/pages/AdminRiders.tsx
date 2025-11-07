@@ -23,6 +23,7 @@ interface Rider {
   email: string;
   phone: string | null;
   isActive: boolean;
+  isApproved: boolean;
 }
 
 const addRiderSchema = z.object({
@@ -282,7 +283,10 @@ export default function AdminRiders() {
     enabled: isAuthenticated && user?.role === "admin",
   });
 
-  const filteredRiders = riders.filter(r => 
+  // Filter to show only pending applications (unapproved riders)
+  const pendingRiders = riders.filter(r => r.isApproved === false);
+
+  const filteredRiders = pendingRiders.filter(r => 
     (r.username?.toLowerCase() || '').includes(searchQuery.toLowerCase()) ||
     (r.email?.toLowerCase() || '').includes(searchQuery.toLowerCase())
   );
