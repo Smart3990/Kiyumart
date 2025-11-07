@@ -2,6 +2,10 @@
 
 ## Recent Changes (November 7, 2025)
 
+### Latest Updates
+- **Real-time Currency Conversion**: Integrated live exchange rate fetching in LanguageContext with React Query, fetching rates from `/api/currency/rates` endpoint (using exchangerate.host API). Implemented `formatPrice()` and `convertPrice()` helpers that automatically convert prices from base currency (GHS) to selected currency. Updated ProductCard, Cart, and CartPopover components to use `formatPrice()` for automatic currency conversion. Rates are cached for 1 hour with automatic hourly refresh.
+- **Test Credentials Standardization**: Updated all test credentials across TEST_ACCOUNTS.md, TEST_CREDENTIALS.md, and TESTING.md to follow consistent `usertype@kiyumart.com/usertype123` pattern (admin@kiyumart.com/admin123, seller@kiyumart.com/seller123, buyer@kiyumart.com/buyer123, rider@kiyumart.com/rider123).
+
 ### Bug Fixes
 - **Image Upload Fix**: Created public upload endpoint (`/api/upload/public`) for unauthenticated Ghana card and profile image uploads during seller/rider registration
 - **Application Visibility**: Added "Approved" tabs to AdminSellers and AdminRiders pages to preserve visibility of approved users after approval
