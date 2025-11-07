@@ -47,6 +47,13 @@
   - RiderDeliveries: Uses `["/api/deliveries", "rider"]` for both query and invalidation
 - **All Navigation Links Working**: Every dashboard navigation button now routes to a functional page with proper role guards and data fetching
 
+### Static Admin Account Management
+- **Admin Seeding Script**: Created `scripts/seed-admins.ts` to generate persistent super admin and admin accounts that survive project exports
+- **Environment-Based Credentials**: Admin passwords are configured via environment variables for production security (SUPER_ADMIN_PASSWORD, ADMIN_PASSWORD)
+- **Development Defaults**: Includes default credentials for local development (superadmin@kiyumart.com / SuperAdmin123!, admin@kiyumart.com / Admin123!)
+- **Safe Re-runs**: Script checks for existing accounts and only creates missing ones, preventing duplicates
+- **Production Safety**: Enforces custom passwords in production environments and provides comprehensive setup documentation in ADMIN_SETUP.md
+
 ## Overview
 
 KiyuMart is an e-commerce platform specializing in modest Islamic women's fashion, designed to operate as either a single-store or a multi-vendor marketplace. Its core purpose is to provide a comprehensive online destination with functionalities including product and order management, real-time delivery tracking with map visualization, live chat, and Paystack payment integration. The platform aims to offer a diverse and inclusive product range, supported by dynamic category management, extensive admin dashboards for user and product management, and a robust application verification system for sellers and riders.
