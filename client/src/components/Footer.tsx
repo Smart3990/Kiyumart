@@ -1,7 +1,7 @@
 import { Facebook, Instagram, Twitter, Mail, Phone, MapPin } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useQuery } from "@tanstack/react-query";
-import { Link } from "wouter";
+import { Link, useRoute } from "wouter";
 import { useAuth } from "@/lib/auth";
 import logoLight from "@assets/light_mode_1762169855262.png";
 import logoDark from "@assets/photo_2025-09-24_21-19-48-removebg-preview_1762169855290.png";
@@ -30,9 +30,32 @@ interface Product {
   category: string;
 }
 
+interface Store {
+  id: string;
+  name: string;
+  description?: string;
+  logo?: string;
+  banner?: string;
+  primarySellerId: string;
+}
+
 export default function Footer() {
+  const [match, params] = useRoute("/seller/:id");
+  const sellerId = match ? params?.id : null;
+  
   const { data: settings } = useQuery<PlatformSettings>({
     queryKey: ["/api/settings"],
+  });
+  
+  // Fetch seller's store information if viewing a seller store page
+  const { data: sellerStore } = useQuery<Store>({
+    queryKey: ["/api/stores/by-seller", sellerId],
+    queryFn: async () => {
+      const res = await fetch(`/api/stores/by-seller/${sellerId}`);
+      if (!res.ok) throw new Error("Failed to fetch store");
+      return res.json();
+    },
+    enabled: !!sellerId,
   });
   
   // Fetch products to get categories dynamically (filtered by primary store in single-store mode)
@@ -60,15 +83,20 @@ export default function Footer() {
     }
   };
 
+  // Use seller store info if viewing a seller store page, otherwise use platform settings
+  const displayName = sellerStore?.name || settings?.platformName || "KiyuMart";
+  const displayLogo = sellerStore?.logo || settings?.logo;
+  const displayDescription = sellerStore?.description || settings?.footerDescription || "Your trusted fashion marketplace. Quality products, fast delivery, and excellent service.";
+
   return (
     <footer className="bg-card border-t mt-20">
       <div className="max-w-7xl mx-auto px-4 py-12">
         <div className={`grid grid-cols-1 ${settings?.isMultiVendor ? 'md:grid-cols-3' : 'md:grid-cols-2 lg:grid-cols-4'} gap-8`}>
           <div className={settings?.isMultiVendor ? 'md:col-span-1' : ''}>
-            {settings?.logo ? (
+            {displayLogo ? (
               <img 
-                src={settings.logo}
-                alt={settings.platformName || "KiyuMart"}
+                src={displayLogo}
+                alt={displayName}
                 className="h-10 w-auto mb-4"
                 data-testid="img-footer-logo"
               />
@@ -76,20 +104,20 @@ export default function Footer() {
               <>
                 <img 
                   src={logoLight}
-                  alt="KiyuMart"
+                  alt={displayName}
                   className="h-10 w-auto mb-4 dark:hidden"
                   data-testid="img-footer-logo-light"
                 />
                 <img 
                   src={logoDark}
-                  alt="KiyuMart"
+                  alt={displayName}
                   className="h-10 w-auto mb-4 hidden dark:block"
                   data-testid="img-footer-logo-dark"
                 />
               </>
             )}
             <p className="text-muted-foreground mb-4">
-              {settings?.footerDescription || "Your trusted fashion marketplace. Quality products, fast delivery, and excellent service."}
+              {displayDescription}
             </p>
             <div className="flex gap-2">
               {settings?.facebookUrl && (
