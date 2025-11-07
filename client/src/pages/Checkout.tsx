@@ -8,10 +8,12 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Separator } from "@/components/ui/separator";
 import { ArrowLeft, Package, Bike, Building2, MapPin } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { useLanguage } from "@/contexts/LanguageContext";
 
 export default function Checkout() {
   const [, navigate] = useLocation();
   const { toast } = useToast();
+  const { formatPrice } = useLanguage();
   const [deliveryMethod, setDeliveryMethod] = useState<"pickup" | "bus" | "rider">("pickup");
   const [deliveryAddress, setDeliveryAddress] = useState("");
   const [deliveryZone, setDeliveryZone] = useState("");
@@ -101,7 +103,7 @@ export default function Checkout() {
                       <Building2 className="h-5 w-5 text-muted-foreground" />
                       <div>
                         <div className="font-medium">Bus Delivery</div>
-                        <div className="text-sm text-muted-foreground">Delivered via bus - GHS 5.00</div>
+                        <div className="text-sm text-muted-foreground">Delivered via bus - {formatPrice(5)}</div>
                       </div>
                     </Label>
                   </div>
@@ -112,7 +114,7 @@ export default function Checkout() {
                       <Bike className="h-5 w-5 text-muted-foreground" />
                       <div>
                         <div className="font-medium">Rider Delivery</div>
-                        <div className="text-sm text-muted-foreground">Fast delivery by rider - GHS 10.00</div>
+                        <div className="text-sm text-muted-foreground">Fast delivery by rider - {formatPrice(10)}</div>
                       </div>
                     </Label>
                   </div>
@@ -168,7 +170,7 @@ export default function Checkout() {
                         <div className="text-sm font-medium line-clamp-2">{item.name}</div>
                         <div className="text-sm text-muted-foreground">Qty: {item.quantity}</div>
                       </div>
-                      <div className="text-sm font-medium">GHS {item.price.toFixed(2)}</div>
+                      <div className="text-sm font-medium">{formatPrice(item.price)}</div>
                     </div>
                   ))}
                 </div>
@@ -178,20 +180,20 @@ export default function Checkout() {
                 <div className="space-y-2 text-sm">
                   <div className="flex justify-between">
                     <span className="text-muted-foreground">Subtotal</span>
-                    <span data-testid="text-checkout-subtotal">GHS {subtotal.toFixed(2)}</span>
+                    <span data-testid="text-checkout-subtotal">{formatPrice(subtotal)}</span>
                   </div>
                   <div className="flex justify-between">
                     <span className="text-muted-foreground">Delivery Fee</span>
-                    <span data-testid="text-checkout-delivery">GHS {deliveryFee.toFixed(2)}</span>
+                    <span data-testid="text-checkout-delivery">{formatPrice(deliveryFee)}</span>
                   </div>
                   <div className="flex justify-between">
                     <span className="text-muted-foreground">Processing Fee (1.95%)</span>
-                    <span data-testid="text-checkout-processing">GHS {processingFee.toFixed(2)}</span>
+                    <span data-testid="text-checkout-processing">{formatPrice(processingFee)}</span>
                   </div>
                   <Separator />
                   <div className="flex justify-between text-lg font-bold">
                     <span>Total</span>
-                    <span data-testid="text-checkout-total">GHS {total.toFixed(2)}</span>
+                    <span data-testid="text-checkout-total">{formatPrice(total)}</span>
                   </div>
                 </div>
 
