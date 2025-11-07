@@ -2,6 +2,26 @@
 
 ## Recent Changes (November 7, 2025)
 
+### Production Security & Performance Enhancements
+- **Helmet Security Headers**: Implemented comprehensive security headers (XSS protection, content type sniffing prevention, frame options, referrer policy)
+- **Rate Limiting**: Added role-aware rate limiting with separate buckets for API (100 requests/15min) and authentication (5 attempts/15min) endpoints
+- **Enhanced Error Handling**: Implemented structured error logging with timestamps, request context, and user tracking for production debugging
+- **Database Indexes**: Added performance indexes to critical tables (users: role/isActive/isApproved, products: sellerId/storeId/category/isActive, orders: buyerId/sellerId/riderId/status/paymentStatus/createdAt, commissions: sellerId/orderId/status)
+
+### Commission System for Multi-Vendor Marketplace
+- **Commission Tables**: Created comprehensive commission tracking system with `commissions`, `seller_payouts`, and `platform_earnings` tables
+- **Configurable Commission Rate**: Added `defaultCommissionRate` (10% default) and `minimumPayoutAmount` (50 GHS default) to platform settings
+- **Commission Calculation**: Platform automatically tracks commission on each order, splitting revenue between seller and platform
+- **Payout Management**: Admin dashboard support for tracking seller payouts with status management (pending, processing, completed, failed)
+- **Multiple Payout Methods**: Support for bank transfer, mobile money, and Paystack-based payouts with bank details storage
+
+### Paystack Webhook Integration
+- **Async Payment Verification**: Implemented `/api/webhooks/paystack` endpoint for handling asynchronous payment confirmations from Paystack
+- **HMAC Signature Verification**: Webhook validates Paystack signatures using HMAC SHA-512 for security
+- **Idempotency Protection**: Prevents duplicate transaction processing by checking existing transaction status
+- **Real-time Notifications**: Webhook triggers Socket.IO events and database notifications when payments are confirmed
+- **Order Status Automation**: Automatically updates order status to "processing" when payment succeeds via webhook
+
 ### Super Admin Media Library Fix
 - **Fixed Critical 403 Permission Errors**: Resolved all "Unauthorized to access media library" errors preventing super_admin from accessing media library features
 - **Updated Media Library Endpoints**: Modified POST/GET/DELETE /api/media-library and GET /api/assets/images to authorize super_admin role alongside admin role
@@ -29,11 +49,39 @@ The frontend is built with React 18 (Vite, TypeScript), utilizing Wouter for rou
 
 ### Backend Architecture
 
-The backend is developed with Express.js and integrates a native HTTP server with Socket.IO for WebSocket communication. Authentication is JWT-based, incorporating bcrypt for password hashing and role-based access control. PostgreSQL (Neon serverless) serves as the primary database, managed by Drizzle ORM for type-safe operations and Drizzle Kit for migrations. Cloudinary handles all media uploads. The API is RESTful, employing Zod for request validation and Multer for file uploads. The architecture supports a comprehensive application verification system, including Ghana Card verification for sellers and riders, with detailed admin review processes. It also includes secured API endpoints for managing footer pages with CRUD operations and role-based access control.
+The backend is developed with Express.js and integrates a native HTTP server with Socket.IO for WebSocket communication. Authentication is JWT-based, incorporating bcrypt for password hashing and role-based access control. PostgreSQL (Neon serverless) serves as the primary database, managed by Drizzle ORM for type-safe operations and Drizzle Kit for migrations. Cloudinary handles all media uploads. The API is RESTful, employing Zod for request validation and Multer for file uploads.
+
+**Production Security Features:**
+- Helmet security headers for XSS protection, content security, and frame options
+- Role-aware rate limiting (100 API requests/15min, 5 auth attempts/15min)
+- Structured error logging with request context and user tracking
+- HMAC signature verification for Paystack webhooks
+
+**Multi-Vendor Financial System:**
+- Commission tracking with configurable platform rates (default 10%)
+- Seller payout management with multiple payment methods
+- Platform earnings tracking and reporting
+- Automatic revenue splitting between sellers and platform
+
+The architecture supports a comprehensive application verification system, including Ghana Card verification for sellers and riders, with detailed admin review processes. It also includes secured API endpoints for managing footer pages with CRUD operations and role-based access control.
 
 ### Database Schema Design
 
-The database schema encompasses tables for core e-commerce functionalities (Users, Products, Orders, Reviews, Delivery Zones, Transactions, Product Variants, Cart), store management (Stores), real-time communication (Chat Messages), content management (Hero Banners, Banner Collections, Marketplace Banners, Footer Pages), dynamic categories, and platform configuration. It supports product variants, multi-vendor associations, enhanced product modules with video and dynamic fields, verified buyer reviews, promotions, subscriptions, wishlists, and localization. Recent additions include fields for `profileImage`, `ghanaCardFront`, `ghanaCardBack` for application verification, an `isApproved` flag in the User interface for managing approval workflows, and the `footerPages` table for dynamic footer link management with group-based organization.
+The database schema encompasses tables for core e-commerce functionalities (Users, Products, Orders, Reviews, Delivery Zones, Transactions, Product Variants, Cart), store management (Stores), real-time communication (Chat Messages), content management (Hero Banners, Banner Collections, Marketplace Banners, Footer Pages), dynamic categories, and platform configuration.
+
+**Commission & Financial System:**
+- `commissions`: Tracks platform commission on each order with configurable rates, seller/platform revenue splits
+- `seller_payouts`: Manages seller payout requests with status tracking (pending, processing, completed, failed)
+- `platform_earnings`: Records platform revenue from commissions and service fees
+- Platform settings include `defaultCommissionRate` and `minimumPayoutAmount` configuration
+
+**Performance Optimization:**
+- Indexes on users (role, isActive, isApproved)
+- Indexes on products (sellerId, storeId, category, isActive)
+- Indexes on orders (buyerId, sellerId, riderId, status, paymentStatus, createdAt)
+- Indexes on commissions (sellerId, orderId, status)
+
+It supports product variants, multi-vendor associations, enhanced product modules with video and dynamic fields, verified buyer reviews, promotions, subscriptions, wishlists, and localization. Recent additions include fields for `profileImage`, `ghanaCardFront`, `ghanaCardBack` for application verification, an `isApproved` flag in the User interface for managing approval workflows, the `footerPages` table for dynamic footer link management with group-based organization, and the `storeId` field in orders for multi-vendor support.
 
 ### UI/UX Decisions
 

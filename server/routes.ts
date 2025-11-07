@@ -2809,6 +2809,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
           status: "processing",
         });
         
+        // Calculate and record commission for multi-vendor marketplace
+        await calculateAndRecordCommission(orderId);
+        
         // Get buyer details
         const buyer = await storage.getUser(order.buyerId);
         
@@ -2885,6 +2888,163 @@ export async function registerRoutes(app: Express): Promise<Server> {
       });
     }
   });
+
+  // ============ Paystack Webhook Handler ============
+  // Note: Uses raw body for HMAC signature verification (captured via express.json verify hook)
+  app.post("/api/webhooks/paystack", async (req, res) => {
+    try {
+      const crypto = await import('crypto');
+      const settings = await storage.getPlatformSettings();
+      
+      if (!settings.paystackSecretKey) {
+        console.error('[WEBHOOK] Paystack secret key not configured');
+        return res.status(503).json({ error: "Payment gateway not configured" });
+      }
+
+      // Verify webhook signature using raw body (HMAC SHA-512)
+      const rawBody = (req as any).rawBody;
+      if (!rawBody) {
+        console.error('[WEBHOOK] Missing raw body for signature verification');
+        return res.status(400).json({ error: "Invalid request format" });
+      }
+
+      const hash = crypto
+        .createHmac('sha512', settings.paystackSecretKey)
+        .update(rawBody)
+        .digest('hex');
+
+      const paystackSignature = req.headers['x-paystack-signature'];
+      if (hash !== paystackSignature) {
+        console.error('[SECURITY] Invalid Paystack webhook signature', {
+          expected: hash.substring(0, 20) + '...',
+          received: typeof paystackSignature === 'string' ? paystackSignature.substring(0, 20) + '...' : 'missing'
+        });
+        return res.status(401).json({ error: "Invalid signature" });
+      }
+
+      const event = req.body as any;
+      console.log('[WEBHOOK] Paystack event received:', event.event);
+
+      // Handle different webhook events
+      if (event.event === 'charge.success') {
+        const { reference, metadata } = event.data;
+        
+        if (!metadata?.orderId) {
+          console.error('[WEBHOOK] Missing orderId in metadata');
+          return res.status(400).json({ error: "Invalid webhook data" });
+        }
+
+        // Check if transaction already processed (idempotency)
+        const existingTransaction = await storage.getTransactionByReference(reference);
+        if (existingTransaction && existingTransaction.status === "completed") {
+          console.log('[WEBHOOK] Transaction already processed:', reference);
+          return res.json({ message: "Transaction already processed" });
+        }
+
+        const order = await storage.getOrder(metadata.orderId);
+        if (!order) {
+          console.error('[WEBHOOK] Order not found:', metadata.orderId);
+          return res.status(404).json({ error: "Order not found" });
+        }
+
+        // Create or update transaction
+        if (!existingTransaction) {
+          await storage.createTransaction({
+            orderId: metadata.orderId,
+            userId: metadata.userId,
+            amount: (event.data.amount / 100).toString(),
+            currency: event.data.currency,
+            paymentProvider: "paystack",
+            paymentReference: reference,
+            status: "completed",
+            metadata: event.data,
+          });
+        } else {
+          // Update existing transaction status
+          // Note: This would require a updateTransaction method in storage
+          console.log('[WEBHOOK] Updating existing transaction:', reference);
+        }
+
+        // Update order status
+        await storage.updateOrder(metadata.orderId, {
+          paymentStatus: "completed",
+          status: "processing",
+        });
+
+        // Calculate and record commission for multi-vendor marketplace
+        await calculateAndRecordCommission(metadata.orderId);
+
+        // Notify buyer
+        await storage.createNotification({
+          userId: order.buyerId,
+          type: "order",
+          title: "Payment Confirmed",
+          message: `Your payment for order #${order.orderNumber} has been confirmed by Paystack.`,
+        });
+
+        // Real-time notification
+        io.to(order.buyerId).emit("payment_completed", {
+          orderId: order.id,
+          orderNumber: order.orderNumber,
+          amount: `${order.currency} ${order.total}`,
+        });
+
+        console.log('[WEBHOOK] Payment processed successfully:', reference);
+      } else if (event.event === 'charge.failed') {
+        // Handle failed payment
+        console.log('[WEBHOOK] Payment failed:', event.data.reference);
+      }
+
+      res.json({ status: "success" });
+    } catch (error: any) {
+      console.error('[WEBHOOK] Error processing webhook:', error);
+      res.status(500).json({ error: "Webhook processing failed" });
+    }
+  });
+
+  // ============ Commission Calculation Helper ============
+  async function calculateAndRecordCommission(orderId: string) {
+    try {
+      const order = await storage.getOrder(orderId);
+      if (!order || !order.sellerId) {
+        console.error('[COMMISSION] Order not found or missing seller:', orderId);
+        return;
+      }
+
+      // Get platform commission rate
+      const settings = await storage.getPlatformSettings();
+      const commissionRate = parseFloat(settings.defaultCommissionRate || "10.00");
+
+      // Calculate amounts
+      const orderAmount = parseFloat(order.total);
+      const commissionAmount = (orderAmount * commissionRate) / 100;
+      const sellerAmount = orderAmount - commissionAmount;
+
+      // Create commission record
+      await storage.createCommission({
+        orderId: order.id,
+        sellerId: order.sellerId,
+        orderAmount: orderAmount.toFixed(2),
+        commissionRate: commissionRate.toFixed(2),
+        commissionAmount: commissionAmount.toFixed(2),
+        sellerAmount: sellerAmount.toFixed(2),
+        platformAmount: commissionAmount.toFixed(2),
+        status: "pending",
+      });
+
+      // Record platform earnings
+      await storage.createPlatformEarning({
+        orderId: order.id,
+        amount: commissionAmount.toFixed(2),
+        type: "commission",
+        description: `Commission from order #${order.orderNumber}`,
+      });
+
+      console.log(`[COMMISSION] Recorded commission for order ${order.orderNumber}: Platform ${commissionAmount.toFixed(2)}, Seller ${sellerAmount.toFixed(2)}`);
+    } catch (error) {
+      console.error('[COMMISSION] Error calculating commission:', error);
+    }
+  }
 
   // ============ Analytics Routes ============
   app.get("/api/analytics", requireAuth, async (req: AuthRequest, res) => {

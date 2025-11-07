@@ -4,6 +4,7 @@ import {
   chatMessages, transactions, platformSettings, cart, wishlist, reviews,
   productVariants, heroBanners, coupons, bannerCollections, marketplaceBanners,
   stores, categoryFields, categories, notifications, mediaLibrary, footerPages,
+  commissions, platformEarnings,
   type User, type InsertUser, type Product, type InsertProduct,
   type Order, type InsertOrder, type DeliveryZone, type InsertDeliveryZone,
   type ChatMessage, type InsertChatMessage, type Transaction, type PlatformSettings,
@@ -12,7 +13,8 @@ import {
   type Coupon, type InsertCoupon, type BannerCollection, type InsertBannerCollection,
   type MarketplaceBanner, type InsertMarketplaceBanner, type Store, type CategoryField,
   type Category, type Notification, type InsertNotification, type MediaLibrary,
-  type InsertMediaLibrary, type FooterPage, type InsertFooterPage
+  type InsertMediaLibrary, type FooterPage, type InsertFooterPage,
+  type Commission, type InsertCommission, type PlatformEarning, type InsertPlatformEarning
 } from "@shared/schema";
 import { eq, and, desc, sql, lte, gte, or, isNull } from "drizzle-orm";
 
@@ -57,6 +59,10 @@ export interface IStorage {
   // Transaction operations
   createTransaction(data: any): Promise<Transaction>;
   getTransactionByReference(reference: string): Promise<Transaction | undefined>;
+  
+  // Commission operations
+  createCommission(data: InsertCommission): Promise<Commission>;
+  createPlatformEarning(data: InsertPlatformEarning): Promise<PlatformEarning>;
   
   // Platform settings
   getPlatformSettings(): Promise<PlatformSettings>;
@@ -392,6 +398,17 @@ export class DbStorage implements IStorage {
 
   async getTransactionByReference(reference: string): Promise<Transaction | undefined> {
     const result = await db.select().from(transactions).where(eq(transactions.paymentReference, reference)).limit(1);
+    return result[0];
+  }
+
+  // Commission operations
+  async createCommission(data: InsertCommission): Promise<Commission> {
+    const result = await db.insert(commissions).values(data as any).returning();
+    return result[0];
+  }
+
+  async createPlatformEarning(data: InsertPlatformEarning): Promise<PlatformEarning> {
+    const result = await db.insert(platformEarnings).values(data as any).returning();
     return result[0];
   }
 

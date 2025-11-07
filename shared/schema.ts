@@ -1,5 +1,5 @@
 import { sql } from "drizzle-orm";
-import { pgTable, text, varchar, integer, decimal, timestamp, boolean, jsonb, pgEnum, unique, serial } from "drizzle-orm/pg-core";
+import { pgTable, text, varchar, integer, decimal, timestamp, boolean, jsonb, pgEnum, unique, serial, index } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
@@ -39,7 +39,11 @@ export const users = pgTable("users", {
   ratings: decimal("ratings", { precision: 3, scale: 2 }).default("0"),
   totalRatings: integer("total_ratings").default(0),
   createdAt: timestamp("created_at").defaultNow(),
-});
+}, (table) => ({
+  roleIdx: index("users_role_idx").on(table.role),
+  isActiveIdx: index("users_is_active_idx").on(table.isActive),
+  isApprovedIdx: index("users_is_approved_idx").on(table.isApproved),
+}));
 
 export const adminPermissions = pgTable("admin_permissions", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
@@ -120,6 +124,8 @@ export const platformSettings = pgTable("platform_settings", {
   allowSellerRegistration: boolean("allow_seller_registration").default(false),
   allowRiderRegistration: boolean("allow_rider_registration").default(false),
   primaryStoreId: varchar("primary_store_id"),
+  defaultCommissionRate: decimal("default_commission_rate", { precision: 5, scale: 2 }).default("10.00"), // 10% default
+  minimumPayoutAmount: decimal("minimum_payout_amount", { precision: 10, scale: 2 }).default("50.00"),
   updatedAt: timestamp("updated_at").defaultNow(),
 });
 
@@ -174,7 +180,12 @@ export const products = pgTable("products", {
   totalRatings: integer("total_ratings").default(0),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
-});
+}, (table) => ({
+  sellerIdx: index("products_seller_id_idx").on(table.sellerId),
+  storeIdx: index("products_store_id_idx").on(table.storeId),
+  categoryIdx: index("products_category_idx").on(table.category),
+  isActiveIdx: index("products_is_active_idx").on(table.isActive),
+}));
 
 export const deliveryZones = pgTable("delivery_zones", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
@@ -205,6 +216,7 @@ export const orders = pgTable("orders", {
   buyerId: varchar("buyer_id").notNull().references(() => users.id),
   sellerId: varchar("seller_id").notNull().references(() => users.id),
   riderId: varchar("rider_id").references(() => users.id),
+  storeId: varchar("store_id").references(() => stores.id),
   status: orderStatusEnum("status").notNull().default("pending"),
   deliveryMethod: deliveryMethodEnum("delivery_method").notNull(),
   deliveryZoneId: varchar("delivery_zone_id").references(() => deliveryZones.id),
@@ -227,7 +239,14 @@ export const orders = pgTable("orders", {
   deliveredAt: timestamp("delivered_at"),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
-});
+}, (table) => ({
+  buyerIdx: index("orders_buyer_id_idx").on(table.buyerId),
+  sellerIdx: index("orders_seller_id_idx").on(table.sellerId),
+  riderIdx: index("orders_rider_id_idx").on(table.riderId),
+  statusIdx: index("orders_status_idx").on(table.status),
+  paymentStatusIdx: index("orders_payment_status_idx").on(table.paymentStatus),
+  createdAtIdx: index("orders_created_at_idx").on(table.createdAt),
+}));
 
 export const orderItems = pgTable("order_items", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
@@ -411,6 +430,56 @@ export const adminWalletTransactions = pgTable("admin_wallet_transactions", {
   type: adminTransactionTypeEnum("type").notNull(),
   amount: decimal("amount", { precision: 10, scale: 2 }).notNull(),
   productId: varchar("product_id").references(() => products.id),
+  description: text("description"),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+// Commission System Tables
+export const commissions = pgTable("commissions", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  orderId: varchar("order_id").notNull().references(() => orders.id),
+  sellerId: varchar("seller_id").notNull().references(() => users.id),
+  orderAmount: decimal("order_amount", { precision: 10, scale: 2 }).notNull(),
+  commissionRate: decimal("commission_rate", { precision: 5, scale: 2 }).notNull(), // Percentage
+  commissionAmount: decimal("commission_amount", { precision: 10, scale: 2 }).notNull(),
+  sellerAmount: decimal("seller_amount", { precision: 10, scale: 2 }).notNull(),
+  platformAmount: decimal("platform_amount", { precision: 10, scale: 2 }).notNull(),
+  status: text("status").notNull().default("pending"), // pending, processed, failed
+  processedAt: timestamp("processed_at"),
+  createdAt: timestamp("created_at").defaultNow(),
+}, (table) => ({
+  sellerIdx: index("commissions_seller_id_idx").on(table.sellerId),
+  orderIdx: index("commissions_order_id_idx").on(table.orderId),
+  statusIdx: index("commissions_status_idx").on(table.status),
+}));
+
+export const sellerPayouts = pgTable("seller_payouts", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  sellerId: varchar("seller_id").notNull().references(() => users.id),
+  amount: decimal("amount", { precision: 10, scale: 2 }).notNull(),
+  currency: text("currency").notNull().default("GHS"),
+  method: text("method").notNull(), // bank_transfer, mobile_money, paystack
+  status: text("status").notNull().default("pending"), // pending, processing, completed, failed
+  reference: text("reference").unique(),
+  bankDetails: jsonb("bank_details").$type<{
+    accountName?: string;
+    accountNumber?: string;
+    bankName?: string;
+    mobileNumber?: string;
+  }>(),
+  commissionIds: text("commission_ids").array(), // Array of commission IDs included in this payout
+  notes: text("notes"),
+  processedBy: varchar("processed_by").references(() => users.id),
+  processedAt: timestamp("processed_at"),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+export const platformEarnings = pgTable("platform_earnings", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  orderId: varchar("order_id").notNull().references(() => orders.id),
+  commissionId: varchar("commission_id").references(() => commissions.id),
+  amount: decimal("amount", { precision: 10, scale: 2 }).notNull(),
+  type: text("type").notNull(), // commission, service_fee, delivery_fee
   description: text("description"),
   createdAt: timestamp("created_at").defaultNow(),
 });
@@ -832,6 +901,19 @@ export type MediaLibrary = typeof mediaLibrary.$inferSelect;
 export const insertCategoryFieldSchema = createInsertSchema(categoryFields).omit({ id: true, createdAt: true });
 export type InsertCategoryField = z.infer<typeof insertCategoryFieldSchema>;
 export type CategoryField = typeof categoryFields.$inferSelect;
+
+// Commission System Schemas
+export const insertCommissionSchema = createInsertSchema(commissions).omit({ id: true, createdAt: true });
+export type InsertCommission = z.infer<typeof insertCommissionSchema>;
+export type Commission = typeof commissions.$inferSelect;
+
+export const insertSellerPayoutSchema = createInsertSchema(sellerPayouts).omit({ id: true, createdAt: true });
+export type InsertSellerPayout = z.infer<typeof insertSellerPayoutSchema>;
+export type SellerPayout = typeof sellerPayouts.$inferSelect;
+
+export const insertPlatformEarningSchema = createInsertSchema(platformEarnings).omit({ id: true, createdAt: true });
+export type InsertPlatformEarning = z.infer<typeof insertPlatformEarningSchema>;
+export type PlatformEarning = typeof platformEarnings.$inferSelect;
 
 // Store schema
 export const insertStoreSchema = createInsertSchema(stores).omit({ id: true, createdAt: true, updatedAt: true });
