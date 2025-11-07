@@ -3,7 +3,7 @@ import { pgTable, text, varchar, integer, decimal, timestamp, boolean, jsonb, pg
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
-export const userRoleEnum = pgEnum("user_role", ["admin", "seller", "buyer", "rider", "agent"]);
+export const userRoleEnum = pgEnum("user_role", ["super_admin", "admin", "seller", "buyer", "rider", "agent"]);
 export const orderStatusEnum = pgEnum("order_status", ["pending", "processing", "delivering", "delivered", "cancelled", "disputed"]);
 export const deliveryMethodEnum = pgEnum("delivery_method", ["pickup", "bus", "rider"]);
 export const paymentStatusEnum = pgEnum("payment_status", ["pending", "processing", "completed", "failed", "refunded"]);
@@ -38,6 +38,37 @@ export const users = pgTable("users", {
   nationalIdCard: varchar("national_id_card"),
   ratings: decimal("ratings", { precision: 3, scale: 2 }).default("0"),
   totalRatings: integer("total_ratings").default(0),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+export const adminPermissions = pgTable("admin_permissions", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  userId: varchar("user_id").notNull().unique().references(() => users.id, { onDelete: "cascade" }),
+  canManageUsers: boolean("can_manage_users").default(true),
+  canManageProducts: boolean("can_manage_products").default(true),
+  canManageOrders: boolean("can_manage_orders").default(true),
+  canManageStores: boolean("can_manage_stores").default(true),
+  canManageCategories: boolean("can_manage_categories").default(true),
+  canManageAdmins: boolean("can_manage_admins").default(false), // Only super_admin
+  canEditPasswords: boolean("can_edit_passwords").default(false), // Only super_admin
+  canManageRoles: boolean("can_manage_roles").default(false), // Only super_admin
+  canManagePlatformSettings: boolean("can_manage_platform_settings").default(true),
+  canViewAnalytics: boolean("can_view_analytics").default(true),
+  canManagePromotions: boolean("can_manage_promotions").default(true),
+  canManageReviews: boolean("can_manage_reviews").default(true),
+  maxProductsPerDay: integer("max_products_per_day").default(100),
+  maxOrdersPerDay: integer("max_orders_per_day").default(500),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+export const passwordResetTokens = pgTable("password_reset_tokens", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  userId: varchar("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+  token: varchar("token").notNull().unique(),
+  expiresAt: timestamp("expires_at").notNull(),
+  usedAt: timestamp("used_at"),
+  createdBy: varchar("created_by").references(() => users.id), // Admin who triggered reset
   createdAt: timestamp("created_at").defaultNow(),
 });
 
@@ -481,6 +512,31 @@ export const insertUserSchema = createInsertSchema(users).pick({
   storeType: true,
   storeTypeMetadata: true,
   vehicleInfo: true,
+});
+
+export const insertAdminPermissionSchema = createInsertSchema(adminPermissions).pick({
+  userId: true,
+  canManageUsers: true,
+  canManageProducts: true,
+  canManageOrders: true,
+  canManageStores: true,
+  canManageCategories: true,
+  canManageAdmins: true,
+  canEditPasswords: true,
+  canManageRoles: true,
+  canManagePlatformSettings: true,
+  canViewAnalytics: true,
+  canManagePromotions: true,
+  canManageReviews: true,
+  maxProductsPerDay: true,
+  maxOrdersPerDay: true,
+});
+
+export const insertPasswordResetTokenSchema = createInsertSchema(passwordResetTokens).pick({
+  userId: true,
+  token: true,
+  expiresAt: true,
+  createdBy: true,
 });
 
 export const insertProductSchema = createInsertSchema(products).pick({

@@ -84,3 +84,74 @@ export function requireRole(...roles: string[]) {
     next();
   };
 }
+
+export function requirePermission(...permissions: string[]) {
+  return async (req: AuthRequest, res: Response, next: NextFunction) => {
+    if (!req.user) {
+      return res.status(401).json({ error: "Authentication required" });
+    }
+
+    if (req.user.role !== "admin" && req.user.role !== "super_admin") {
+      return res.status(403).json({ error: "Admin access required" });
+    }
+
+    if (req.user.role === "super_admin") {
+      return next();
+    }
+
+    try {
+      const { db } = await import("../db");
+      const { adminPermissions } = await import("@shared/schema");
+      const { eq } = await import("drizzle-orm");
+
+      const [userPermissions] = await db
+        .select()
+        .from(adminPermissions)
+        .where(eq(adminPermissions.userId, req.user.id));
+
+      if (!userPermissions) {
+        return res.status(403).json({ error: "No permissions configured for this admin" });
+      }
+
+      const hasPermission = permissions.every((permission) => {
+        switch (permission) {
+          case "manage_users":
+            return userPermissions.canManageUsers;
+          case "manage_products":
+            return userPermissions.canManageProducts;
+          case "manage_orders":
+            return userPermissions.canManageOrders;
+          case "manage_stores":
+            return userPermissions.canManageStores;
+          case "manage_categories":
+            return userPermissions.canManageCategories;
+          case "manage_admins":
+            return userPermissions.canManageAdmins;
+          case "edit_passwords":
+            return userPermissions.canEditPasswords;
+          case "manage_roles":
+            return userPermissions.canManageRoles;
+          case "manage_platform_settings":
+            return userPermissions.canManagePlatformSettings;
+          case "view_analytics":
+            return userPermissions.canViewAnalytics;
+          case "manage_promotions":
+            return userPermissions.canManagePromotions;
+          case "manage_reviews":
+            return userPermissions.canManageReviews;
+          default:
+            return false;
+        }
+      });
+
+      if (!hasPermission) {
+        return res.status(403).json({ error: "Insufficient permissions for this action" });
+      }
+
+      next();
+    } catch (error) {
+      console.error("Permission check error:", error);
+      return res.status(500).json({ error: "Failed to verify permissions" });
+    }
+  };
+}
