@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useLocation } from "wouter";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -12,11 +12,14 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { Loader2, Store, ArrowLeft, Upload, Image as ImageIcon, AlertCircle } from "lucide-react";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Loader2, Store, ArrowLeft, Upload, Image as ImageIcon, AlertCircle, Package } from "lucide-react";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
+import { STORE_TYPES, STORE_TYPE_CONFIG, type StoreType, getStoreTypeFields, getStoreTypeSchema } from "@shared/storeTypes";
 
-const becomeSellerSchema = z.object({
+const baseSellerSchema = z.object({
   name: z.string().min(2, "Name must be at least 2 characters"),
   email: z.string().email("Invalid email address"),
   phone: z.string().min(10, "Phone number must be at least 10 characters"),
@@ -28,9 +31,22 @@ const becomeSellerSchema = z.object({
   ghanaCardFront: z.string().min(1, "Ghana Card front image is required"),
   ghanaCardBack: z.string().min(1, "Ghana Card back image is required"),
   nationalIdCard: z.string().min(10, "Ghana Card number is required"),
+  storeType: z.enum(STORE_TYPES, { required_error: "Please select a store type" }),
 });
 
-type BecomeSellerFormData = z.infer<typeof becomeSellerSchema>;
+function getSellerSchema(storeType: StoreType | null) {
+  if (!storeType) {
+    return baseSellerSchema.extend({
+      storeTypeMetadata: z.record(z.any()).optional(),
+    });
+  }
+  
+  return baseSellerSchema.extend({
+    storeTypeMetadata: getStoreTypeSchema(storeType),
+  });
+}
+
+type BecomeSellerFormData = z.infer<ReturnType<typeof getSellerSchema>>;
 
 export default function BecomeSellerPage() {
   const [, navigate] = useLocation();
@@ -39,9 +55,11 @@ export default function BecomeSellerPage() {
   const [profilePreview, setProfilePreview] = useState<string>("");
   const [cardFrontPreview, setCardFrontPreview] = useState<string>("");
   const [cardBackPreview, setCardBackPreview] = useState<string>("");
+  const [selectedStoreType, setSelectedStoreType] = useState<StoreType | null>(null);
+  const [metadataErrors, setMetadataErrors] = useState<Record<string, string>>({});
 
   const form = useForm<BecomeSellerFormData>({
-    resolver: zodResolver(becomeSellerSchema),
+    resolver: zodResolver(getSellerSchema(selectedStoreType)),
     defaultValues: {
       name: "",
       email: "",
@@ -54,8 +72,16 @@ export default function BecomeSellerPage() {
       ghanaCardFront: "",
       ghanaCardBack: "",
       nationalIdCard: "",
+      storeType: undefined as any,
+      storeTypeMetadata: {},
     },
   });
+
+  useEffect(() => {
+    if (selectedStoreType) {
+      setMetadataErrors({});
+    }
+  }, [selectedStoreType]);
 
   const handleImageUpload = async (file: File, fieldName: "profileImage" | "ghanaCardFront" | "ghanaCardBack") => {
     if (!file) return;
@@ -141,7 +167,42 @@ export default function BecomeSellerPage() {
   });
 
   const onSubmit = (data: BecomeSellerFormData) => {
-    applyMutation.mutate(data);
+    if (!selectedStoreType) {
+      toast({
+        title: "Store Type Required",
+        description: "Please select a store type before submitting",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    try {
+      const storeTypeSchema = getStoreTypeSchema(selectedStoreType);
+      storeTypeSchema.parse(data.storeTypeMetadata);
+      setMetadataErrors({});
+      applyMutation.mutate(data);
+    } catch (error: any) {
+      if (error.errors) {
+        const errors: Record<string, string> = {};
+        error.errors.forEach((err: any) => {
+          const fieldName = err.path[0];
+          errors[fieldName] = err.message;
+        });
+        setMetadataErrors(errors);
+        
+        toast({
+          title: "Missing Required Information",
+          description: "Please fill in all required product information fields",
+          variant: "destructive",
+        });
+      } else {
+        toast({
+          title: "Validation Error",
+          description: "Please check all required fields",
+          variant: "destructive",
+        });
+      }
+    }
   };
 
   return (
@@ -362,6 +423,41 @@ export default function BecomeSellerPage() {
                     
                     <FormField
                       control={form.control}
+                      name="storeType"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Store Type</FormLabel>
+                          <Select
+                            onValueChange={(value) => {
+                              field.onChange(value);
+                              setSelectedStoreType(value as StoreType);
+                              form.setValue("storeTypeMetadata", {});
+                            }}
+                            value={field.value}
+                          >
+                            <FormControl>
+                              <SelectTrigger data-testid="select-store-type">
+                                <SelectValue placeholder="Select your store type" />
+                              </SelectTrigger>
+                            </FormControl>
+                            <SelectContent>
+                              {STORE_TYPES.map((type) => (
+                                <SelectItem key={type} value={type} data-testid={`option-store-type-${type}`}>
+                                  {STORE_TYPE_CONFIG[type].icon} {STORE_TYPE_CONFIG[type].label}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                          <FormDescription>
+                            {selectedStoreType && STORE_TYPE_CONFIG[selectedStoreType].description}
+                          </FormDescription>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+
+                    <FormField
+                      control={form.control}
                       name="storeName"
                       render={({ field }) => (
                         <FormItem>
@@ -408,6 +504,149 @@ export default function BecomeSellerPage() {
                       )}
                     />
                   </div>
+
+                  {selectedStoreType && (
+                    <div className="space-y-4">
+                      <div className="flex items-center gap-2">
+                        <Package className="h-5 w-5 text-primary" />
+                        <h3 className="text-lg font-semibold">Product Information</h3>
+                      </div>
+                      <p className="text-sm text-muted-foreground">
+                        Tell us about the products you'll be selling. This helps us better understand your business.
+                      </p>
+                      
+                      {getStoreTypeFields(selectedStoreType).map((field) => (
+                        <div key={field.name}>
+                          {field.type === "multiselect" ? (
+                            <div className="space-y-3">
+                              <FormLabel>
+                                {field.label}
+                                {field.required && <span className="text-destructive ml-1">*</span>}
+                              </FormLabel>
+                              <div className="grid grid-cols-2 gap-2">
+                                {field.options?.map((option) => (
+                                  <div key={option} className="flex items-center space-x-2">
+                                    <Checkbox
+                                      id={`${field.name}-${option}`}
+                                      checked={
+                                        form.watch("storeTypeMetadata")[field.name]?.includes(option) || false
+                                      }
+                                      onCheckedChange={(checked) => {
+                                        const current = form.watch("storeTypeMetadata")[field.name] || [];
+                                        const updated = checked
+                                          ? [...current, option]
+                                          : current.filter((v: string) => v !== option);
+                                        form.setValue("storeTypeMetadata", {
+                                          ...form.watch("storeTypeMetadata"),
+                                          [field.name]: updated,
+                                        });
+                                      }}
+                                      data-testid={`checkbox-${field.name}-${option}`}
+                                    />
+                                    <label
+                                      htmlFor={`${field.name}-${option}`}
+                                      className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+                                    >
+                                      {option}
+                                    </label>
+                                  </div>
+                                ))}
+                              </div>
+                              {field.description && (
+                                <p className="text-sm text-muted-foreground">{field.description}</p>
+                              )}
+                              {metadataErrors[field.name] && (
+                                <p className="text-sm text-destructive">{metadataErrors[field.name]}</p>
+                              )}
+                            </div>
+                          ) : field.type === "select" ? (
+                            <div className="space-y-2">
+                              <FormLabel>
+                                {field.label}
+                                {field.required && <span className="text-destructive ml-1">*</span>}
+                              </FormLabel>
+                              <Select
+                                onValueChange={(value) => {
+                                  form.setValue("storeTypeMetadata", {
+                                    ...form.watch("storeTypeMetadata"),
+                                    [field.name]: value,
+                                  });
+                                }}
+                                value={form.watch("storeTypeMetadata")[field.name] || ""}
+                              >
+                                <SelectTrigger data-testid={`select-${field.name}`}>
+                                  <SelectValue placeholder={field.placeholder || `Select ${field.label}`} />
+                                </SelectTrigger>
+                                <SelectContent>
+                                  {field.options?.map((option) => (
+                                    <SelectItem key={option} value={option} data-testid={`option-${field.name}-${option}`}>
+                                      {option}
+                                    </SelectItem>
+                                  ))}
+                                </SelectContent>
+                              </Select>
+                              {field.description && (
+                                <p className="text-sm text-muted-foreground">{field.description}</p>
+                              )}
+                              {metadataErrors[field.name] && (
+                                <p className="text-sm text-destructive">{metadataErrors[field.name]}</p>
+                              )}
+                            </div>
+                          ) : field.type === "textarea" ? (
+                            <div className="space-y-2">
+                              <FormLabel>
+                                {field.label}
+                                {field.required && <span className="text-destructive ml-1">*</span>}
+                              </FormLabel>
+                              <Textarea
+                                placeholder={field.placeholder}
+                                value={form.watch("storeTypeMetadata")[field.name] || ""}
+                                onChange={(e) => {
+                                  form.setValue("storeTypeMetadata", {
+                                    ...form.watch("storeTypeMetadata"),
+                                    [field.name]: e.target.value,
+                                  });
+                                }}
+                                data-testid={`textarea-${field.name}`}
+                              />
+                              {field.description && (
+                                <p className="text-sm text-muted-foreground">{field.description}</p>
+                              )}
+                              {metadataErrors[field.name] && (
+                                <p className="text-sm text-destructive">{metadataErrors[field.name]}</p>
+                              )}
+                            </div>
+                          ) : (
+                            <div className="space-y-2">
+                              <FormLabel>
+                                {field.label}
+                                {field.required && <span className="text-destructive ml-1">*</span>}
+                              </FormLabel>
+                              <Input
+                                type={field.type === "number" ? "number" : "text"}
+                                placeholder={field.placeholder}
+                                value={form.watch("storeTypeMetadata")[field.name] || ""}
+                                onChange={(e) => {
+                                  const value = field.type === "number" ? Number(e.target.value) : e.target.value;
+                                  form.setValue("storeTypeMetadata", {
+                                    ...form.watch("storeTypeMetadata"),
+                                    [field.name]: value,
+                                  });
+                                }}
+                                data-testid={`input-${field.name}`}
+                              />
+                              {field.description && (
+                                <p className="text-sm text-muted-foreground">{field.description}</p>
+                              )}
+                              {metadataErrors[field.name] && (
+                                <p className="text-sm text-destructive">{metadataErrors[field.name]}</p>
+                              )}
+                            </div>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  )}
 
                   <div className="flex justify-end gap-3 pt-4">
                     <Button

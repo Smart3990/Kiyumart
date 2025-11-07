@@ -14,6 +14,7 @@ export const adminTransactionTypeEnum = pgEnum("admin_transaction_type", ["sale"
 export const mediaTypeEnum = pgEnum("media_type", ["image", "video"]);
 export const deliveryAssignmentStatusEnum = pgEnum("delivery_assignment_status", ["assigned", "en_route", "delivered", "cancelled"]);
 export const mediaCategoryEnum = pgEnum("media_category", ["banner", "category", "logo", "product", "general"]);
+export const storeTypeEnum = pgEnum("store_type", ["clothing", "electronics", "food_beverages", "beauty_cosmetics", "home_garden", "sports_fitness", "books_media", "toys_games", "automotive", "health_wellness"]);
 
 export const users = pgTable("users", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
@@ -31,6 +32,8 @@ export const users = pgTable("users", {
   storeName: text("store_name"),
   storeDescription: text("store_description"),
   storeBanner: text("store_banner"),
+  storeType: storeTypeEnum("store_type"),
+  storeTypeMetadata: jsonb("store_type_metadata").$type<Record<string, any>>(),
   vehicleInfo: jsonb("vehicle_info").$type<{ type: string; plateNumber?: string; license?: string; color?: string }>(),
   nationalIdCard: varchar("national_id_card"),
   ratings: decimal("ratings", { precision: 3, scale: 2 }).default("0"),
@@ -98,6 +101,8 @@ export const stores = pgTable("stores", {
   logo: text("logo"),
   banner: text("banner"),
   category: text("category"),
+  storeType: storeTypeEnum("store_type"),
+  storeTypeMetadata: jsonb("store_type_metadata").$type<Record<string, any>>(),
   isActive: boolean("is_active").default(true),
   isApproved: boolean("is_approved").default(true),
   createdAt: timestamp("created_at").defaultNow(),

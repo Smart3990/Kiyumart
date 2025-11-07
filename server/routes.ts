@@ -15,6 +15,7 @@ import { uploadToCloudinary, uploadWithMetadata } from "./cloudinary";
 import { getExchangeRates, convertCurrency, SUPPORTED_CURRENCIES } from "./currency";
 import multer from "multer";
 import { insertUserSchema, insertProductSchema, insertDeliveryZoneSchema, insertOrderSchema, insertWishlistSchema, insertReviewSchema, insertBannerCollectionSchema, insertMarketplaceBannerSchema } from "@shared/schema";
+import { getStoreTypeSchema, type StoreType, STORE_TYPES } from "@shared/storeTypes";
 
 const upload = multer({ storage: multer.memoryStorage() });
 
@@ -359,6 +360,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
               name: user.storeName || user.name + "'s Store",
               description: user.storeDescription || "",
               logo: user.storeBanner || "",
+              storeType: user.storeType,
+              storeTypeMetadata: user.storeTypeMetadata,
               isActive: true,
               isApproved: true
             });
@@ -493,6 +496,28 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       if (!password || password.length < 8) {
         return res.status(400).json({ error: "Password must be at least 8 characters" });
+      }
+
+      if (!userData.storeType) {
+        return res.status(400).json({ error: "Store type is required" });
+      }
+
+      if (!STORE_TYPES.includes(userData.storeType)) {
+        return res.status(400).json({ error: "Invalid store type" });
+      }
+
+      try {
+        const storeTypeSchema = getStoreTypeSchema(userData.storeType as StoreType);
+        storeTypeSchema.parse(userData.storeTypeMetadata || {});
+      } catch (validationError: any) {
+        const errors = validationError.errors?.map((e: any) => ({
+          field: e.path.join('.'),
+          message: e.message
+        }));
+        return res.status(400).json({ 
+          error: "Invalid or missing product information", 
+          details: errors 
+        });
       }
 
       const existingUser = await storage.getUserByEmail(userData.email);
@@ -2174,6 +2199,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
                   name: seller.storeName || seller.name + "'s Store",
                   description: seller.storeDescription || "",
                   logo: seller.storeBanner || "",
+                  storeType: seller.storeType,
+                  storeTypeMetadata: seller.storeTypeMetadata,
                   isActive: true,
                   isApproved: true
                 });
