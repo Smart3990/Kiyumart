@@ -54,6 +54,14 @@
 - **Safe Re-runs**: Script checks for existing accounts and only creates missing ones, preventing duplicates
 - **Production Safety**: Enforces custom passwords in production environments and provides comprehensive setup documentation in ADMIN_SETUP.md
 
+### Dynamic Primary Store Selection System
+- **Database-Driven Product Display**: Removed all hardcoded category and product data - system is now fully database-driven with no static fallbacks
+- **Admin Primary Store Control**: Added dropdown selector in Admin Store Manager > Store Mode tab allowing admins to choose any approved store as the primary/featured store
+- **Intelligent Product Filtering**: Home page automatically filters products by selected primary store when in single-store mode, with graceful fallback to showing all products when no store is selected
+- **Multi-Vendor Mode Unaffected**: Primary store selection only applies in single-store mode - multi-vendor mode continues showing all products from all stores
+- **Approved Stores Only**: Primary store selector displays only approved and active stores for quality control
+- **Clear Admin UX**: Warning message displays in Store Mode tab when operating in single-store mode without a selected primary store
+
 ## Overview
 
 KiyuMart is an e-commerce platform specializing in modest Islamic women's fashion, designed to operate as either a single-store or a multi-vendor marketplace. Its core purpose is to provide a comprehensive online destination with functionalities including product and order management, real-time delivery tracking with map visualization, live chat, and Paystack payment integration. The platform aims to offer a diverse and inclusive product range, supported by dynamic category management, extensive admin dashboards for user and product management, and a robust application verification system for sellers and riders.
