@@ -219,7 +219,7 @@ export default function AdminOrders() {
             <Button
               variant="ghost"
               size="icon"
-              onClick={() => navigate("/admin")}
+              onClick={() => window.history.back()}
               data-testid="button-back"
             >
               <ArrowLeft className="h-5 w-5" />

@@ -992,7 +992,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // ============ Delivery Zone Routes ============
-  app.post("/api/delivery-zones", requireAuth, requireRole("admin"), async (req, res) => {
+  app.post("/api/delivery-zones", requireAuth, requireRole("admin", "super_admin"), async (req, res) => {
     try {
       const validatedData = insertDeliveryZoneSchema.parse(req.body);
       const zone = await storage.createDeliveryZone(validatedData);
@@ -1011,7 +1011,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.patch("/api/delivery-zones/:id", requireAuth, requireRole("admin"), async (req, res) => {
+  app.patch("/api/delivery-zones/:id", requireAuth, requireRole("admin", "super_admin"), async (req, res) => {
     try {
       const zone = await storage.updateDeliveryZone(req.params.id, req.body);
       if (!zone) {
@@ -1023,7 +1023,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.delete("/api/delivery-zones/:id", requireAuth, requireRole("admin"), async (req, res) => {
+  app.delete("/api/delivery-zones/:id", requireAuth, requireRole("admin", "super_admin"), async (req, res) => {
     try {
       await storage.deleteDeliveryZone(req.params.id);
       res.json({ success: true });

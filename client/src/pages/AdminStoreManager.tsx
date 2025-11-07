@@ -147,7 +147,7 @@ export default function AdminStoreManager() {
             <Button
               variant="ghost"
               size="icon"
-              onClick={() => navigate("/admin")}
+              onClick={() => window.history.back()}
               data-testid="button-back"
             >
               <ArrowLeft className="h-5 w-5" />
@@ -617,7 +617,7 @@ export default function AdminStoreManager() {
               <Button
                 type="button"
                 variant="outline"
-                onClick={() => navigate("/admin")}
+                onClick={() => window.history.back()}
                 data-testid="button-cancel"
               >
                 Cancel
