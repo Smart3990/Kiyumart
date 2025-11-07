@@ -9,6 +9,9 @@ import { setupVite, serveStatic, log } from "./vite";
 
 const app = express();
 
+// Trust proxy - Required for rate limiting behind Replit's proxy
+app.set('trust proxy', true);
+
 // Security Headers - Helmet.js
 app.use(helmet({
   contentSecurityPolicy: process.env.NODE_ENV === 'production' ? undefined : false,
