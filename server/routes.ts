@@ -2498,7 +2498,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.patch("/api/settings", requireAuth, requireRole("admin"), async (req, res) => {
+  app.patch("/api/settings", requireAuth, requireRole("admin", "super_admin"), async (req, res) => {
     try {
       const previousSettings = await storage.getPlatformSettings();
       

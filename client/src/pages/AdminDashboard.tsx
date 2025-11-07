@@ -58,7 +58,7 @@ export default function AdminDashboard() {
       setActiveItem("my-purchases");
     } else if (path === "/wishlist") {
       setActiveItem("my-wishlist");
-    } else if (path.includes("/notifications")) {
+    } else if (path.includes("/admin/notifications") || path === "/notifications") {
       setActiveItem("notifications");
     } else if (path.includes("/admin/messages")) {
       setActiveItem("messages");
@@ -79,7 +79,7 @@ export default function AdminDashboard() {
       id === "my-cart" ? "/cart" :
       id === "my-purchases" ? "/orders" :
       id === "my-wishlist" ? "/wishlist" :
-      id === "notifications" ? "/notifications" :
+      id === "notifications" ? "/admin/notifications" :
       id === "messages" ? "/admin/messages" :
       id === "analytics" ? "/admin/analytics" :
       "/admin"
