@@ -16,6 +16,7 @@ export const deliveryAssignmentStatusEnum = pgEnum("delivery_assignment_status",
 export const mediaCategoryEnum = pgEnum("media_category", ["banner", "category", "logo", "product", "general"]);
 export const storeTypeEnum = pgEnum("store_type", ["clothing", "electronics", "food_beverages", "beauty_cosmetics", "home_garden", "sports_fitness", "books_media", "toys_games", "automotive", "health_wellness"]);
 export const applicationStatusEnum = pgEnum("application_status", ["pending", "approved", "rejected"]);
+export const payoutTypeEnum = pgEnum("payout_type", ["bank_account", "mobile_money"]);
 
 export const users = pgTable("users", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
@@ -146,6 +147,23 @@ export const stores = pgTable("stores", {
   storeTypeMetadata: jsonb("store_type_metadata").$type<Record<string, any>>(),
   isActive: boolean("is_active").default(true),
   isApproved: boolean("is_approved").default(true),
+  
+  // Paystack Payment Integration Fields
+  paystackSubaccountId: text("paystack_subaccount_id"), // Paystack subaccount code (e.g., ACCT_xxxxxxxx)
+  payoutType: payoutTypeEnum("payout_type"), // bank_account or mobile_money
+  payoutDetails: jsonb("payout_details").$type<{
+    // For Bank Account
+    accountName?: string;
+    accountNumber?: string;
+    bankCode?: string;
+    bankName?: string;
+    // For Mobile Money
+    fullName?: string;
+    mobileNumber?: string;
+    provider?: string; // MTN, Vodafone, AirtelTigo
+  }>(),
+  isPayoutVerified: boolean("is_payout_verified").default(false),
+  
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
 });

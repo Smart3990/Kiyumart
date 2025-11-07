@@ -2527,15 +2527,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       const message = await storage.createMessage(messageData);
       
+      // CRITICAL FIX: Broadcast to BOTH sender and receiver for instant message updates
       io.to(req.body.receiverId).emit("new_message", message);
+      io.to(req.user!.id).emit("new_message", message);
       
-      // Notify admins about new messages to admin
+      // Notify admins about new messages to admin, agent, or super_admin
       const receiver = await storage.getUser(req.body.receiverId);
-      if (receiver && receiver.role === "admin") {
+      const sender = await storage.getUser(req.user!.id);
+      if (receiver && (receiver.role === "admin" || receiver.role === "super_admin" || receiver.role === "agent")) {
         await notifyAdmins(
           "message",
           "New message received",
-          `You have a new message from a user`,
+          `You have a new message from ${sender?.name || sender?.email || 'a user'}`,
           { messageId: message.id, senderId: req.user!.id }
         );
       }
