@@ -3,6 +3,9 @@ import { createServer, type Server } from "http";
 import { Server as SocketIOServer } from "socket.io";
 import bcrypt from "bcryptjs";
 import { storage } from "./storage";
+import { db } from "../db";
+import { users, cart, wishlist, chatMessages, notifications, orders, products, stores } from "@shared/schema";
+import { eq, or } from "drizzle-orm";
 import { 
   hashPassword, 
   comparePassword, 
@@ -599,14 +602,60 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.delete("/api/users/:id", requireAuth, requireRole("admin"), async (req, res) => {
     try {
-      // Soft delete: deactivate user instead of hard delete to preserve referential integrity
-      const user = await storage.updateUser(req.params.id, { isActive: false });
+      const user = await storage.getUser(req.params.id);
       if (!user) {
         return res.status(404).json({ error: "User not found" });
       }
-      res.json({ success: true, message: "User deactivated successfully" });
+
+      console.log(`Starting hard delete for user ${req.params.id} (${user.role})`);
+      
+      // Execute all deletes in a transaction for data integrity
+      await db.transaction(async (tx) => {
+        // Delete user's chat messages
+        await tx.delete(chatMessages).where(
+          or(
+            eq(chatMessages.senderId, req.params.id),
+            eq(chatMessages.receiverId, req.params.id)
+          )
+        );
+        
+        // Delete user's cart items
+        await tx.delete(cart).where(eq(cart.userId, req.params.id));
+        
+        // Delete user's wishlist items
+        await tx.delete(wishlist).where(eq(wishlist.userId, req.params.id));
+        
+        // Delete user's notifications
+        await tx.delete(notifications).where(eq(notifications.userId, req.params.id));
+        
+        // If seller, delete their store and products
+        if (user.role === "seller") {
+          const store = await storage.getStoreByPrimarySeller(req.params.id);
+          if (store) {
+            // Delete products from this store
+            await tx.delete(products).where(eq(products.storeId, store.id));
+            // Delete the store
+            await tx.delete(stores).where(eq(stores.id, store.id));
+            console.log(`Deleting store ${store.id} and its products for seller ${req.params.id}`);
+          }
+        }
+        
+        // Delete user's orders (as buyer or rider)
+        await tx.delete(orders).where(
+          or(
+            eq(orders.userId, req.params.id),
+            eq(orders.riderId, req.params.id)
+          )
+        );
+        
+        // Finally, delete the user
+        await tx.delete(users).where(eq(users.id, req.params.id));
+      });
+      
+      console.log(`Successfully hard deleted user ${req.params.id} and all related data`);
+      res.json({ success: true, message: "User and all related data deleted successfully" });
     } catch (error: any) {
-      console.error("Error deactivating user:", error);
+      console.error("Error deleting user:", error);
       res.status(400).json({ error: error.message });
     }
   });

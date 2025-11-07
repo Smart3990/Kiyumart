@@ -10,7 +10,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Loader2, Search, Store, Edit, Ban, ArrowLeft, Plus, CheckCircle, XCircle, ShieldCheck, Clock, ExternalLink } from "lucide-react";
+import { Loader2, Search, Store, Edit, Ban, ArrowLeft, Plus, CheckCircle, XCircle, ShieldCheck, Clock, ExternalLink, Eye, CreditCard, User, MapPin } from "lucide-react";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
@@ -32,6 +32,10 @@ interface SellerData {
   storeDescription: string | null;
   storeBanner: string | null;
   profileImage: string | null;
+  ghanaCardFront: string | null;
+  ghanaCardBack: string | null;
+  nationalIdCard: string | null;
+  businessAddress: string | null;
   createdAt: string | null;
 }
 
@@ -473,6 +477,140 @@ function EditSellerDialog({ sellerData }: { sellerData: SellerData }) {
   );
 }
 
+function ViewApplicationDialog({ sellerData }: { sellerData: SellerData }) {
+  const [open, setOpen] = useState(false);
+
+  return (
+    <Dialog open={open} onOpenChange={setOpen}>
+      <DialogTrigger asChild>
+        <Button 
+          variant="outline" 
+          size="sm"
+          data-testid={`button-view-application-${sellerData.id}`}
+        >
+          <Eye className="h-3 w-3 mr-1" />
+          View Application
+        </Button>
+      </DialogTrigger>
+      <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
+        <DialogHeader>
+          <DialogTitle>Seller Application Details</DialogTitle>
+          <DialogDescription>
+            Review all application details including verification documents
+          </DialogDescription>
+        </DialogHeader>
+        
+        <div className="space-y-6">
+          {/* Profile Image */}
+          {sellerData.profileImage && (
+            <div>
+              <h3 className="text-lg font-semibold mb-3 flex items-center gap-2">
+                <User className="h-5 w-5" />
+                Profile Photo
+              </h3>
+              <div className="bg-muted rounded-lg p-4 flex justify-center">
+                <img 
+                  src={sellerData.profileImage} 
+                  alt="Profile" 
+                  className="w-32 h-32 rounded-full object-cover"
+                />
+              </div>
+            </div>
+          )}
+
+          {/* Personal Information */}
+          <div>
+            <h3 className="text-lg font-semibold mb-3">Personal Information</h3>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
+              <div>
+                <p className="text-muted-foreground">Name</p>
+                <p className="font-medium">{sellerData.name}</p>
+              </div>
+              <div>
+                <p className="text-muted-foreground">Email</p>
+                <p className="font-medium">{sellerData.email}</p>
+              </div>
+              <div>
+                <p className="text-muted-foreground">Phone</p>
+                <p className="font-medium">{sellerData.phone || 'N/A'}</p>
+              </div>
+              {sellerData.nationalIdCard && (
+                <div>
+                  <p className="text-muted-foreground">Ghana Card Number</p>
+                  <p className="font-medium">{sellerData.nationalIdCard}</p>
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* Ghana Card Verification */}
+          {(sellerData.ghanaCardFront || sellerData.ghanaCardBack) && (
+            <div>
+              <h3 className="text-lg font-semibold mb-3 flex items-center gap-2">
+                <CreditCard className="h-5 w-5" />
+                Ghana Card Verification
+              </h3>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {sellerData.ghanaCardFront && (
+                  <div>
+                    <p className="text-sm font-medium text-muted-foreground mb-2">Front</p>
+                    <div className="bg-muted rounded-lg p-2">
+                      <img 
+                        src={sellerData.ghanaCardFront} 
+                        alt="Ghana Card Front" 
+                        className="w-full h-auto rounded object-contain"
+                      />
+                    </div>
+                  </div>
+                )}
+                {sellerData.ghanaCardBack && (
+                  <div>
+                    <p className="text-sm font-medium text-muted-foreground mb-2">Back</p>
+                    <div className="bg-muted rounded-lg p-2">
+                      <img 
+                        src={sellerData.ghanaCardBack} 
+                        alt="Ghana Card Back" 
+                        className="w-full h-auto rounded object-contain"
+                      />
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+
+          {/* Store Information */}
+          <div>
+            <h3 className="text-lg font-semibold mb-3 flex items-center gap-2">
+              <Store className="h-5 w-5" />
+              Store Information
+            </h3>
+            <div className="grid grid-cols-1 gap-4 text-sm">
+              <div>
+                <p className="text-muted-foreground">Store Name</p>
+                <p className="font-medium">{sellerData.storeName || 'N/A'}</p>
+              </div>
+              <div>
+                <p className="text-muted-foreground">Store Description</p>
+                <p className="font-medium">{sellerData.storeDescription || 'N/A'}</p>
+              </div>
+              {sellerData.businessAddress && (
+                <div>
+                  <p className="text-muted-foreground flex items-center gap-1">
+                    <MapPin className="h-3 w-3" />
+                    Business Address
+                  </p>
+                  <p className="font-medium">{sellerData.businessAddress}</p>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
 function ApproveRejectDialog({ sellerData }: { sellerData: SellerData }) {
   const [open, setOpen] = useState(false);
   const [action, setAction] = useState<'approve' | 'reject' | null>(null);
@@ -544,6 +682,7 @@ function ApproveRejectDialog({ sellerData }: { sellerData: SellerData }) {
     <>
       {!sellerData.isApproved && sellerData.isActive && (
         <div className="flex gap-1">
+          <ViewApplicationDialog sellerData={sellerData} />
           <Button 
             variant="default" 
             size="sm"
