@@ -9,8 +9,9 @@ import { Input } from "@/components/ui/input";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Loader2, Search, User, Edit, Plus, Bike, ArrowLeft, CheckCircle, XCircle, ShieldCheck, Clock } from "lucide-react";
+import { Loader2, Search, User, Edit, Plus, Bike, ArrowLeft, CheckCircle, XCircle, ShieldCheck, Clock, Eye, CreditCard, MapPin } from "lucide-react";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useForm } from "react-hook-form";
@@ -21,10 +22,22 @@ import { apiRequest, queryClient } from "@/lib/queryClient";
 interface Rider {
   id: string;
   username: string;
+  name: string;
   email: string;
   phone: string | null;
   isActive: boolean;
   isApproved: boolean;
+  profileImage: string | null;
+  ghanaCardFront: string | null;
+  ghanaCardBack: string | null;
+  nationalIdCard: string | null;
+  vehicleInfo: {
+    type: string;
+    plateNumber: string;
+    license: string;
+  } | null;
+  businessAddress: string | null;
+  createdAt: string | null;
 }
 
 const addRiderSchema = z.object({
@@ -263,6 +276,271 @@ function AddRiderDialog() {
   );
 }
 
+function ViewApplicationDialog({ riderData }: { riderData: Rider }) {
+  const [open, setOpen] = useState(false);
+
+  return (
+    <Dialog open={open} onOpenChange={setOpen}>
+      <DialogTrigger asChild>
+        <Button 
+          variant="outline" 
+          size="sm"
+          data-testid={`button-view-application-${riderData.id}`}
+        >
+          <Eye className="h-3 w-3 mr-1" />
+          View Application
+        </Button>
+      </DialogTrigger>
+      <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
+        <DialogHeader>
+          <DialogTitle>Rider Application Details</DialogTitle>
+          <DialogDescription>
+            Review all application details including verification documents
+          </DialogDescription>
+        </DialogHeader>
+        
+        <div className="space-y-6">
+          {riderData.profileImage && (
+            <div>
+              <h3 className="text-lg font-semibold mb-3 flex items-center gap-2">
+                <User className="h-5 w-5" />
+                Profile Photo
+              </h3>
+              <div className="bg-muted rounded-lg p-4 flex justify-center">
+                <img 
+                  src={riderData.profileImage} 
+                  alt="Profile" 
+                  className="w-32 h-32 rounded-full object-cover"
+                />
+              </div>
+            </div>
+          )}
+
+          <div>
+            <h3 className="text-lg font-semibold mb-3">Personal Information</h3>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
+              <div>
+                <p className="text-muted-foreground">Name</p>
+                <p className="font-medium">{riderData.name || riderData.username}</p>
+              </div>
+              <div>
+                <p className="text-muted-foreground">Email</p>
+                <p className="font-medium">{riderData.email}</p>
+              </div>
+              <div>
+                <p className="text-muted-foreground">Phone</p>
+                <p className="font-medium">{riderData.phone || 'N/A'}</p>
+              </div>
+              {riderData.nationalIdCard && (
+                <div>
+                  <p className="text-muted-foreground">Ghana Card Number</p>
+                  <p className="font-medium">{riderData.nationalIdCard}</p>
+                </div>
+              )}
+            </div>
+          </div>
+
+          {(riderData.ghanaCardFront || riderData.ghanaCardBack) && (
+            <div>
+              <h3 className="text-lg font-semibold mb-3 flex items-center gap-2">
+                <CreditCard className="h-5 w-5" />
+                Ghana Card Verification
+              </h3>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {riderData.ghanaCardFront && (
+                  <div>
+                    <p className="text-sm font-medium text-muted-foreground mb-2">Front</p>
+                    <div className="bg-muted rounded-lg p-2">
+                      <img 
+                        src={riderData.ghanaCardFront} 
+                        alt="Ghana Card Front" 
+                        className="w-full h-auto rounded object-contain"
+                      />
+                    </div>
+                  </div>
+                )}
+                {riderData.ghanaCardBack && (
+                  <div>
+                    <p className="text-sm font-medium text-muted-foreground mb-2">Back</p>
+                    <div className="bg-muted rounded-lg p-2">
+                      <img 
+                        src={riderData.ghanaCardBack} 
+                        alt="Ghana Card Back" 
+                        className="w-full h-auto rounded object-contain"
+                      />
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+
+          {riderData.vehicleInfo && (
+            <div>
+              <h3 className="text-lg font-semibold mb-3 flex items-center gap-2">
+                <Bike className="h-5 w-5" />
+                Vehicle Information
+              </h3>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
+                <div>
+                  <p className="text-muted-foreground">Vehicle Type</p>
+                  <p className="font-medium capitalize">{riderData.vehicleInfo.type}</p>
+                </div>
+                <div>
+                  <p className="text-muted-foreground">Plate Number</p>
+                  <p className="font-medium">{riderData.vehicleInfo.plateNumber}</p>
+                </div>
+                <div>
+                  <p className="text-muted-foreground">License Number</p>
+                  <p className="font-medium">{riderData.vehicleInfo.license}</p>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {riderData.businessAddress && (
+            <div>
+              <h3 className="text-lg font-semibold mb-3 flex items-center gap-2">
+                <MapPin className="h-5 w-5" />
+                Address
+              </h3>
+              <p className="text-sm">{riderData.businessAddress}</p>
+            </div>
+          )}
+        </div>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+function ApproveRejectDialog({ riderData }: { riderData: Rider }) {
+  const [open, setOpen] = useState(false);
+  const [action, setAction] = useState<'approve' | 'reject' | null>(null);
+  const { toast } = useToast();
+
+  const approveMutation = useMutation({
+    mutationFn: async () => {
+      return apiRequest("PATCH", `/api/users/${riderData.id}/approve`);
+    },
+    onSuccess: async () => {
+      toast({
+        title: "Success",
+        description: "Rider application approved successfully",
+      });
+      await queryClient.invalidateQueries({ queryKey: ["/api/users", "rider"] });
+      await queryClient.refetchQueries({ queryKey: ["/api/users", "rider"] });
+      setOpen(false);
+      setAction(null);
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to approve rider",
+        variant: "destructive",
+      });
+      setAction(null);
+    },
+  });
+
+  const rejectMutation = useMutation({
+    mutationFn: async () => {
+      return apiRequest("PATCH", `/api/users/${riderData.id}/reject`);
+    },
+    onSuccess: async () => {
+      toast({
+        title: "Success",
+        description: "Rider application rejected successfully",
+      });
+      await queryClient.invalidateQueries({ queryKey: ["/api/users", "rider"] });
+      await queryClient.refetchQueries({ queryKey: ["/api/users", "rider"] });
+      setOpen(false);
+      setAction(null);
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to reject rider",
+        variant: "destructive",
+      });
+      setAction(null);
+    },
+  });
+
+  const handleAction = (selectedAction: 'approve' | 'reject') => {
+    setAction(selectedAction);
+    setOpen(true);
+  };
+
+  const confirmAction = () => {
+    if (action === 'approve') {
+      approveMutation.mutate();
+    } else if (action === 'reject') {
+      rejectMutation.mutate();
+    }
+  };
+
+  const isPending = approveMutation.isPending || rejectMutation.isPending;
+
+  return (
+    <>
+      {!riderData.isApproved && riderData.isActive && (
+        <div className="flex gap-1">
+          <ViewApplicationDialog riderData={riderData} />
+          <Button 
+            variant="default" 
+            size="sm"
+            onClick={() => handleAction('approve')}
+            data-testid={`button-approve-${riderData.id}`}
+            className="bg-green-600 hover:bg-green-700"
+          >
+            <CheckCircle className="h-3 w-3 mr-1" />
+            Approve
+          </Button>
+          <Button 
+            variant="destructive" 
+            size="sm"
+            onClick={() => handleAction('reject')}
+            data-testid={`button-reject-${riderData.id}`}
+          >
+            <XCircle className="h-3 w-3 mr-1" />
+            Reject
+          </Button>
+        </div>
+      )}
+      
+      <AlertDialog open={open} onOpenChange={setOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>
+              {action === 'approve' ? 'Approve' : 'Reject'} Rider Application?
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              {action === 'approve' 
+                ? `Are you sure you want to approve ${riderData.name || riderData.username}'s application? This will allow them to start accepting deliveries.`
+                : `Are you sure you want to reject ${riderData.name || riderData.username}'s application? This will deactivate their account.`
+              }
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel data-testid="button-cancel-action">Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={confirmAction}
+              disabled={isPending}
+              data-testid="button-confirm-action"
+              className={action === 'reject' ? 'bg-destructive hover:bg-destructive/90' : ''}
+            >
+              {isPending && (
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              )}
+              {action === 'approve' ? 'Approve' : 'Reject'}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+    </>
+  );
+}
+
 export default function AdminRiders() {
   const [searchQuery, setSearchQuery] = useState("");
   const [activeTab, setActiveTab] = useState("all");
@@ -401,14 +679,18 @@ export default function AdminRiders() {
                       </div>
                     </div>
                     <div className="flex gap-2">
-                      <Button 
-                        variant="ghost" 
-                        size="icon"
-                        onClick={() => navigate(`/admin/riders/${rider.id}/edit`)}
-                        data-testid={`button-edit-${rider.id}`}
-                      >
-                        <Edit className="h-4 w-4" />
-                      </Button>
+                      {!rider.isApproved && rider.isActive ? (
+                        <ApproveRejectDialog riderData={rider} />
+                      ) : (
+                        <Button 
+                          variant="ghost" 
+                          size="icon"
+                          onClick={() => navigate(`/admin/riders/${rider.id}/edit`)}
+                          data-testid={`button-edit-${rider.id}`}
+                        >
+                          <Edit className="h-4 w-4" />
+                        </Button>
+                      )}
                     </div>
                   </div>
                 </Card>
