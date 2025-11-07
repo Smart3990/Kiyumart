@@ -473,6 +473,132 @@ function EditSellerDialog({ sellerData }: { sellerData: SellerData }) {
   );
 }
 
+function ApproveRejectDialog({ sellerData }: { sellerData: SellerData }) {
+  const [open, setOpen] = useState(false);
+  const [action, setAction] = useState<'approve' | 'reject' | null>(null);
+  const { toast } = useToast();
+
+  const approveMutation = useMutation({
+    mutationFn: async () => {
+      return apiRequest("PATCH", `/api/users/${sellerData.id}/approve`);
+    },
+    onSuccess: () => {
+      toast({
+        title: "Success",
+        description: "Seller application approved successfully",
+      });
+      queryClient.invalidateQueries({ queryKey: ["/api/users"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/stores"] });
+      setOpen(false);
+      setAction(null);
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to approve seller",
+        variant: "destructive",
+      });
+      setAction(null);
+    },
+  });
+
+  const rejectMutation = useMutation({
+    mutationFn: async () => {
+      return apiRequest("PATCH", `/api/users/${sellerData.id}/reject`);
+    },
+    onSuccess: () => {
+      toast({
+        title: "Success",
+        description: "Seller application rejected successfully",
+      });
+      queryClient.invalidateQueries({ queryKey: ["/api/users"] });
+      setOpen(false);
+      setAction(null);
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to reject seller",
+        variant: "destructive",
+      });
+      setAction(null);
+    },
+  });
+
+  const handleAction = (selectedAction: 'approve' | 'reject') => {
+    setAction(selectedAction);
+    setOpen(true);
+  };
+
+  const confirmAction = () => {
+    if (action === 'approve') {
+      approveMutation.mutate();
+    } else if (action === 'reject') {
+      rejectMutation.mutate();
+    }
+  };
+
+  const isPending = approveMutation.isPending || rejectMutation.isPending;
+
+  return (
+    <>
+      {!sellerData.isApproved && sellerData.isActive && (
+        <div className="flex gap-1">
+          <Button 
+            variant="default" 
+            size="sm"
+            onClick={() => handleAction('approve')}
+            data-testid={`button-approve-${sellerData.id}`}
+            className="bg-green-600 hover:bg-green-700"
+          >
+            <CheckCircle className="h-3 w-3 mr-1" />
+            Approve
+          </Button>
+          <Button 
+            variant="destructive" 
+            size="sm"
+            onClick={() => handleAction('reject')}
+            data-testid={`button-reject-${sellerData.id}`}
+          >
+            <XCircle className="h-3 w-3 mr-1" />
+            Reject
+          </Button>
+        </div>
+      )}
+      
+      <AlertDialog open={open} onOpenChange={setOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>
+              {action === 'approve' ? 'Approve' : 'Reject'} Seller Application?
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              {action === 'approve' 
+                ? `Are you sure you want to approve ${sellerData.name}'s application? This will create their store and allow them to start selling.`
+                : `Are you sure you want to reject ${sellerData.name}'s application? This will deactivate their account.`
+              }
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel data-testid="button-cancel-action">Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={confirmAction}
+              disabled={isPending}
+              data-testid="button-confirm-action"
+              className={action === 'reject' ? 'bg-destructive hover:bg-destructive/90' : ''}
+            >
+              {isPending && (
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              )}
+              {action === 'approve' ? 'Approve' : 'Reject'}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+    </>
+  );
+}
+
 function BanActivateDialog({ sellerData }: { sellerData: SellerData }) {
   const [open, setOpen] = useState(false);
   const { toast } = useToast();
@@ -687,6 +813,12 @@ export default function AdminSellers() {
                           </p>
                         )}
                       </div>
+
+                      {!seller.isApproved && (
+                        <div className="mt-3">
+                          <ApproveRejectDialog sellerData={seller} />
+                        </div>
+                      )}
 
                       <div className="flex items-center gap-2 mt-3">
                         {seller.isActive ? (

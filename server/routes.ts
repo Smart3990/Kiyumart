@@ -421,6 +421,39 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  app.patch("/api/users/:id/reject", requireAuth, requireRole("admin"), async (req, res) => {
+    try {
+      const user = await storage.getUser(req.params.id);
+      if (!user) {
+        return res.status(404).json({ error: "User not found" });
+      }
+      
+      // Only allow rejection of pending (unapproved) applications
+      if (user.isApproved) {
+        return res.status(400).json({ 
+          error: "Cannot reject already approved applications. Use deactivate instead." 
+        });
+      }
+      
+      // Deactivate and unapprove the user
+      const rejectedUser = await storage.updateUser(req.params.id, { 
+        isApproved: false,
+        isActive: false 
+      });
+      
+      if (!rejectedUser) {
+        return res.status(404).json({ error: "User not found" });
+      }
+      
+      console.log(`User ${user.id} (${user.role}) pending application rejected by admin`);
+      const { password, ...userWithoutPassword } = rejectedUser;
+      res.json(userWithoutPassword);
+    } catch (error: any) {
+      console.error("Error rejecting user application:", error);
+      res.status(400).json({ error: error.message });
+    }
+  });
+
   app.patch("/api/users/:id/status", requireAuth, requireRole("admin"), async (req, res) => {
     try {
       const { isActive } = req.body;
