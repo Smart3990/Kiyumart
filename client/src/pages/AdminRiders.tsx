@@ -571,9 +571,14 @@ export default function AdminRiders() {
   
   // Pending applications (unapproved riders)
   const pendingRiders = riders.filter(r => r.isApproved === false && r.isActive === true);
+  const approvedRiders = allRiders.filter(r => r.isApproved === true);
   
   // Get the appropriate rider list based on active tab
-  const displayedRiders = activeTab === "pending" ? pendingRiders : allRiders;
+  const displayedRiders = activeTab === "pending" 
+    ? pendingRiders 
+    : activeTab === "approved" 
+      ? approvedRiders 
+      : allRiders;
 
   const filteredRiders = displayedRiders.filter(r => 
     (r.username?.toLowerCase() || '').includes(searchQuery.toLowerCase()) ||
@@ -614,6 +619,9 @@ export default function AdminRiders() {
               </TabsTrigger>
               <TabsTrigger value="pending" data-testid="tab-pending-riders">
                 Pending Applications ({pendingRiders.length})
+              </TabsTrigger>
+              <TabsTrigger value="approved" data-testid="tab-approved-riders">
+                Approved Riders ({approvedRiders.length})
               </TabsTrigger>
             </TabsList>
 

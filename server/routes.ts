@@ -264,6 +264,31 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Generic image upload endpoint (for admins/sellers)
+  // Public upload endpoint for registration (seller/rider Ghana cards, profile images)
+  app.post("/api/upload/public", upload.single("file"), async (req, res) => {
+    try {
+      if (!req.file) {
+        return res.status(400).json({ error: "No image file provided" });
+      }
+
+      const allowedMimeTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp', 'image/gif'];
+      if (!allowedMimeTypes.includes(req.file.mimetype)) {
+        return res.status(400).json({ error: "Invalid file type. Only JPEG, PNG, WEBP, and GIF images are allowed" });
+      }
+
+      const maxSize = 10 * 1024 * 1024; // 10MB
+      if (req.file.size > maxSize) {
+        return res.status(400).json({ error: "File too large. Maximum size is 10MB" });
+      }
+
+      const imageUrl = await uploadToCloudinary(req.file.buffer, "kiyumart/registration");
+      res.json({ url: imageUrl });
+    } catch (error: any) {
+      console.error("Public image upload error:", error);
+      res.status(500).json({ error: error.message || "Failed to upload image" });
+    }
+  });
+
   app.post("/api/upload/image", requireAuth, upload.single("file"), async (req: AuthRequest, res) => {
     try {
       if (!req.file) {

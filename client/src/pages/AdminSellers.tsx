@@ -839,7 +839,11 @@ export default function AdminSellers() {
   const approvedSellers = allSellers.filter(s => s.isApproved === true);
   
   // Get the appropriate seller list based on active tab
-  const sellers = activeTab === "pending" ? pendingSellers : allSellers;
+  const sellers = activeTab === "pending" 
+    ? pendingSellers 
+    : activeTab === "approved" 
+      ? approvedSellers 
+      : allSellers;
   
   // Create a map of sellerId to storeId for quick lookup
   const sellerToStoreMap = new Map(stores.map(store => [store.primarySellerId, store.id]));
@@ -884,6 +888,9 @@ export default function AdminSellers() {
               </TabsTrigger>
               <TabsTrigger value="pending" data-testid="tab-pending-sellers">
                 Pending Applications ({pendingSellers.length})
+              </TabsTrigger>
+              <TabsTrigger value="approved" data-testid="tab-approved-sellers">
+                Approved Sellers ({approvedSellers.length})
               </TabsTrigger>
             </TabsList>
 

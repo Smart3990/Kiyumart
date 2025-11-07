@@ -96,10 +96,10 @@ export default function BecomeSellerPage() {
       return;
     }
 
-    if (file.size > 5 * 1024 * 1024) {
+    if (file.size > 10 * 1024 * 1024) {
       toast({
         title: "File too large",
-        description: "Image must be less than 5MB",
+        description: "Image must be less than 10MB",
         variant: "destructive",
       });
       return;
@@ -107,13 +107,12 @@ export default function BecomeSellerPage() {
 
     setUploading(fieldName);
     const formData = new FormData();
-    formData.append("media", file);
+    formData.append("file", file);
 
     try {
-      const response = await fetch("/api/upload/media", {
+      const response = await fetch("/api/upload/public", {
         method: "POST",
         body: formData,
-        credentials: "include",
       });
 
       if (!response.ok) throw new Error("Upload failed");
