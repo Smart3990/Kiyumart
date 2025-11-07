@@ -76,6 +76,7 @@ import BecomeSellerPage from "@/pages/BecomeSellerPage";
 import BecomeRiderPage from "@/pages/BecomeRiderPage";
 import AdminStoresList from "@/pages/AdminStoresList";
 import AdminUserEdit from "@/pages/AdminUserEdit";
+import AdminUserCreate from "@/pages/AdminUserCreate";
 import RiderEdit from "@/pages/RiderEdit";
 import AdminApplications from "@/pages/AdminApplications";
 import AdminProductEdit from "@/pages/AdminProductEdit";
@@ -126,6 +127,7 @@ function Router() {
       <Route path="/admin/products/:id/edit" component={AdminProductEdit} />
       <Route path="/admin/products" component={AdminProducts} />
       <Route path="/admin/orders" component={AdminOrders} />
+      <Route path="/admin/users/create" component={AdminUserCreate} />
       <Route path="/admin/users/:id/edit" component={AdminUserEdit} />
       <Route path="/admin/users" component={AdminUsers} />
       <Route path="/admin/sellers" component={AdminSellers} />

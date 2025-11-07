@@ -353,6 +353,14 @@ export default function AdminUsers() {
               <h1 className="text-3xl font-bold text-foreground" data-testid="heading-users">Users Management</h1>
               <p className="text-muted-foreground mt-1">Manage platform users and roles</p>
             </div>
+            <Button
+              onClick={() => navigate("/admin/users/create?role=agent")}
+              data-testid="button-create-agent"
+              className="gap-2"
+            >
+              <UserCog className="h-4 w-4" />
+              Create Agent
+            </Button>
           </div>
 
           <div className="mb-6 space-y-4">
