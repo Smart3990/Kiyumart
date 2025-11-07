@@ -3209,6 +3209,35 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  app.delete("/api/assets/delete", requireAuth, requireRole("admin"), async (req: AuthRequest, res) => {
+    try {
+      const fs = await import('fs');
+      const path = await import('path');
+      const { path: filePath } = req.body;
+
+      if (!filePath) {
+        return res.status(400).json({ error: "File path is required" });
+      }
+
+      const fullPath = path.join(process.cwd(), filePath);
+      const assetsDir = path.join(process.cwd(), 'attached_assets');
+
+      if (!fullPath.startsWith(assetsDir)) {
+        return res.status(403).json({ error: "Cannot delete files outside attached_assets folder" });
+      }
+
+      if (!fs.existsSync(fullPath)) {
+        return res.status(404).json({ error: "File not found" });
+      }
+
+      fs.unlinkSync(fullPath);
+      res.json({ success: true, message: "File deleted successfully" });
+    } catch (error: any) {
+      console.error('Error deleting file:', error);
+      res.status(500).json({ error: error.message || "Failed to delete file" });
+    }
+  });
+
   // ============ Enhanced Review Routes ============
   app.post("/api/reviews/:id/reply", requireAuth, requireRole("seller"), async (req: AuthRequest, res) => {
     try {

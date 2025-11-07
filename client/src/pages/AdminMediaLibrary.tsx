@@ -50,6 +50,7 @@ export default function AdminMediaLibrary() {
   });
   const [copiedUrl, setCopiedUrl] = useState<string | null>(null);
   const [selectedImages, setSelectedImages] = useState<Set<string>>(new Set());
+  const [selectedAssets, setSelectedAssets] = useState<Set<string>>(new Set());
 
   // Fetch available asset images
   const { data: assetImages = [], isLoading: assetsLoading } = useQuery<AssetImage[]>({
@@ -140,6 +141,48 @@ export default function AdminMediaLibrary() {
     },
   });
 
+  const deleteAssetMutation = useMutation({
+    mutationFn: async (path: string) => {
+      return apiRequest("DELETE", `/api/assets/delete`, { path });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/assets/images"] });
+      setSelectedAssets(new Set());
+      toast({
+        title: "Success",
+        description: "Asset deleted successfully",
+      });
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to delete asset",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const bulkDeleteAssetsMutation = useMutation({
+    mutationFn: async (paths: string[]) => {
+      await Promise.all(paths.map(path => apiRequest("DELETE", `/api/assets/delete`, { path })));
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/assets/images"] });
+      setSelectedAssets(new Set());
+      toast({
+        title: "Success",
+        description: `${selectedAssets.size} assets deleted successfully`,
+      });
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to delete assets",
+        variant: "destructive",
+      });
+    },
+  });
+
   const toggleImageSelection = (id: string) => {
     const newSelected = new Set(selectedImages);
     if (newSelected.has(id)) {
@@ -150,6 +193,16 @@ export default function AdminMediaLibrary() {
     setSelectedImages(newSelected);
   };
 
+  const toggleAssetSelection = (path: string) => {
+    const newSelected = new Set(selectedAssets);
+    if (newSelected.has(path)) {
+      newSelected.delete(path);
+    } else {
+      newSelected.add(path);
+    }
+    setSelectedAssets(newSelected);
+  };
+
   const toggleSelectAll = () => {
     if (selectedImages.size === filteredItems.length) {
       setSelectedImages(new Set());
@@ -158,11 +211,27 @@ export default function AdminMediaLibrary() {
     }
   };
 
+  const toggleSelectAllAssets = () => {
+    if (selectedAssets.size === assetImages.length) {
+      setSelectedAssets(new Set());
+    } else {
+      setSelectedAssets(new Set(assetImages.map(asset => asset.path)));
+    }
+  };
+
   const handleBulkDelete = () => {
     if (selectedImages.size === 0) return;
     
     if (confirm(`Are you sure you want to delete ${selectedImages.size} selected item(s)?`)) {
       bulkDeleteMutation.mutate(Array.from(selectedImages));
+    }
+  };
+
+  const handleBulkDeleteAssets = () => {
+    if (selectedAssets.size === 0) return;
+    
+    if (confirm(`Are you sure you want to delete ${selectedAssets.size} selected asset(s)?`)) {
+      bulkDeleteAssetsMutation.mutate(Array.from(selectedAssets));
     }
   };
 
@@ -304,9 +373,44 @@ export default function AdminMediaLibrary() {
 
         {/* Available Assets Tab */}
         <TabsContent value="assets" className="space-y-4">
-          <p className="text-sm text-muted-foreground">
-            Browse all images from your attached_assets folder. Click copy to use them in your application.
-          </p>
+          <div className="flex items-center justify-between gap-4">
+            <p className="text-sm text-muted-foreground">
+              Browse all images from your attached_assets folder. Click copy to use them in your application.
+            </p>
+            {assetImages.length > 0 && (
+              <div className="flex items-center gap-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={toggleSelectAllAssets}
+                  data-testid="button-select-all-assets"
+                >
+                  {selectedAssets.size === assetImages.length ? "Deselect All" : "Select All"}
+                </Button>
+                {selectedAssets.size > 0 && (
+                  <Button
+                    variant="destructive"
+                    size="sm"
+                    onClick={handleBulkDeleteAssets}
+                    disabled={bulkDeleteAssetsMutation.isPending}
+                    data-testid="button-bulk-delete-assets"
+                  >
+                    {bulkDeleteAssetsMutation.isPending ? (
+                      <>
+                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                        Deleting...
+                      </>
+                    ) : (
+                      <>
+                        <Trash2 className="mr-2 h-4 w-4" />
+                        Delete ({selectedAssets.size})
+                      </>
+                    )}
+                  </Button>
+                )}
+              </div>
+            )}
+          </div>
           {assetsLoading ? (
             <div className="flex justify-center p-12">
               <Loader2 className="h-8 w-8 animate-spin text-primary" />
@@ -324,7 +428,7 @@ export default function AdminMediaLibrary() {
           ) : (
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
               {assetImages.map((asset, index) => (
-                <Card key={index} className="overflow-hidden" data-testid={`asset-card-${index}`}>
+                <Card key={index} className={`overflow-hidden ${selectedAssets.has(asset.path) ? 'ring-2 ring-primary' : ''}`} data-testid={`asset-card-${index}`}>
                   <div className="aspect-video bg-muted relative">
                     <img
                       src={asset.url}
@@ -334,6 +438,14 @@ export default function AdminMediaLibrary() {
                         e.currentTarget.src = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='100' height='100'%3E%3Crect fill='%23ddd' width='100' height='100'/%3E%3Ctext x='50%25' y='50%25' dominant-baseline='middle' text-anchor='middle' fill='%23999'%3ENo Image%3C/text%3E%3C/svg%3E";
                       }}
                     />
+                    <div className="absolute top-2 left-2">
+                      <Checkbox
+                        checked={selectedAssets.has(asset.path)}
+                        onCheckedChange={() => toggleAssetSelection(asset.path)}
+                        className="bg-white"
+                        data-testid={`checkbox-select-asset-${index}`}
+                      />
+                    </div>
                   </div>
                   <CardContent className="p-4">
                     <p className="font-semibold text-sm truncate mb-2" title={asset.filename}>
@@ -342,25 +454,39 @@ export default function AdminMediaLibrary() {
                     <p className="text-xs text-muted-foreground mb-3 truncate" title={asset.path}>
                       {asset.path}
                     </p>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      className="w-full"
-                      onClick={() => copyToClipboard(asset.url)}
-                      data-testid={`button-copy-asset-${index}`}
-                    >
-                      {copiedUrl === asset.url ? (
-                        <>
-                          <Check className="h-4 w-4 mr-1" />
-                          Copied
-                        </>
-                      ) : (
-                        <>
-                          <Copy className="h-4 w-4 mr-1" />
-                          Copy URL
-                        </>
-                      )}
-                    </Button>
+                    <div className="flex gap-2">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="flex-1"
+                        onClick={() => copyToClipboard(asset.url)}
+                        data-testid={`button-copy-asset-${index}`}
+                      >
+                        {copiedUrl === asset.url ? (
+                          <>
+                            <Check className="h-4 w-4 mr-1" />
+                            Copied
+                          </>
+                        ) : (
+                          <>
+                            <Copy className="h-4 w-4 mr-1" />
+                            Copy
+                          </>
+                        )}
+                      </Button>
+                      <Button
+                        variant="destructive"
+                        size="sm"
+                        onClick={() => {
+                          if (confirm("Are you sure you want to delete this asset?")) {
+                            deleteAssetMutation.mutate(asset.path);
+                          }
+                        }}
+                        data-testid={`button-delete-asset-${index}`}
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    </div>
                   </CardContent>
                 </Card>
               ))}
