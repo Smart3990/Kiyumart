@@ -14,6 +14,12 @@ Preferred communication style: Simple, everyday language.
 
 The frontend is built with React 18 (Vite, TypeScript), utilizing Wouter for routing and TanStack Query for server state management. UI components are crafted with Shadcn UI (Radix UI primitives) and Tailwind CSS, adhering to a mobile-first, responsive design with a green color scheme. Key features include a persistent shopping cart and wishlist, product browsing with filters, real-time order tracking via Socket.IO, multi-language support with automatic currency switching, QR code generation for orders, and role-based dashboards. Paystack is integrated for payments, and Leaflet.js with OpenStreetMap is used for live delivery tracking. The system supports dynamic components for multi-vendor functionality, an admin branding system for UI customization, and a reusable Media Upload System for Cloudinary. Comprehensive approval workflows are in place for sellers and riders, with sellers having dedicated product management features and a dynamic store type selection process with 10 predefined categories.
 
+**Critical TanStack Query Configuration:**
+- **QueryKey Best Practice**: The default `queryFn` in `client/src/lib/queryClient.ts` uses ONLY the first element of the `queryKey` array as the URL endpoint. Additional array elements serve exclusively as cache discriminators, NOT URL path segments.
+- **Correct Pattern**: `queryKey: ["/api/products", sellerId]` fetches from `/api/products`, using `sellerId` only for cache differentiation.
+- **Custom QueryFn Required**: Queries needing dynamic URLs (e.g., `/api/users/${id}`) must provide their own `queryFn` that properly constructs the URL.
+- **Historical Bug Fix (Nov 2025)**: Corrected default `queryFn` from `queryKey.join("/")` to `queryKey[0]`, eliminating malformed URLs like `/api/users/media-library` that caused cascading 403/404 errors.
+
 ### Backend Architecture
 
 The backend is developed with Express.js and integrates a native HTTP server with Socket.IO for WebSocket communication. Authentication is JWT-based, incorporating bcrypt for password hashing and role-based access control. PostgreSQL (Neon serverless) serves as the primary database, managed by Drizzle ORM for type-safe operations and Drizzle Kit for migrations. Cloudinary handles all media uploads. The API is RESTful, employing Zod for request validation and Multer for file uploads.
