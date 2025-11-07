@@ -71,6 +71,14 @@ export default function AdminDashboardConnected() {
       setActiveItem("applications");
     } else if (path.includes("/admin/zones") || path.includes("/admin/delivery-zones")) {
       setActiveItem("zones");
+    } else if (path === "/cart") {
+      setActiveItem("my-cart");
+    } else if (path === "/orders" || path === "/track") {
+      setActiveItem("my-purchases");
+    } else if (path === "/wishlist") {
+      setActiveItem("my-wishlist");
+    } else if (path.includes("/notifications")) {
+      setActiveItem("notifications");
     } else if (path.includes("/admin/messages")) {
       setActiveItem("messages");
     } else if (path.includes("/admin/analytics")) {
@@ -81,8 +89,6 @@ export default function AdminDashboardConnected() {
       setActiveItem("banners");
     } else if (path.includes("/admin/media-library")) {
       setActiveItem("media-library");
-    } else if (path.includes("/notifications")) {
-      setActiveItem("notifications");
     }
   }, [location]);
 
@@ -100,6 +106,9 @@ export default function AdminDashboardConnected() {
       id === "riders" ? "/admin/riders" :
       id === "applications" ? "/admin/applications" :
       id === "zones" ? "/admin/zones" :
+      id === "my-cart" ? "/cart" :
+      id === "my-purchases" ? "/orders" :
+      id === "my-wishlist" ? "/wishlist" :
       id === "notifications" ? "/notifications" :
       id === "messages" ? "/admin/messages" :
       id === "analytics" ? "/admin/analytics" :

@@ -52,6 +52,12 @@ export default function AdminDashboard() {
       setActiveItem("categories");
     } else if (path.includes("/admin/zones")) {
       setActiveItem("zones");
+    } else if (path === "/cart") {
+      setActiveItem("my-cart");
+    } else if (path === "/orders" || path === "/track") {
+      setActiveItem("my-purchases");
+    } else if (path === "/wishlist") {
+      setActiveItem("my-wishlist");
     } else if (path.includes("/notifications")) {
       setActiveItem("notifications");
     } else if (path.includes("/admin/messages")) {

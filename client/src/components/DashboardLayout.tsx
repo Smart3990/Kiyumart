@@ -8,17 +8,18 @@ interface User {
   id: string;
   name: string;
   email: string;
-  role: "admin" | "seller" | "buyer" | "rider" | "agent";
+  role: "admin" | "seller" | "buyer" | "rider" | "agent" | "super_admin";
 }
 
 interface DashboardLayoutProps {
   children: ReactNode;
-  role: "admin" | "seller" | "buyer" | "rider" | "agent";
+  role: "admin" | "seller" | "buyer" | "rider" | "agent" | "super_admin";
   showBackButton?: boolean;
 }
 
 const roleBasePaths: Record<string, string> = {
   admin: "/admin",
+  super_admin: "/admin",
   seller: "/seller",
   buyer: "/buyer",
   rider: "/rider",
