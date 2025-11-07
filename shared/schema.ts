@@ -390,6 +390,20 @@ export const marketplaceBanners = pgTable("marketplace_banners", {
   createdAt: timestamp("created_at").defaultNow(),
 });
 
+export const footerPages = pgTable("footer_pages", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  title: text("title").notNull(),
+  slug: text("slug").notNull().unique(),
+  content: text("content"),
+  url: text("url"),
+  group: text("group").default("general"),
+  displayOrder: integer("display_order").default(0),
+  isActive: boolean("is_active").default(true),
+  openInNewTab: boolean("open_in_new_tab").default(false),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
 // New tables for comprehensive feature list
 export const adminWalletTransactions = pgTable("admin_wallet_transactions", {
   id: serial("id").primaryKey(),
@@ -664,6 +678,17 @@ export const insertMarketplaceBannerSchema = createInsertSchema(marketplaceBanne
   metadata: true,
 });
 
+export const insertFooterPageSchema = createInsertSchema(footerPages).pick({
+  title: true,
+  slug: true,
+  content: true,
+  url: true,
+  group: true,
+  displayOrder: true,
+  isActive: true,
+  openInNewTab: true,
+});
+
 export const insertAdminWalletTransactionSchema = createInsertSchema(adminWalletTransactions).omit({ id: true, createdAt: true });
 export const insertPromotionSchema = createInsertSchema(promotions).omit({ id: true, createdAt: true });
 export const insertSubscriptionPlanSchema = createInsertSchema(subscriptionPlans).omit({ id: true, createdAt: true });
@@ -740,6 +765,9 @@ export type BannerCollection = typeof bannerCollections.$inferSelect;
 
 export type InsertMarketplaceBanner = z.infer<typeof insertMarketplaceBannerSchema>;
 export type MarketplaceBanner = typeof marketplaceBanners.$inferSelect;
+
+export type InsertFooterPage = z.infer<typeof insertFooterPageSchema>;
+export type FooterPage = typeof footerPages.$inferSelect;
 
 export type InsertAdminWalletTransaction = z.infer<typeof insertAdminWalletTransactionSchema>;
 export type AdminWalletTransaction = typeof adminWalletTransactions.$inferSelect;

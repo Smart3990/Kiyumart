@@ -3,7 +3,7 @@ import {
   users, products, orders, orderItems, deliveryZones, deliveryTracking,
   chatMessages, transactions, platformSettings, cart, wishlist, reviews,
   productVariants, heroBanners, coupons, bannerCollections, marketplaceBanners,
-  stores, categoryFields, categories, notifications, mediaLibrary,
+  stores, categoryFields, categories, notifications, mediaLibrary, footerPages,
   type User, type InsertUser, type Product, type InsertProduct,
   type Order, type InsertOrder, type DeliveryZone, type InsertDeliveryZone,
   type ChatMessage, type InsertChatMessage, type Transaction, type PlatformSettings,
@@ -12,7 +12,7 @@ import {
   type Coupon, type InsertCoupon, type BannerCollection, type InsertBannerCollection,
   type MarketplaceBanner, type InsertMarketplaceBanner, type Store, type CategoryField,
   type Category, type Notification, type InsertNotification, type MediaLibrary,
-  type InsertMediaLibrary
+  type InsertMediaLibrary, type FooterPage
 } from "@shared/schema";
 import { eq, and, desc, sql, lte, gte, or, isNull } from "drizzle-orm";
 
@@ -830,6 +830,12 @@ export class DbStorage implements IStorage {
         )
       )
       .orderBy(marketplaceBanners.displayOrder);
+  }
+
+  async getActiveFooterPages(): Promise<FooterPage[]> {
+    return db.select().from(footerPages)
+      .where(eq(footerPages.isActive, true))
+      .orderBy(footerPages.group, footerPages.displayOrder);
   }
 
   async updateMarketplaceBanner(id: string, data: Partial<MarketplaceBanner>): Promise<MarketplaceBanner | undefined> {

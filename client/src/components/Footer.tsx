@@ -63,10 +63,30 @@ export default function Footer() {
     queryKey: ["/api/products"],
   });
   
+  // Fetch dynamic footer pages
+  const { data: footerPages = [] } = useQuery<Array<{
+    id: string;
+    title: string;
+    slug: string;
+    url: string | null;
+    group: string | null;
+    openInNewTab: boolean | null;
+  }>>({
+    queryKey: ["/api/footer-pages"],
+  });
+  
   // Get unique categories from products for single-store mode
   const productCategories = Array.from(new Set(products.map(p => p.category)))
     .filter(Boolean)
     .slice(0, 3);
+  
+  // Group footer pages by group
+  const groupedPages = footerPages.reduce((acc, page) => {
+    const group = page.group || 'general';
+    if (!acc[group]) acc[group] = [];
+    acc[group].push(page);
+    return acc;
+  }, {} as Record<string, typeof footerPages>);
   
   const { isAuthenticated } = useAuth();
 
@@ -191,38 +211,69 @@ export default function Footer() {
             )}
           </div>
 
-          <div>
-            <h4 className="font-semibold mb-4">Customer Service</h4>
-            <ul className="space-y-2 text-muted-foreground">
-              <li>
-                <Link 
-                  href={isAuthenticated ? "/support" : "/auth"} 
-                  className="hover:text-foreground transition-colors"
-                  data-testid="link-support"
-                >
-                  Customer Support
-                </Link>
-              </li>
-              <li>
-                <Link 
-                  href={isAuthenticated ? "/orders" : "/auth"} 
-                  className="hover:text-foreground transition-colors" 
-                  data-testid="link-orders"
-                >
-                  My Orders
-                </Link>
-              </li>
-              <li>
-                <Link 
-                  href={isAuthenticated ? "/wishlist" : "/auth"} 
-                  className="hover:text-foreground transition-colors" 
-                  data-testid="link-wishlist"
-                >
-                  Wishlist
-                </Link>
-              </li>
-            </ul>
-          </div>
+          {groupedPages['customer_service'] && groupedPages['customer_service'].length > 0 ? (
+            <div>
+              <h4 className="font-semibold mb-4">Customer Service</h4>
+              <ul className="space-y-2 text-muted-foreground">
+                {groupedPages['customer_service'].map(page => (
+                  <li key={page.id}>
+                    {page.url ? (
+                      <a 
+                        href={page.url}
+                        target={page.openInNewTab ? "_blank" : undefined}
+                        rel={page.openInNewTab ? "noopener noreferrer" : undefined}
+                        className="hover:text-foreground transition-colors"
+                        data-testid={`link-${page.slug}`}
+                      >
+                        {page.title}
+                      </a>
+                    ) : (
+                      <Link 
+                        href={`/page/${page.slug}`}
+                        className="hover:text-foreground transition-colors"
+                        data-testid={`link-${page.slug}`}
+                      >
+                        {page.title}
+                      </Link>
+                    )}
+                  </li>
+                ))}
+              </ul>
+            </div>
+          ) : (
+            <div>
+              <h4 className="font-semibold mb-4">Customer Service</h4>
+              <ul className="space-y-2 text-muted-foreground">
+                <li>
+                  <Link 
+                    href={isAuthenticated ? "/support" : "/auth"} 
+                    className="hover:text-foreground transition-colors"
+                    data-testid="link-support"
+                  >
+                    Customer Support
+                  </Link>
+                </li>
+                <li>
+                  <Link 
+                    href={isAuthenticated ? "/orders" : "/auth"} 
+                    className="hover:text-foreground transition-colors" 
+                    data-testid="link-orders"
+                  >
+                    My Orders
+                  </Link>
+                </li>
+                <li>
+                  <Link 
+                    href={isAuthenticated ? "/wishlist" : "/auth"} 
+                    className="hover:text-foreground transition-colors" 
+                    data-testid="link-wishlist"
+                  >
+                    Wishlist
+                  </Link>
+                </li>
+              </ul>
+            </div>
+          )}
 
           <div>
             <h4 className="font-semibold mb-4">Contact</h4>

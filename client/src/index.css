@@ -356,6 +356,27 @@
   }
 }
 
+/* Category Grid - Multi-Vendor Mode (Limited width for single items) */
+.category-grid {
+  display: grid;
+  gap: 1rem;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  align-items: start;
+}
+
+@media (min-width: 640px) {
+  .category-grid {
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  }
+}
+
+@media (min-width: 1024px) {
+  .category-grid {
+    grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+    max-width: calc(320px * 3 + 2rem);
+  }
+}
+
 /* Category Grid - Single Store Mode (Auto-adjusting responsive layout) */
 .category-grid-single-store {
   display: grid;

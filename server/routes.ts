@@ -1474,6 +1474,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Footer Pages API
+  app.get("/api/footer-pages", async (req, res) => {
+    try {
+      const pages = await storage.getActiveFooterPages();
+      res.json(pages);
+    } catch (error: any) {
+      res.status(400).json({ error: error.message });
+    }
+  });
+
   // Create test user accounts for all roles (Development/Testing only)
   app.post("/api/seed/test-users", async (req, res) => {
     try {
