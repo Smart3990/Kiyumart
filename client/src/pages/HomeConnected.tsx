@@ -8,6 +8,7 @@ import { useLanguage } from "@/contexts/LanguageContext";
 import Header from "@/components/Header";
 import HeroCarousel from "@/components/HeroCarousel";
 import CategoryCard from "@/components/CategoryCard";
+import StoreCard from "@/components/StoreCard";
 import ProductCard from "@/components/ProductCard";
 import Footer from "@/components/Footer";
 import CartSidebar from "@/components/CartSidebar";
@@ -62,6 +63,22 @@ export default function HomeConnected() {
 
   const { data: allProducts = [], isLoading: productsLoading } = useQuery<Product[]>({
     queryKey: ["/api/products"],
+  });
+
+  const { data: dbStores = [] } = useQuery<Array<{
+    id: string; 
+    name: string; 
+    logo?: string; 
+    banner?: string; 
+    isActive: boolean; 
+    isApproved: boolean;
+  }>>({
+    queryKey: ["/api/stores"],
+    queryFn: async () => {
+      const res = await fetch("/api/stores?isActive=true&isApproved=true");
+      return res.json();
+    },
+    enabled: platformSettings?.isMultiVendor === true && platformSettings?.shopDisplayMode === "by-store",
   });
 
   // Filter products by primary store in single-store mode

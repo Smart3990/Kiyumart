@@ -7,6 +7,7 @@ import { useLanguage } from "@/contexts/LanguageContext";
 import Header from "@/components/Header";
 import HeroCarousel from "@/components/HeroCarousel";
 import CategoryCard from "@/components/CategoryCard";
+import StoreCard from "@/components/StoreCard";
 import ProductCard from "@/components/ProductCard";
 import Footer from "@/components/Footer";
 import CartSidebar from "@/components/CartSidebar";
@@ -37,8 +38,28 @@ export default function Home() {
     }
   ]);
 
-  const { data: platformSettings } = useQuery<{isMultiVendor: boolean; primaryStoreId?: string}>({
+  const { data: platformSettings } = useQuery<{
+    isMultiVendor: boolean; 
+    primaryStoreId?: string; 
+    shopDisplayMode?: string;
+  }>({
     queryKey: ["/api/platform-settings"],
+  });
+
+  const { data: dbStores = [] } = useQuery<Array<{
+    id: string; 
+    name: string; 
+    logo?: string; 
+    banner?: string; 
+    isActive: boolean; 
+    isApproved: boolean;
+  }>>({
+    queryKey: ["/api/stores"],
+    queryFn: async () => {
+      const res = await fetch("/api/stores?isActive=true&isApproved=true");
+      return res.json();
+    },
+    enabled: platformSettings?.isMultiVendor === true && platformSettings?.shopDisplayMode === "by-store",
   });
 
   const { data: dbCategories = [] } = useQuery<Array<{id: string; name: string; slug: string; image: string; isActive: boolean}>>({
@@ -185,16 +206,49 @@ export default function Home() {
 
       <main className="flex-1">
         <section className="max-w-7xl mx-auto px-4 py-12">
-          <h2 className="text-3xl font-bold mb-8">{t("shopByCategory")}</h2>
-          <div className="category-grid-single-store">
-            {categories.map((category) => (
-              <CategoryCard
-                key={category.id}
-                {...category}
-                onClick={(id) => navigate(`/category/${id}`)}
-              />
-            ))}
-          </div>
+          {platformSettings?.isMultiVendor && platformSettings?.shopDisplayMode === "by-store" ? (
+            <>
+              <h2 className="text-3xl font-bold mb-8">Shop by Stores</h2>
+              {dbStores.length === 0 ? (
+                <div className="text-center py-12">
+                  <p className="text-muted-foreground text-lg">No stores available at the moment. Please check back later!</p>
+                </div>
+              ) : (
+                <div className="category-grid-single-store">
+                  {dbStores.map((store) => (
+                    <StoreCard
+                      key={store.id}
+                      id={store.id}
+                      name={store.name}
+                      logo={store.logo}
+                      banner={store.banner}
+                    />
+                  ))}
+                </div>
+              )}
+            </>
+          ) : (
+            <>
+              <h2 className="text-3xl font-bold mb-8">{t("shopByCategory")}</h2>
+              {categories.length === 0 ? (
+                <div className="text-center py-12">
+                  <p className="text-muted-foreground text-lg">
+                    No product categories are available at the moment. Please check back later or contact the administrator.
+                  </p>
+                </div>
+              ) : (
+                <div className="category-grid-single-store">
+                  {categories.map((category) => (
+                    <CategoryCard
+                      key={category.id}
+                      {...category}
+                      onClick={(id) => navigate(`/category/${id}`)}
+                    />
+                  ))}
+                </div>
+              )}
+            </>
+          )}
         </section>
 
         <section className="max-w-7xl mx-auto px-4 py-12">

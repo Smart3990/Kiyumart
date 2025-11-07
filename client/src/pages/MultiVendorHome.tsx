@@ -5,6 +5,7 @@ import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import MarketplaceBannerCarousel from "@/components/MarketplaceBannerCarousel";
 import SellerCategoryCard from "@/components/SellerCategoryCard";
+import StoreCard from "@/components/StoreCard";
 import CategoryCard from "@/components/CategoryCard";
 import ProductCard from "@/components/ProductCard";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -35,6 +36,21 @@ export default function MultiVendorHome() {
 
   const { data: sellers = [], isLoading: sellersLoading } = useQuery<Seller[]>({
     queryKey: ["/api/homepage/sellers"],
+  });
+
+  const { data: stores = [], isLoading: storesLoading } = useQuery<Array<{
+    id: string;
+    name: string;
+    logo?: string;
+    banner?: string;
+    isActive: boolean;
+    isApproved: boolean;
+  }>>({
+    queryKey: ["/api/stores"],
+    queryFn: async () => {
+      const res = await fetch("/api/stores?isActive=true&isApproved=true");
+      return res.json();
+    },
   });
 
   const { data: featuredProducts = [], isLoading: productsLoading } = useQuery<Product[]>({
@@ -90,7 +106,7 @@ export default function MultiVendorHome() {
                 {isAdmin && (
                   <Badge variant="outline" className="text-sm" data-testid="badge-store-count">
                     {shopDisplayMode === "by-store" 
-                      ? `${sellers.length} ${sellers.length === 1 ? "Store" : "Stores"}`
+                      ? `${stores.length} ${stores.length === 1 ? "Store" : "Stores"}`
                       : `${categories.length} ${categories.length === 1 ? "Category" : "Categories"}`
                     }
                   </Badge>
@@ -130,30 +146,34 @@ export default function MultiVendorHome() {
               ) : (
                 <div className="text-center py-12 text-muted-foreground" data-testid="empty-categories">
                   <ShoppingBag className="w-16 h-16 mx-auto mb-4 opacity-50" />
-                  <p>No categories available yet</p>
+                  <p className="text-lg mb-2">No product categories are available at the moment</p>
+                  <p className="text-sm">Please check back later or contact the administrator to add categories!</p>
                 </div>
               )
             ) : (
-              sellersLoading ? (
+              storesLoading ? (
                 <div className="category-grid">
                   {[...Array(6)].map((_, i) => (
-                    <Skeleton key={i} className="aspect-[16/10] rounded-lg" data-testid={`skeleton-seller-${i}`} />
+                    <Skeleton key={i} className="aspect-[4/3] rounded-lg" data-testid={`skeleton-store-${i}`} />
                   ))}
                 </div>
-              ) : sellers.length > 0 ? (
-                <div className="category-grid" data-testid="grid-sellers">
-                  {sellers.map((seller) => (
-                    <SellerCategoryCard
-                      key={seller.id}
-                      seller={seller}
-                      productCount={getSellerProductCount(seller.id)}
+              ) : stores.length > 0 ? (
+                <div className="category-grid" data-testid="grid-stores">
+                  {stores.map((store) => (
+                    <StoreCard
+                      key={store.id}
+                      id={store.id}
+                      name={store.name}
+                      logo={store.logo}
+                      banner={store.banner}
                     />
                   ))}
                 </div>
               ) : (
-                <div className="text-center py-12 text-muted-foreground" data-testid="empty-sellers">
+                <div className="text-center py-12 text-muted-foreground" data-testid="empty-stores">
                   <ShoppingBag className="w-16 h-16 mx-auto mb-4 opacity-50" />
-                  <p>No stores available yet</p>
+                  <p className="text-lg mb-2">No stores available at the moment</p>
+                  <p className="text-sm">Please check back later or contact support!</p>
                 </div>
               )
             )}
