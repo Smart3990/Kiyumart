@@ -3404,7 +3404,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // ============ Media Library Routes ============
   app.post("/api/media-library", requireAuth, async (req: AuthRequest, res) => {
     try {
-      // Validate role - admin can upload all types, seller can only upload product images
+      // Validate role - admin/super_admin can upload all types, seller can only upload product images
       const userRole = req.user!.role;
       const { category } = req.body;
 
@@ -3412,7 +3412,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(403).json({ error: "Sellers can only upload product images" });
       }
 
-      if (userRole !== "admin" && userRole !== "seller") {
+      if (userRole !== "admin" && userRole !== "super_admin" && userRole !== "seller") {
         return res.status(403).json({ error: "Unauthorized to upload media" });
       }
 
@@ -3432,8 +3432,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const { category, uploaderRole } = req.query;
       const userRole = req.user!.role;
 
-      // Only admin and seller roles can access media library
-      if (userRole !== "admin" && userRole !== "seller") {
+      // Only admin, super_admin and seller roles can access media library
+      if (userRole !== "admin" && userRole !== "super_admin" && userRole !== "seller") {
         return res.status(403).json({ error: "Unauthorized to access media library" });
       }
 
@@ -3444,24 +3444,26 @@ export async function registerRoutes(app: Express): Promise<Server> {
         filters.category = category as string;
       }
 
-      // Sellers can only see their own product images or admin's media
+      // Sellers can only see their own product images or admin/super_admin's media
       if (userRole === "seller") {
-        // If category is product, show seller's own products plus admin's products
+        // If category is product, show seller's own products plus admin/super_admin's products
         if (!category || category === "product") {
           const items = await storage.getMediaLibraryItems({ category: "product" });
-          // Filter to only show seller's own or admin uploaded
+          // Filter to only show seller's own or admin/super_admin uploaded
           const filtered = items.filter(
-            item => item.uploaderId === req.user!.id || item.uploaderRole === "admin"
+            item => item.uploaderId === req.user!.id || item.uploaderRole === "admin" || item.uploaderRole === "super_admin"
           );
           return res.json(filtered);
         } else {
-          // For non-product categories, sellers can only see admin uploads
-          filters.uploaderRole = "admin";
+          // For non-product categories, sellers can only see admin/super_admin uploads with requested category
+          const items = await storage.getMediaLibraryItems({ category: category as string });
+          const filtered = items.filter(item => item.uploaderRole === "admin" || item.uploaderRole === "super_admin");
+          return res.json(filtered);
         }
       }
 
-      // Admin can see everything, optionally filtered
-      if (uploaderRole && userRole === "admin") {
+      // Admin and super_admin can see everything, optionally filtered
+      if (uploaderRole && (userRole === "admin" || userRole === "super_admin")) {
         filters.uploaderRole = uploaderRole as string;
       }
 
@@ -3484,12 +3486,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(404).json({ error: "Media item not found" });
       }
 
-      // Admin can delete anything, sellers can only delete their own product images
+      // Admin and super_admin can delete anything, sellers can only delete their own product images
       if (userRole === "seller") {
         if (item.uploaderId !== req.user!.id) {
           return res.status(403).json({ error: "Unauthorized to delete this item" });
         }
-      } else if (userRole !== "admin") {
+      } else if (userRole !== "admin" && userRole !== "super_admin") {
         return res.status(403).json({ error: "Unauthorized" });
       }
 
@@ -3504,7 +3506,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // ============ Asset Browser Route ============
-  app.get("/api/assets/images", requireAuth, requireRole("admin"), async (req: AuthRequest, res) => {
+  app.get("/api/assets/images", requireAuth, requireRole("admin", "super_admin"), async (req: AuthRequest, res) => {
     try {
       const fs = await import('fs');
       const path = await import('path');
