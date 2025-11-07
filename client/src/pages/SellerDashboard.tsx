@@ -33,9 +33,11 @@ export default function SellerDashboard() {
   });
 
   // Fetch seller's store information only if approved
-  const { data: store } = useQuery<Store | null>({
+  const { data: store, isLoading: storeLoading, error: storeError } = useQuery<Store | null>({
     queryKey: ["/api/stores/my-store"],
     enabled: !!user?.id && user?.role === "seller" && user?.isApproved === true,
+    retry: 3, // Retry a few times in case store is being created
+    retryDelay: 1000,
     queryFn: async () => {
       const res = await fetch("/api/stores/my-store");
       if (res.status === 404) {
@@ -78,6 +80,11 @@ export default function SellerDashboard() {
   }
 
   const handlePreviewStore = () => {
+    if (!store) {
+      window.open("/", '_blank'); // Fallback to homepage if no store
+      return;
+    }
+    
     if (platformSettings?.isMultiVendor && store?.id) {
       // In multi-vendor mode, open the specific store page in a new tab
       window.open(`/stores/${store.id}`, '_blank');

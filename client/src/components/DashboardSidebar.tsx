@@ -79,7 +79,6 @@ const menuItems: Record<string, MenuItem[]> = {
   ],
   seller: [
     { icon: LayoutDashboard, label: "Dashboard", id: "dashboard" },
-    { icon: Home, label: "Shop Mode", id: "shop-mode" },
     { icon: ImagePlus, label: "Media Library", id: "media-library" },
     { icon: Package, label: "My Products", id: "products" },
     { icon: ShoppingBag, label: "Orders", id: "orders" },

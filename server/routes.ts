@@ -3568,15 +3568,38 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Get current seller's store
+  // Get current seller's store (auto-create if missing)
   app.get("/api/stores/my-store", requireAuth, requireRole("seller"), async (req: AuthRequest, res) => {
     try {
-      const store = await storage.getStoreByPrimarySeller(req.user!.id);
+      let store = await storage.getStoreByPrimarySeller(req.user!.id);
+      
+      // If approved seller doesn't have a store, create one automatically
+      if (!store && req.user!.isApproved) {
+        console.log(`Auto-creating missing store for approved seller ${req.user!.id}`);
+        const seller = await storage.getUser(req.user!.id);
+        if (seller) {
+          const storeData = {
+            primarySellerId: req.user!.id,
+            name: seller.storeName || seller.name + "'s Store",
+            description: seller.storeDescription || "",
+            logo: seller.storeBanner || "",
+            storeType: seller.storeType,
+            storeTypeMetadata: seller.storeTypeMetadata,
+            isActive: true,
+            isApproved: true
+          };
+          store = await storage.createStore(storeData);
+          console.log(`Successfully auto-created store ${store.id} for seller ${req.user!.id}`);
+        }
+      }
+      
       if (!store) {
         return res.status(404).json({ error: "Store not found" });
       }
+      
       res.json(store);
     } catch (error: any) {
+      console.error("Error fetching seller store:", error);
       res.status(500).json({ error: error.message });
     }
   });
