@@ -487,8 +487,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
             stack: storeError.stack
           });
           // If store creation fails, delete the user to avoid orphaned accounts
-          await storage.deleteUser(user.id);
-          throw new Error(`Failed to create store: ${storeError.message}`);
+          try {
+            await storage.deleteUser(user.id);
+            console.log(`Rolled back user ${user.id} after store creation failure`);
+          } catch (deleteError: any) {
+            console.error(`CRITICAL: Failed to rollback user ${user.id}:`, deleteError);
+            throw new Error(`Store creation failed and user rollback failed. Please contact support to manually clean up user with email: ${user.email}`);
+          }
+          throw new Error(`Failed to create store: ${storeError.message}. User has been removed, please retry.`);
         }
       }
       

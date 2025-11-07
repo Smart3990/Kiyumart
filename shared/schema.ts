@@ -472,6 +472,9 @@ export const insertUserSchema = createInsertSchema(users).pick({
   phone: true,
   storeName: true,
   storeDescription: true,
+  storeBanner: true,
+  storeType: true,
+  storeTypeMetadata: true,
   vehicleInfo: true,
 });
 
