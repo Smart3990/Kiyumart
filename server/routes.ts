@@ -358,33 +358,63 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.patch("/api/users/:id/approve", requireAuth, requireRole("admin"), async (req, res) => {
     try {
-      const user = await storage.updateUser(req.params.id, { isApproved: true });
+      // First, get the user without approving yet
+      const user = await storage.getUser(req.params.id);
       if (!user) {
         return res.status(404).json({ error: "User not found" });
       }
       
-      // Create store for approved seller using their application data
+      // Create store BEFORE approving seller to ensure atomicity
       if (user.role === "seller") {
-        try {
-          const existingStore = await storage.getStoreByPrimarySeller(user.id);
-          if (!existingStore) {
-            await storage.createStore({
-              primarySellerId: user.id,
-              name: user.storeName || user.name + "'s Store",
-              description: user.storeDescription || "",
-              logo: user.storeBanner || "",
-              storeType: user.storeType,
-              storeTypeMetadata: user.storeTypeMetadata,
-              isActive: true,
-              isApproved: true
+        const existingStore = await storage.getStoreByPrimarySeller(user.id);
+        if (!existingStore) {
+          const storeData = {
+            primarySellerId: user.id,
+            name: user.storeName || user.name + "'s Store",
+            description: user.storeDescription || "",
+            logo: user.storeBanner || "",
+            storeType: user.storeType,
+            storeTypeMetadata: user.storeTypeMetadata,
+            isActive: true,
+            isApproved: true
+          };
+          
+          console.log(`Creating store for seller ${user.id} before approval:`, {
+            name: storeData.name,
+            storeType: storeData.storeType
+          });
+          
+          try {
+            const newStore = await storage.createStore(storeData);
+            console.log(`Successfully created store ${newStore.id} for seller ${user.id}`);
+          } catch (storeError: any) {
+            console.error(`CRITICAL: Failed to create store for seller ${user.id}:`, {
+              error: storeError.message,
+              stack: storeError.stack,
+              userData: {
+                storeName: user.storeName,
+                storeType: user.storeType,
+                hasMetadata: !!user.storeTypeMetadata
+              }
+            });
+            // Store creation failed - DO NOT approve user, return error so admin can retry
+            return res.status(500).json({ 
+              error: "Store creation failed. User not approved. Please retry or contact support.",
+              details: storeError.message 
             });
           }
-        } catch (storeError: any) {
-          console.error("Failed to create store for approved seller:", storeError);
+        } else {
+          console.log(`Store already exists for seller ${user.id}: ${existingStore.id}`);
         }
       }
       
-      const { password, ...userWithoutPassword } = user;
+      // Now approve the user (store creation succeeded or not needed)
+      const approvedUser = await storage.updateUser(req.params.id, { isApproved: true });
+      if (!approvedUser) {
+        return res.status(404).json({ error: "User not found" });
+      }
+      
+      const { password, ...userWithoutPassword } = approvedUser;
       res.json(userWithoutPassword);
     } catch (error: any) {
       res.status(400).json({ error: error.message });
@@ -432,16 +462,30 @@ export async function registerRoutes(app: Express): Promise<Server> {
         try {
           const existingStore = await storage.getStoreByPrimarySeller(user.id);
           if (!existingStore) {
-            await storage.createStore({
+            const storeData = {
               primarySellerId: user.id,
               name: storeName || user.name + "'s Store",
               description: storeDescription || "",
               logo: storeBanner || "",
+              storeType: req.body.storeType,
+              storeTypeMetadata: req.body.storeTypeMetadata,
               isActive: true,
               isApproved: true
+            };
+            
+            console.log(`Creating store for new seller ${user.id}:`, {
+              name: storeData.name,
+              storeType: storeData.storeType
             });
+            
+            const newStore = await storage.createStore(storeData);
+            console.log(`Successfully created store ${newStore.id} for seller ${user.id}`);
           }
         } catch (storeError: any) {
+          console.error(`CRITICAL: Failed to create store for new seller ${user.id}:`, {
+            error: storeError.message,
+            stack: storeError.stack
+          });
           // If store creation fails, delete the user to avoid orphaned accounts
           await storage.deleteUser(user.id);
           throw new Error(`Failed to create store: ${storeError.message}`);
