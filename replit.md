@@ -1,5 +1,13 @@
 # KiyuMart - Islamic Women's Fashion E-commerce Marketplace
 
+## Recent Changes (November 7, 2025)
+
+### Bug Fixes
+- **Image Upload Fix**: Created public upload endpoint (`/api/upload/public`) for unauthenticated Ghana card and profile image uploads during seller/rider registration
+- **Application Visibility**: Added "Approved" tabs to AdminSellers and AdminRiders pages to preserve visibility of approved users after approval
+- **Navigation Fix**: Added onClick handler to Admin Dashboard "View All" button to properly navigate to orders page
+- **Dynamic Seller Footers**: Updated Footer component to display seller-specific store information (name, logo, description) when viewing individual seller store pages (`/seller/:id`)
+
 ## Overview
 
 KiyuMart is an e-commerce platform specializing in modest Islamic women's fashion, operating as either a single-store or a multi-vendor marketplace. It offers comprehensive e-commerce functionalities including product and order management, real-time delivery tracking with map visualization, live chat, and Paystack payment integration. The platform aims to be a premier online destination for modest Islamic fashion, providing a diverse and inclusive product range. It includes features like dynamic category management, extensive admin dashboards for user and product management, and a robust application verification system for sellers and riders.
