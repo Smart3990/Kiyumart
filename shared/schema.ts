@@ -894,6 +894,15 @@ export const categoryFields = pgTable("category_fields", {
   createdAt: timestamp("created_at").defaultNow(),
 });
 
+// Role Feature Permissions - Controls which features are enabled for each user role
+export const roleFeatures = pgTable("role_features", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  role: userRoleEnum("role").notNull().unique(),
+  features: jsonb("features").$type<Record<string, boolean>>().notNull().default({}),
+  updatedAt: timestamp("updated_at").defaultNow(),
+  updatedBy: varchar("updated_by").references(() => users.id),
+});
+
 export const insertMediaLibrarySchema = createInsertSchema(mediaLibrary).omit({ id: true, createdAt: true });
 export type InsertMediaLibrary = z.infer<typeof insertMediaLibrarySchema>;
 export type MediaLibrary = typeof mediaLibrary.$inferSelect;
@@ -924,3 +933,8 @@ export type Store = typeof stores.$inferSelect;
 export const insertCategorySchema = createInsertSchema(categories).omit({ id: true, createdAt: true, updatedAt: true });
 export type InsertCategory = z.infer<typeof insertCategorySchema>;
 export type Category = typeof categories.$inferSelect;
+
+// Role Features schema
+export const insertRoleFeaturesSchema = createInsertSchema(roleFeatures).omit({ id: true, updatedAt: true });
+export type InsertRoleFeatures = z.infer<typeof insertRoleFeaturesSchema>;
+export type RoleFeatures = typeof roleFeatures.$inferSelect;

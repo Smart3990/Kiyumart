@@ -4,7 +4,7 @@ import {
   chatMessages, transactions, platformSettings, cart, wishlist, reviews,
   productVariants, heroBanners, coupons, bannerCollections, marketplaceBanners,
   stores, categoryFields, categories, notifications, mediaLibrary, footerPages,
-  commissions, platformEarnings,
+  commissions, platformEarnings, roleFeatures,
   type User, type InsertUser, type Product, type InsertProduct,
   type Order, type InsertOrder, type DeliveryZone, type InsertDeliveryZone,
   type ChatMessage, type InsertChatMessage, type Transaction, type PlatformSettings,
@@ -170,6 +170,10 @@ export interface IStorage {
   createMediaLibraryItem(data: InsertMediaLibrary): Promise<MediaLibrary>;
   getMediaLibraryItems(filters?: { category?: string; uploaderRole?: string; uploaderId?: string }): Promise<MediaLibrary[]>;
   deleteMediaLibraryItem(id: string): Promise<boolean>;
+  
+  // Role Features operations (super_admin only)
+  getRoleFeatures(role?: string): Promise<any[]>;
+  updateRoleFeatures(role: string, features: Record<string, boolean>, updatedBy: string): Promise<any>;
 }
 
 export class DbStorage implements IStorage {
@@ -1071,6 +1075,34 @@ export class DbStorage implements IStorage {
   async deleteMediaLibraryItem(id: string): Promise<boolean> {
     const result = await db.delete(mediaLibrary).where(eq(mediaLibrary.id, id));
     return result.rowCount !== null && result.rowCount > 0;
+  }
+
+  // Role Features operations
+  async getRoleFeatures(role?: string): Promise<any[]> {
+    let query = db.select().from(roleFeatures);
+    
+    if (role) {
+      query = query.where(eq(roleFeatures.role, role as any)) as any;
+    }
+    
+    return query;
+  }
+
+  async updateRoleFeatures(role: string, features: Record<string, boolean>, updatedBy: string): Promise<any> {
+    const existing = await db.select().from(roleFeatures).where(eq(roleFeatures.role, role as any)).limit(1);
+    
+    if (existing.length > 0) {
+      const [updated] = await db.update(roleFeatures)
+        .set({ features, updatedAt: new Date(), updatedBy })
+        .where(eq(roleFeatures.role, role as any))
+        .returning();
+      return updated;
+    } else {
+      const [created] = await db.insert(roleFeatures)
+        .values({ role: role as any, features, updatedBy })
+        .returning();
+      return created;
+    }
   }
 }
 
