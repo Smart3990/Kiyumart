@@ -20,6 +20,7 @@ import {
   ImagePlus,
   ShoppingCart,
   Shield,
+  Home,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useQuery } from "@tanstack/react-query";
@@ -78,6 +79,7 @@ const menuItems: Record<string, MenuItem[]> = {
   ],
   seller: [
     { icon: LayoutDashboard, label: "Dashboard", id: "dashboard" },
+    { icon: Home, label: "Shop Mode", id: "shop-mode" },
     { icon: ImagePlus, label: "Media Library", id: "media-library" },
     { icon: Package, label: "My Products", id: "products" },
     { icon: ShoppingBag, label: "Orders", id: "orders" },
@@ -93,6 +95,7 @@ const menuItems: Record<string, MenuItem[]> = {
   ],
   rider: [
     { icon: LayoutDashboard, label: "Dashboard", id: "dashboard" },
+    { icon: Home, label: "Shop Mode", id: "shop-mode" },
     { icon: ShoppingBag, label: "Deliveries", id: "deliveries" },
     { icon: MapPin, label: "Active Route", id: "route" },
     { icon: ShoppingCart, label: "Shopping Cart", id: "my-cart", separator: true },
@@ -113,6 +116,7 @@ const menuItems: Record<string, MenuItem[]> = {
   ],
   agent: [
     { icon: LayoutDashboard, label: "Dashboard", id: "dashboard" },
+    { icon: Home, label: "Shop Mode", id: "shop-mode" },
     { icon: Ticket, label: "My Tickets", id: "tickets" },
     { icon: Users, label: "Customers", id: "customers" },
     { icon: ShoppingCart, label: "Shopping Cart", id: "my-cart", separator: true },

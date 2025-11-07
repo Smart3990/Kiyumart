@@ -109,6 +109,9 @@ export default function DashboardLayout({
     
     if (id === "dashboard") {
       setLocation(basePath);
+    } else if (id === "shop-mode") {
+      // Navigate to shop homepage
+      setLocation("/");
     } else if (id === "my-cart") {
       // All roles can access shopping cart
       setLocation("/cart");
