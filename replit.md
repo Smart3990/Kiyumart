@@ -6,8 +6,13 @@ KiyuMart is an e-commerce platform specializing in modest Islamic women's fashio
 
 ## Recent Changes (November 2025)
 
+### Admin Seller Management Improvements (November 7, 2025)
+- **Dual-View Seller Management**: AdminSellers page now features tabs for "All Sellers" (default view showing all registered sellers) and "Pending Applications" (unapproved sellers only). This fixes the issue where admin-created sellers (auto-approved with `isApproved=true`) were not visible in the management interface. Admins can now view the complete seller roster while still having dedicated access to pending applications requiring approval.
+- **Quick Store View Button**: Each seller card in AdminSellers page now includes a "View Store" button that directly navigates to the seller's store page (`/seller/{storeId}`). The button only appears for sellers who have an associated store, using the sellerToStoreMap lookup for efficient store ID retrieval.
+- **Category Management Accessible**: Confirmed AdminCategoryManager is fully integrated with route `/admin/categories` and accessible via the "Categories" menu item in the admin sidebar, allowing admins to manage product categories displayed on the homepage.
+- **Admin Shopping Features**: Verified that admin users can access their personal shopping cart (`/cart`), wishlist (`/wishlist`), and purchase history (`/orders`) through dedicated sidebar menu items ("Shopping Cart", "My Wishlist", "My Purchases") with proper routing in DashboardLayout.
+
 ### Admin Application Management Enhancements (November 7, 2025)
-- **Pending Application Filtering**: AdminSellers and AdminRiders pages now filter to show only pending applications (`isApproved === false`), automatically removing approved/rejected applications from the list. This provides a clean workflow where admins focus only on applications requiring action.
 - **Smart Notification Redirects**: Clicking notifications now intelligently redirects admins to the relevant page based on notification type and metadata (product pages, order details, user management, messages), with automatic mark-as-read. Preview dialog only shown for notifications without redirect metadata.
 - **Enhanced Store Banner Upload**: Admin create seller form now uses MediaUploadInput component for store banner images, supporting both file upload to Cloudinary and direct URL entry, replacing the basic URL input field.
 
