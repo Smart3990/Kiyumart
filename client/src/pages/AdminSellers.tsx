@@ -828,8 +828,8 @@ export default function AdminSellers() {
   // All sellers
   const allSellers = users.filter(u => u.role === "seller");
   
-  // Pending applications (unapproved sellers)
-  const pendingSellers = allSellers.filter(s => s.isApproved === false);
+  // Pending applications (unapproved AND active sellers only, excluding rejected ones)
+  const pendingSellers = allSellers.filter(s => s.isApproved === false && s.isActive === true);
   
   // Approved sellers
   const approvedSellers = allSellers.filter(s => s.isApproved === true);
@@ -921,11 +921,11 @@ export default function AdminSellers() {
                         <div className="flex gap-2 flex-shrink-0">
                           <EditSellerDialog sellerData={seller} />
                           <BanActivateDialog sellerData={seller} />
-                          {seller.storeName && sellerToStoreMap.has(seller.id) && (
+                          {seller.isApproved && sellerToStoreMap.has(seller.id) && (
                             <Button 
                               variant="outline" 
                               size="icon"
-                              onClick={() => navigate(`/seller/${sellerToStoreMap.get(seller.id)}`)}
+                              onClick={() => navigate(`/seller/${seller.id}`)}
                               data-testid={`button-view-store-${seller.id}`}
                               title="View Store"
                             >

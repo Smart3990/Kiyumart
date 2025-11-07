@@ -289,7 +289,7 @@ export default function AdminRiders() {
   const allRiders = riders;
   
   // Pending applications (unapproved riders)
-  const pendingRiders = riders.filter(r => r.isApproved === false);
+  const pendingRiders = riders.filter(r => r.isApproved === false && r.isActive === true);
   
   // Get the appropriate rider list based on active tab
   const displayedRiders = activeTab === "pending" ? pendingRiders : allRiders;
