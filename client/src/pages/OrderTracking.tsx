@@ -16,6 +16,7 @@ import { useLocation } from "wouter";
 import { useToast } from "@/hooks/use-toast";
 import { format } from "date-fns";
 import { io, Socket } from "socket.io-client";
+import { useLanguage } from "@/contexts/LanguageContext";
 
 interface Order {
   id: string;
@@ -44,6 +45,7 @@ export default function OrderTracking() {
   const { user, isAuthenticated, isLoading: authLoading } = useAuth();
   const [, navigate] = useLocation();
   const { toast } = useToast();
+  const { formatPrice } = useLanguage();
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [riderLocations, setRiderLocations] = useState<Map<string, RiderLocation>>(new Map());
@@ -336,7 +338,7 @@ export default function OrderTracking() {
                             <div>
                               <p className="text-sm text-muted-foreground">Total Amount</p>
                               <p className="text-lg font-semibold" data-testid={`text-amount-${order.id}`}>
-                                GHS {parseFloat(order.totalAmount as any || "0").toFixed(2)}
+                                {formatPrice(parseFloat(order.totalAmount as any || "0"))}
                               </p>
                             </div>
                             <div>

@@ -12,6 +12,7 @@ import { Separator } from "@/components/ui/separator";
 import { Badge } from "@/components/ui/badge";
 import { ArrowLeft, Package, Bike, Building2, MapPin, Tag, X } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { useLanguage } from "@/contexts/LanguageContext";
 
 interface CartItem {
   id: string;
@@ -46,6 +47,7 @@ export default function CheckoutConnected() {
   const [, navigate] = useLocation();
   const { user, isAuthenticated, isLoading: authLoading } = useAuth();
   const { toast } = useToast();
+  const { formatPrice } = useLanguage();
   const [deliveryMethod, setDeliveryMethod] = useState<"pickup" | "bus" | "rider">("pickup");
   const [deliveryAddress, setDeliveryAddress] = useState("");
   const [selectedZoneId, setSelectedZoneId] = useState("");
@@ -384,7 +386,7 @@ export default function CheckoutConnected() {
                       <option value="">Select a zone</option>
                       {deliveryZones.map((zone) => (
                         <option key={zone.id} value={zone.id}>
-                          {zone.name} (GHS {zone.fee})
+                          {zone.name} ({formatPrice(parseFloat(zone.fee))})
                         </option>
                       ))}
                     </select>
@@ -429,7 +431,7 @@ export default function CheckoutConnected() {
                       <span className="text-sm font-medium text-green-700 dark:text-green-300" data-testid="text-coupon-discount">
                         {appliedCoupon.discountType === "percentage" 
                           ? `${appliedCoupon.discountValue}% off`
-                          : `GHS ${appliedCoupon.discountValue} off`}
+                          : `${formatPrice(parseFloat(appliedCoupon.discountValue))} off`}
                       </span>
                     </div>
                     <Button
@@ -474,11 +476,11 @@ export default function CheckoutConnected() {
                         <div className="text-sm text-right flex flex-col justify-start">
                           {hasDiscount && (
                             <div className="text-muted-foreground line-through text-xs mb-1" data-testid={`text-original-price-${item.id}`}>
-                              GHS {(originalPrice * item.quantity).toFixed(2)}
+                              {formatPrice(originalPrice * item.quantity)}
                             </div>
                           )}
                           <div className={`font-medium ${hasDiscount ? 'text-green-600 dark:text-green-400' : ''}`} data-testid={`text-item-total-${item.id}`}>
-                            GHS {(discountedPrice * item.quantity).toFixed(2)}
+                            {formatPrice(discountedPrice * item.quantity)}
                           </div>
                         </div>
                       </div>
@@ -491,32 +493,32 @@ export default function CheckoutConnected() {
                 <div className="space-y-2 text-sm">
                   <div className="flex justify-between">
                     <span className="text-muted-foreground">Subtotal</span>
-                    <span data-testid="text-checkout-subtotal">GHS {subtotal.toFixed(2)}</span>
+                    <span data-testid="text-checkout-subtotal">{formatPrice(subtotal)}</span>
                   </div>
                   {productSavings > 0 && (
                     <div className="flex justify-between text-green-600 dark:text-green-400">
                       <span className="font-medium">Product Discounts</span>
-                      <span data-testid="text-product-discounts">-GHS {productSavings.toFixed(2)}</span>
+                      <span data-testid="text-product-discounts">-{formatPrice(productSavings)}</span>
                     </div>
                   )}
                   {couponDiscount > 0 && (
                     <div className="flex justify-between text-green-600 dark:text-green-400">
                       <span className="font-medium">Coupon Discount</span>
-                      <span data-testid="text-checkout-coupon">-GHS {couponDiscount.toFixed(2)}</span>
+                      <span data-testid="text-checkout-coupon">-{formatPrice(couponDiscount)}</span>
                     </div>
                   )}
                   <div className="flex justify-between">
                     <span className="text-muted-foreground">Delivery Fee</span>
-                    <span data-testid="text-checkout-delivery">GHS {deliveryFee.toFixed(2)}</span>
+                    <span data-testid="text-checkout-delivery">{formatPrice(deliveryFee)}</span>
                   </div>
                   <div className="flex justify-between">
                     <span className="text-muted-foreground">Processing Fee (1.95%)</span>
-                    <span data-testid="text-checkout-processing">GHS {processingFee.toFixed(2)}</span>
+                    <span data-testid="text-checkout-processing">{formatPrice(processingFee)}</span>
                   </div>
                   <Separator />
                   <div className="flex justify-between text-lg font-bold">
                     <span>Total</span>
-                    <span data-testid="text-checkout-total">GHS {total.toFixed(2)}</span>
+                    <span data-testid="text-checkout-total">{formatPrice(total)}</span>
                   </div>
                 </div>
 

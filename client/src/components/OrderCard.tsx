@@ -2,6 +2,7 @@ import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Package, MapPin, Calendar } from "lucide-react";
+import { useLanguage } from "@/contexts/LanguageContext";
 
 interface OrderCardProps {
   orderId: string;
@@ -40,6 +41,7 @@ export default function OrderCard({
   date,
   onViewDetails,
 }: OrderCardProps) {
+  const { formatPrice } = useLanguage();
   const statusInfo = statusConfig[status];
   const deliveryInfo = deliveryConfig[deliveryMethod];
   const DeliveryIcon = deliveryInfo.icon;
@@ -80,7 +82,7 @@ export default function OrderCard({
           <div>
             <p className="text-xs text-muted-foreground">Total</p>
             <p className="text-lg font-bold" data-testid={`text-total-${orderId}`}>
-              {currency} {total.toFixed(2)}
+              {formatPrice(total)}
             </p>
           </div>
           <Button 

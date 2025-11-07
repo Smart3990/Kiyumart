@@ -7,6 +7,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button";
 import { Loader2, CreditCard, AlertCircle } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { useLanguage } from "@/contexts/LanguageContext";
 
 interface Order {
   id: string;
@@ -22,6 +23,7 @@ export default function PaymentPage() {
   const [, navigate] = useLocation();
   const { user, isAuthenticated, isLoading: authLoading } = useAuth();
   const { toast } = useToast();
+  const { formatPrice } = useLanguage();
   const [isInitializing, setIsInitializing] = useState(false);
 
   useEffect(() => {
@@ -159,7 +161,7 @@ export default function PaymentPage() {
             <div className="flex justify-between text-sm">
               <span className="text-muted-foreground">Amount</span>
               <span className="font-medium" data-testid="text-payment-amount">
-                {order.currency} {parseFloat(order.total).toFixed(2)}
+                {formatPrice(parseFloat(order.total))}
               </span>
             </div>
           </div>

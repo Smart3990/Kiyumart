@@ -11,6 +11,7 @@ import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { useLocation } from "wouter";
 import { Badge } from "@/components/ui/badge";
+import { useLanguage } from "@/contexts/LanguageContext";
 
 interface MarketplaceBanner {
   id: string;
@@ -39,6 +40,7 @@ export default function MarketplaceBannerCarousel({
   autoplayDuration = 5000,
 }: MarketplaceBannerCarouselProps) {
   const [, navigate] = useLocation();
+  const { formatPrice } = useLanguage();
 
   const { data: banners = [], isLoading } = useQuery<MarketplaceBanner[]>({
     queryKey: ["/api/homepage/banners"],
@@ -134,11 +136,11 @@ export default function MarketplaceBannerCarousel({
                       {banner.metadata?.price && (
                         <div className="mb-4">
                           <span className="text-2xl md:text-3xl font-bold">
-                            GHS {banner.metadata.price}
+                            {formatPrice(parseFloat(banner.metadata.price))}
                           </span>
                           {banner.metadata?.originalPrice && (
                             <span className="ml-3 text-lg line-through text-white/60">
-                              GHS {banner.metadata.originalPrice}
+                              {formatPrice(parseFloat(banner.metadata.originalPrice))}
                             </span>
                           )}
                         </div>

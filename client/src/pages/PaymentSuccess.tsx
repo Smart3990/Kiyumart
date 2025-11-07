@@ -26,7 +26,7 @@ interface Order {
 
 export default function PaymentSuccess() {
   const [, navigate] = useLocation();
-  const { currencySymbol } = useLanguage();
+  const { formatPrice } = useLanguage();
   const { toast } = useToast();
   const searchParams = new URLSearchParams(window.location.search);
   const orderId = searchParams.get("orderId");
@@ -146,7 +146,7 @@ export default function PaymentSuccess() {
                 <div>
                   <p className="text-sm text-muted-foreground mb-1">Total Amount</p>
                   <p className="font-semibold text-primary text-xl" data-testid="text-total">
-                    {currencySymbol} {parseFloat(order.total).toFixed(2)}
+                    {formatPrice(parseFloat(order.total))}
                   </p>
                 </div>
                 <div>
