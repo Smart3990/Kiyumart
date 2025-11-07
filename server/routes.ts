@@ -457,13 +457,37 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.patch("/api/users/:id/status", requireAuth, requireRole("admin"), async (req, res) => {
     try {
       const { isActive } = req.body;
-      const user = await storage.updateUser(req.params.id, { isActive });
+      const user = await storage.getUser(req.params.id);
       if (!user) {
         return res.status(404).json({ error: "User not found" });
       }
-      const { password, ...userWithoutPassword } = user;
+      
+      // If deactivating an approved seller, also deactivate their store
+      if (!isActive && user.role === "seller" && user.isApproved) {
+        const store = await storage.getStoreByPrimarySeller(req.params.id);
+        if (store) {
+          await storage.updateStore(store.id, { isActive: false, isApproved: false });
+          console.log(`Deactivated store ${store.id} for seller ${req.params.id}`);
+        }
+      }
+      
+      // If reactivating an approved seller, also reactivate their store
+      if (isActive && user.role === "seller" && user.isApproved) {
+        const store = await storage.getStoreByPrimarySeller(req.params.id);
+        if (store) {
+          await storage.updateStore(store.id, { isActive: true, isApproved: true });
+          console.log(`Reactivated store ${store.id} for seller ${req.params.id}`);
+        }
+      }
+      
+      const updatedUser = await storage.updateUser(req.params.id, { isActive });
+      if (!updatedUser) {
+        return res.status(404).json({ error: "User not found" });
+      }
+      const { password, ...userWithoutPassword } = updatedUser;
       res.json(userWithoutPassword);
     } catch (error: any) {
+      console.error("Error updating user status:", error);
       res.status(400).json({ error: error.message });
     }
   });
