@@ -103,7 +103,7 @@ export default function Checkout() {
                       <Building2 className="h-5 w-5 text-muted-foreground" />
                       <div>
                         <div className="font-medium">Bus Delivery</div>
-                        <div className="text-sm text-muted-foreground">Delivered via bus - {formatPrice(5)}</div>
+                        <div className="text-sm text-muted-foreground">Delivered via bus</div>
                       </div>
                     </Label>
                   </div>
@@ -114,7 +114,7 @@ export default function Checkout() {
                       <Bike className="h-5 w-5 text-muted-foreground" />
                       <div>
                         <div className="font-medium">Rider Delivery</div>
-                        <div className="text-sm text-muted-foreground">Fast delivery by rider - {formatPrice(10)}</div>
+                        <div className="text-sm text-muted-foreground">Fast delivery by rider</div>
                       </div>
                     </Label>
                   </div>
