@@ -24,7 +24,7 @@ export default function Checkout() {
   ];
 
   const subtotal = mockCartItems.reduce((sum, item) => sum + item.price * item.quantity, 0);
-  const deliveryFee = deliveryMethod === "pickup" ? 0 : deliveryMethod === "bus" ? 5 : 10;
+  const deliveryFee = deliveryMethod === "pickup" ? 0 : 0;
   const processingFee = (subtotal + deliveryFee) * 0.0195;
   const total = subtotal + deliveryFee + processingFee;
 

@@ -3,7 +3,7 @@ import { useLocation } from "wouter";
 import { useQuery } from "@tanstack/react-query";
 import { useAuth } from "@/lib/auth";
 import DashboardLayout from "@/components/DashboardLayout";
-import { Package, Heart, MapPin, CreditCard, User, Loader2, Bell, Settings } from "lucide-react";
+import { Package, Heart, MapPin, CreditCard, User, Loader2 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import ThemeToggle from "@/components/ThemeToggle";
@@ -83,7 +83,7 @@ export default function BuyerDashboard() {
           </Card>
         </div>
 
-        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
+        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
           <Card className="cursor-pointer hover:bg-accent transition-colors" onClick={() => navigate("/orders")} data-testid="card-my-orders">
             <CardHeader>
               <Package className="h-8 w-8 text-primary mb-2" />
@@ -104,26 +104,6 @@ export default function BuyerDashboard() {
             </CardContent>
           </Card>
 
-          <Card className="cursor-pointer hover:bg-accent transition-colors" onClick={() => navigate("/notifications")} data-testid="card-notifications">
-            <CardHeader>
-              <Bell className="h-8 w-8 text-primary mb-2" />
-              <CardTitle>Notifications</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <p className="text-sm text-muted-foreground">View your notifications</p>
-            </CardContent>
-          </Card>
-
-          <Card className="cursor-pointer hover:bg-accent transition-colors" onClick={() => navigate("/settings")} data-testid="card-settings">
-            <CardHeader>
-              <Settings className="h-8 w-8 text-primary mb-2" />
-              <CardTitle>Settings</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <p className="text-sm text-muted-foreground">Manage app preferences</p>
-            </CardContent>
-          </Card>
-
           <Card className="cursor-pointer hover:bg-accent transition-colors" onClick={() => navigate("/profile")} data-testid="card-profile">
             <CardHeader>
               <User className="h-8 w-8 text-primary mb-2" />
@@ -131,16 +111,6 @@ export default function BuyerDashboard() {
             </CardHeader>
             <CardContent>
               <p className="text-sm text-muted-foreground">Manage your account settings</p>
-            </CardContent>
-          </Card>
-
-          <Card className="cursor-pointer hover:bg-accent transition-colors" onClick={() => navigate("/support")} data-testid="card-support">
-            <CardHeader>
-              <MapPin className="h-8 w-8 text-primary mb-2" />
-              <CardTitle>Support</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <p className="text-sm text-muted-foreground">Get help with your orders</p>
             </CardContent>
           </Card>
         </div>

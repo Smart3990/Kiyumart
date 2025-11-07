@@ -191,8 +191,8 @@ export default function CheckoutConnected() {
 
   const selectedZone = deliveryZones.find(z => z.id === selectedZoneId);
   const deliveryFee = deliveryMethod === "pickup" ? 0 : 
-                      deliveryMethod === "bus" ? (selectedZone ? parseFloat(selectedZone.fee) * 0.5 : 5) :
-                      selectedZone ? parseFloat(selectedZone.fee) : 10;
+                      deliveryMethod === "bus" ? (selectedZone ? parseFloat(selectedZone.fee) * 0.5 : 0) :
+                      selectedZone ? parseFloat(selectedZone.fee) : 0;
 
   // Calculate coupon discount
   const calculateCouponDiscount = () => {
