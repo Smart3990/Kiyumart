@@ -4,7 +4,21 @@ This document contains test login credentials for all user roles in the KiyuMart
 
 ## Test Accounts
 
-### 1. Admin Account
+### 1. Super Admin Account
+**Email:** `superadmin@kiyumart.com`  
+**Password:** `superadmin123`  
+**Dashboard URL:** `/admin`
+
+**Access & Features:**
+- FULL platform access with elevated permissions
+- Manage admins and assign roles
+- Edit user passwords
+- All admin features plus special permissions
+- Platform-wide control
+
+---
+
+### 2. Admin Account
 **Email:** `admin@kiyumart.com`  
 **Password:** `admin123`  
 **Dashboard URL:** `/admin`
@@ -22,7 +36,7 @@ This document contains test login credentials for all user roles in the KiyuMart
 
 ---
 
-### 2. Seller Account
+### 3. Seller Account
 **Email:** `seller@kiyumart.com`  
 **Password:** `seller123`  
 **Dashboard URL:** `/seller`
@@ -42,7 +56,7 @@ This document contains test login credentials for all user roles in the KiyuMart
 
 ---
 
-### 3. Rider Account (Dispatch)
+### 4. Rider Account (Dispatch)
 **Email:** `rider@kiyumart.com`  
 **Password:** `rider123`  
 **Dashboard URL:** `/rider`
@@ -59,6 +73,20 @@ This document contains test login credentials for all user roles in the KiyuMart
 - Type: Motorcycle
 - Plate Number: GR-1234-20
 - License: DL-TEST-001
+
+---
+
+### 5. Agent Account (Support)
+**Email:** `agent@kiyumart.com`  
+**Password:** `agent123`  
+**Dashboard URL:** `/agent`
+
+**Access & Features:**
+- Handle customer support tickets
+- Manage customer inquiries
+- Access messaging center
+- View order issues
+- Provide customer assistance
 
 ---
 

@@ -1479,11 +1479,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const testUsers = [
         {
+          email: "superadmin@kiyumart.com",
+          password: await bcrypt.hash("superadmin123", 10),
+          name: "Super Admin",
+          role: "super_admin",
+          isActive: true,
+          isApproved: true
+        },
+        {
           email: "admin@kiyumart.com",
           password: await bcrypt.hash("admin123", 10),
           name: "Test Admin",
           role: "admin",
-          isActive: true
+          isActive: true,
+          isApproved: true
         },
         {
           email: "seller@kiyumart.com",
@@ -1518,7 +1527,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
           password: await bcrypt.hash("agent123", 10),
           name: "Test Agent",
           role: "agent",
-          isActive: true
+          isActive: true,
+          isApproved: true
         }
       ];
 
@@ -1551,9 +1561,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       res.json({
         success: true,
-        message: "Test users created/verified for all 5 roles",
+        message: "Test users created/verified for all 6 roles",
         users: created,
         credentials: {
+          super_admin: "superadmin@kiyumart.com / superadmin123",
           admin: "admin@kiyumart.com / admin123",
           seller: "seller@kiyumart.com / seller123",
           buyer: "buyer@kiyumart.com / buyer123",

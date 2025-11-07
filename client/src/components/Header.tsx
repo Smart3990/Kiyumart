@@ -50,21 +50,22 @@ export default function Header({
 
   const notificationCount = notificationData?.count || 0;
   
-  // Show "Become a Seller" if enabled and user is not already a seller/admin
+  // Show "Become a Seller" if enabled and user is not already a seller/admin/super_admin
   const showBecomeSeller = platformSettings?.allowSellerRegistration && 
-    (!isAuthenticated || (user?.role !== 'seller' && user?.role !== 'admin'));
+    (!isAuthenticated || (user?.role !== 'seller' && user?.role !== 'admin' && user?.role !== 'super_admin'));
   
-  // Show "Become a Delivery Partner" if enabled and user is not already a rider/admin
+  // Show "Become a Delivery Partner" if enabled and user is not already a rider/admin/super_admin
   const showBecomeRider = platformSettings?.allowRiderRegistration && 
-    (!isAuthenticated || (user?.role !== 'rider' && user?.role !== 'admin'));
+    (!isAuthenticated || (user?.role !== 'rider' && user?.role !== 'admin' && user?.role !== 'super_admin'));
 
   const isActive = (path: string) => location === path;
 
-  // Check if user has a dashboard role (admin, seller, rider, buyer, agent)
-  const hasDashboard = user && ['admin', 'seller', 'rider', 'buyer', 'agent'].includes(user.role);
+  // Check if user has a dashboard role (super_admin, admin, seller, rider, buyer, agent)
+  const hasDashboard = user && ['super_admin', 'admin', 'seller', 'rider', 'buyer', 'agent'].includes(user.role);
   const isDashboardPage = location.startsWith('/admin') || location.startsWith('/seller') || location.startsWith('/rider') || location.startsWith('/buyer') || location.startsWith('/agent');
   
   const getDashboardPath = () => {
+    if (user?.role === 'super_admin') return '/admin';
     if (user?.role === 'admin') return '/admin';
     if (user?.role === 'seller') return '/seller';
     if (user?.role === 'rider') return '/rider';
@@ -74,6 +75,7 @@ export default function Header({
   };
   
   const getDashboardLabel = () => {
+    if (user?.role === 'super_admin') return 'Super Admin Dashboard';
     if (user?.role === 'admin') return 'Admin Dashboard';
     if (user?.role === 'seller') return 'Seller Dashboard';
     if (user?.role === 'rider') return 'Rider Dashboard';
