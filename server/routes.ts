@@ -872,8 +872,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/products", async (req, res) => {
     try {
       const { sellerId, category, isActive } = req.query;
+      
+      // Get platform settings to check for single-store mode
+      const platformSettings = await storage.getPlatformSettings();
+      
+      // In single-store mode with a primary store set, filter by that store's seller
+      let finalSellerId: string | undefined = sellerId as string;
+      if (!platformSettings.isMultiVendor && platformSettings.primaryStoreId && !sellerId) {
+        const primaryStore = await storage.getStore(platformSettings.primaryStoreId);
+        if (primaryStore) {
+          finalSellerId = primaryStore.primarySellerId || undefined;
+        }
+      }
+      
       const products = await storage.getProducts({
-        sellerId: sellerId as string,
+        sellerId: finalSellerId,
         category: category as string,
         isActive: isActive === "true" ? true : isActive === "false" ? false : undefined,
       });

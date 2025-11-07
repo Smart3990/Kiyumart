@@ -19,9 +19,18 @@ interface PlatformSettings {
   isMultiVendor?: boolean;
 }
 
+interface Category {
+  id: string;
+  name: string;
+  slug: string;
+}
+
 export default function Footer() {
   const { data: settings } = useQuery<PlatformSettings>({
     queryKey: ["/api/settings"],
+  });
+  const { data: categories = [] } = useQuery<Category[]>({
+    queryKey: ["/api/categories"],
   });
   const { isAuthenticated } = useAuth();
 
