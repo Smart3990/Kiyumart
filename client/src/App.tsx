@@ -47,8 +47,22 @@ import AdminAgents from "@/pages/AdminAgents";
 import AdminMessages from "@/pages/AdminMessages";
 import AdminAnalytics from "@/pages/AdminAnalytics";
 import AdminMediaLibrary from "@/pages/AdminMediaLibrary";
+import AdminNotifications from "@/pages/AdminNotifications";
 import SellerMediaLibrary from "@/pages/SellerMediaLibrary";
 import SellerProducts from "@/pages/SellerProducts";
+import SellerOrders from "@/pages/SellerOrders";
+import SellerCoupons from "@/pages/SellerCoupons";
+import SellerDeliveries from "@/pages/SellerDeliveries";
+import SellerNotifications from "@/pages/SellerNotifications";
+import SellerMessages from "@/pages/SellerMessages";
+import SellerAnalytics from "@/pages/SellerAnalytics";
+import SellerSettings from "@/pages/SellerSettings";
+import RiderDeliveries from "@/pages/RiderDeliveries";
+import RiderActiveRoute from "@/pages/RiderActiveRoute";
+import RiderNotifications from "@/pages/RiderNotifications";
+import RiderMessages from "@/pages/RiderMessages";
+import RiderEarnings from "@/pages/RiderEarnings";
+import RiderSettings from "@/pages/RiderSettings";
 import CategoryPage from "@/pages/CategoryPage";
 import Wishlist from "@/pages/Wishlist";
 import Orders from "@/pages/Orders";
@@ -119,10 +133,24 @@ function Router() {
       <Route path="/admin/applications" component={AdminApplications} />
       <Route path="/admin/messages" component={AdminMessages} />
       <Route path="/admin/analytics" component={AdminAnalytics} />
+      <Route path="/admin/notifications" component={AdminNotifications} />
       <Route path="/seller" component={SellerDashboard} />
       <Route path="/seller/products" component={SellerProducts} />
       <Route path="/seller/media-library" component={SellerMediaLibrary} />
+      <Route path="/seller/orders" component={SellerOrders} />
+      <Route path="/seller/coupons" component={SellerCoupons} />
+      <Route path="/seller/deliveries" component={SellerDeliveries} />
+      <Route path="/seller/notifications" component={SellerNotifications} />
+      <Route path="/seller/messages" component={SellerMessages} />
+      <Route path="/seller/analytics" component={SellerAnalytics} />
+      <Route path="/seller/settings" component={SellerSettings} />
       <Route path="/rider" component={RiderDashboard} />
+      <Route path="/rider/deliveries" component={RiderDeliveries} />
+      <Route path="/rider/route" component={RiderActiveRoute} />
+      <Route path="/rider/notifications" component={RiderNotifications} />
+      <Route path="/rider/messages" component={RiderMessages} />
+      <Route path="/rider/earnings" component={RiderEarnings} />
+      <Route path="/rider/settings" component={RiderSettings} />
       <Route path="/buyer" component={BuyerDashboard} />
       <Route path="/agent" component={AgentDashboard} />
       <Route path="/agent/tickets" component={AgentTickets} />
