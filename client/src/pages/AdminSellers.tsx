@@ -9,7 +9,8 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Loader2, Search, Store, Edit, Ban, ArrowLeft, Plus, CheckCircle, XCircle, ShieldCheck, Clock } from "lucide-react";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Loader2, Search, Store, Edit, Ban, ArrowLeft, Plus, CheckCircle, XCircle, ShieldCheck, Clock, ExternalLink } from "lucide-react";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
@@ -538,6 +539,7 @@ function BanActivateDialog({ sellerData }: { sellerData: SellerData }) {
 
 export default function AdminSellers() {
   const [searchQuery, setSearchQuery] = useState("");
+  const [activeTab, setActiveTab] = useState("all");
   const [, navigate] = useLocation();
   const { user, isAuthenticated, isLoading: authLoading } = useAuth();
   const { toast } = useToast();
@@ -558,8 +560,17 @@ export default function AdminSellers() {
     enabled: isAuthenticated && user?.role === "admin",
   });
 
-  // Filter to show only sellers (applications = unapproved only)
-  const sellers = users.filter(u => u.role === "seller" && u.isApproved === false);
+  // All sellers
+  const allSellers = users.filter(u => u.role === "seller");
+  
+  // Pending applications (unapproved sellers)
+  const pendingSellers = allSellers.filter(s => s.isApproved === false);
+  
+  // Approved sellers
+  const approvedSellers = allSellers.filter(s => s.isApproved === true);
+  
+  // Get the appropriate seller list based on active tab
+  const sellers = activeTab === "pending" ? pendingSellers : allSellers;
   
   // Create a map of sellerId to storeId for quick lookup
   const sellerToStoreMap = new Map(stores.map(store => [store.primarySellerId, store.id]));
@@ -597,26 +608,36 @@ export default function AdminSellers() {
             <CreateSellerDialog />
           </div>
 
-          <div className="mb-6">
-            <div className="relative">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-              <Input
-                placeholder="Search sellers by name, email or store..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="pl-10"
-                data-testid="input-search-sellers"
-              />
-            </div>
-          </div>
+          <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+            <TabsList className="mb-6">
+              <TabsTrigger value="all" data-testid="tab-all-sellers">
+                All Sellers ({allSellers.length})
+              </TabsTrigger>
+              <TabsTrigger value="pending" data-testid="tab-pending-sellers">
+                Pending Applications ({pendingSellers.length})
+              </TabsTrigger>
+            </TabsList>
 
-          {isLoading ? (
-            <div className="flex justify-center py-12">
-              <Loader2 className="h-8 w-8 animate-spin text-primary" />
+            <div className="mb-6">
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                <Input
+                  placeholder="Search sellers by name, email or store..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="pl-10"
+                  data-testid="input-search-sellers"
+                />
+              </div>
             </div>
-          ) : (
-            <div className="grid gap-4">
-              {filteredSellers.map((seller) => (
+
+            {isLoading ? (
+              <div className="flex justify-center py-12">
+                <Loader2 className="h-8 w-8 animate-spin text-primary" />
+              </div>
+            ) : (
+              <div className="grid gap-4">
+                {filteredSellers.map((seller) => (
                 <Card key={seller.id} className="p-4" data-testid={`card-seller-${seller.id}`}>
                   <div className="flex items-start gap-4">
                     <div className="bg-primary/10 p-3 rounded-full">
@@ -705,13 +726,19 @@ export default function AdminSellers() {
                 <div className="text-center py-12">
                   <Store className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
                   <p className="text-muted-foreground" data-testid="text-no-sellers">
-                    {searchQuery ? "No sellers found matching your search" : "No sellers registered yet"}
+                    {searchQuery 
+                      ? "No sellers found matching your search" 
+                      : activeTab === "pending"
+                        ? "No pending applications"
+                        : "No sellers registered yet"
+                    }
                   </p>
                 </div>
               )}
             </div>
           )}
-        </div>
+        </Tabs>
+      </div>
     </DashboardLayout>
   );
 }
