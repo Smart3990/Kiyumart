@@ -374,7 +374,10 @@ export class DbStorage implements IStorage {
 
   async markMessagesAsRead(senderId: string, receiverId: string): Promise<void> {
     await db.update(chatMessages)
-      .set({ isRead: true })
+      .set({ 
+        isRead: true,
+        readAt: new Date()
+      })
       .where(
         and(
           eq(chatMessages.senderId, senderId),
