@@ -331,15 +331,22 @@ export default function HomeConnected() {
       <main className="flex-1">
         <section className="max-w-7xl mx-auto px-4 py-12">
           <h2 className="text-3xl font-bold mb-8">{t("shopByCategory")}</h2>
-          <div className="category-grid-single-store">
-            {categories.map((category) => (
-              <CategoryCard
-                key={category.id}
-                {...category}
-                onClick={(id) => navigate(`/category/${id}`)}
-              />
-            ))}
-          </div>
+          {categories.length === 0 ? (
+            <div className="text-center py-12 text-muted-foreground">
+              <p className="text-lg">No categories available at the moment.</p>
+              <p className="text-sm mt-2">Please check back later.</p>
+            </div>
+          ) : (
+            <div className="category-grid-single-store">
+              {categories.map((category) => (
+                <CategoryCard
+                  key={category.id}
+                  {...category}
+                  onClick={(id) => navigate(`/category/${id}`)}
+                />
+              ))}
+            </div>
+          )}
         </section>
 
         <section className="max-w-7xl mx-auto px-4 py-12">
