@@ -201,7 +201,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.patch("/api/profile", requireAuth, async (req: AuthRequest, res) => {
     try {
       // Only allow updating specific safe fields
-      const allowedFields = ['name', 'username', 'phone', 'address', 'city', 'country'];
+      const allowedFields = ['name', 'username', 'phone', 'address', 'city', 'country', 'email', 'storeName', 'storeDescription', 'storeBanner', 'vehicleInfo'];
       const updateData: Record<string, any> = {};
       
       for (const field of allowedFields) {
@@ -213,6 +213,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Prevent updates if no valid fields provided
       if (Object.keys(updateData).length === 0) {
         return res.status(400).json({ error: "No valid fields to update" });
+      }
+
+      // Check if email is being changed and if it's already in use
+      if (updateData.email) {
+        const existingUser = await storage.getUserByEmail(updateData.email);
+        if (existingUser && existingUser.id !== req.user!.id) {
+          return res.status(400).json({ error: "Email already in use" });
+        }
       }
       
       const updatedUser = await storage.updateUser(req.user!.id, updateData);

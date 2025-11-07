@@ -55,8 +55,7 @@ export default function Profile() {
 
   const updateProfileMutation = useMutation({
     mutationFn: async (data: Partial<UserProfile>) => {
-      if (!user?.id) throw new Error("User ID not found");
-      return await apiRequest("PATCH", `/api/users/${user.id}`, data);
+      return await apiRequest("PATCH", `/api/profile`, data);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/auth/me"] });
