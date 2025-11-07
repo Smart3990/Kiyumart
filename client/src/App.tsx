@@ -22,6 +22,7 @@ import AgentCustomers from "@/pages/AgentCustomers";
 import AgentNotifications from "@/pages/AgentNotifications";
 import ChatPage from "@/pages/ChatPageConnected";
 import OrderTracking from "@/pages/OrderTracking";
+import LiveTracking from "@/pages/LiveTracking";
 import Checkout from "@/pages/CheckoutConnected";
 import PaymentPage from "@/pages/PaymentPage";
 import PaymentVerifyPage from "@/pages/PaymentVerifyPage";
@@ -158,6 +159,7 @@ function Router() {
       <Route path="/agent/notifications" component={AgentNotifications} />
       <Route path="/chat" component={ChatPage} />
       <Route path="/track" component={OrderTracking} />
+      <Route path="/live-tracking" component={LiveTracking} />
       <Route path="/page/:slug" component={DynamicPage} />
       <Route component={NotFound} />
     </Switch>

@@ -356,7 +356,19 @@ export default function OrderTracking() {
                         {/* Live Delivery Map for Delivering Orders */}
                         {order.status === "delivering" && order.deliveryLatitude && order.deliveryLongitude && 
                          !isNaN(parseFloat(order.deliveryLatitude)) && !isNaN(parseFloat(order.deliveryLongitude)) && (
-                          <div className="pt-4 border-t">
+                          <div className="pt-4 border-t space-y-4">
+                            <div className="flex items-center justify-between">
+                              <h3 className="text-sm font-medium">Live Delivery Tracking</h3>
+                              <Button
+                                onClick={() => navigate(`/live-tracking?orderId=${order.id}`)}
+                                variant="default"
+                                size="sm"
+                                data-testid={`button-live-tracking-${order.id}`}
+                              >
+                                <Navigation className="h-4 w-4 mr-2" />
+                                View Full Map
+                              </Button>
+                            </div>
                             <DeliveryMap
                               deliveryLocation={{
                                 latitude: parseFloat(order.deliveryLatitude),
