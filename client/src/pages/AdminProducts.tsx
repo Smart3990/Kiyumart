@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Loader2, Plus, Search, Edit, Trash2, Eye, ArrowLeft } from "lucide-react";
+import { Loader2, Search, Edit, Trash2, Eye, ArrowLeft, ToggleLeft, ToggleRight } from "lucide-react";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 
@@ -20,6 +20,51 @@ interface Product {
   stock: number;
   images: string[];
   isActive: boolean;
+  sellerId: string;
+  storeName?: string;
+}
+
+function ToggleProductStatusButton({ product }: { product: Product }) {
+  const { toast } = useToast();
+
+  const toggleStatusMutation = useMutation({
+    mutationFn: async () => {
+      return apiRequest("PATCH", `/api/products/${product.id}/status`, { isActive: !product.isActive });
+    },
+    onSuccess: () => {
+      toast({
+        title: "Success",
+        description: `Product ${product.isActive ? 'deactivated' : 'activated'} successfully`,
+      });
+      queryClient.invalidateQueries({ queryKey: ["/api/products"] });
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to update product status",
+        variant: "destructive",
+      });
+    },
+  });
+
+  return (
+    <Button
+      variant="ghost"
+      size="icon"
+      onClick={() => toggleStatusMutation.mutate()}
+      disabled={toggleStatusMutation.isPending}
+      data-testid={`button-toggle-status-${product.id}`}
+      title={product.isActive ? "Deactivate product" : "Activate product"}
+    >
+      {toggleStatusMutation.isPending ? (
+        <Loader2 className="h-4 w-4 animate-spin" />
+      ) : product.isActive ? (
+        <ToggleRight className="h-4 w-4 text-green-500" />
+      ) : (
+        <ToggleLeft className="h-4 w-4 text-muted-foreground" />
+      )}
+    </Button>
+  );
 }
 
 function DeleteProductDialog({ product }: { product: Product }) {
@@ -122,16 +167,8 @@ export default function AdminProducts() {
             </Button>
             <div className="flex-1">
               <h1 className="text-3xl font-bold text-foreground" data-testid="heading-products">Products Management</h1>
-              <p className="text-muted-foreground mt-1">Manage your product catalog</p>
+              <p className="text-muted-foreground mt-1">Manage all products from all sellers</p>
             </div>
-            <Button 
-              onClick={() => navigate("/admin/products/new")}
-              data-testid="button-add-product" 
-              className="gap-2"
-            >
-              <Plus className="h-4 w-4" />
-              Add Product
-            </Button>
           </div>
 
           <div className="mb-6">
@@ -173,6 +210,11 @@ export default function AdminProducts() {
                         <Badge variant="outline" data-testid={`badge-category-${product.id}`}>
                           {product.category}
                         </Badge>
+                        {product.storeName && (
+                          <Badge variant="secondary" data-testid={`badge-seller-${product.id}`}>
+                            {product.storeName}
+                          </Badge>
+                        )}
                         <span className="text-sm text-muted-foreground" data-testid={`text-stock-${product.id}`}>
                           Stock: {product.stock}
                         </span>
@@ -189,6 +231,7 @@ export default function AdminProducts() {
                         size="icon" 
                         onClick={() => navigate(`/product/${product.id}`)}
                         data-testid={`button-view-${product.id}`}
+                        title="View product"
                       >
                         <Eye className="h-4 w-4" />
                       </Button>
@@ -197,9 +240,11 @@ export default function AdminProducts() {
                         size="icon"
                         onClick={() => navigate(`/admin/products/${product.id}/edit`)}
                         data-testid={`button-edit-${product.id}`}
+                        title="Edit product"
                       >
                         <Edit className="h-4 w-4" />
                       </Button>
+                      <ToggleProductStatusButton product={product} />
                       <DeleteProductDialog product={product} />
                     </div>
                   </div>

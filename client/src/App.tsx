@@ -6,6 +6,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { AuthProvider } from "@/lib/auth";
 import { LanguageProvider } from "@/contexts/LanguageContext";
 import { NotificationProvider } from "@/contexts/NotificationContext";
+import { useBranding } from "@/hooks/useBranding";
 
 import Home from "@/pages/HomeConnected";
 import ProductDetails from "@/pages/ProductDetails";
@@ -65,6 +66,9 @@ import AdminProductEdit from "@/pages/AdminProductEdit";
 import AdminProductCreate from "@/pages/AdminProductCreate";
 
 function Router() {
+  // Apply branding colors from database settings
+  useBranding();
+  
   return (
     <Switch>
       <Route path="/" component={Home} />
