@@ -635,7 +635,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.patch("/api/users/:id", requireAuth, requireRole("admin", "super_admin"), async (req, res) => {
+  app.patch("/api/users/:id", requireAuth, requireRole("admin", "super_admin"), async (req: AuthRequest, res) => {
     try {
       const allowedFields = ['name', 'email', 'phone', 'role', 'isActive', 'isApproved', 'vehicleInfo'];
       const updateData: Record<string, any> = {};
@@ -648,6 +648,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       if (Object.keys(updateData).length === 0) {
         return res.status(400).json({ error: "No valid fields to update" });
+      }
+
+      // Security: Only super_admin can assign the super_admin role
+      if (updateData.role === "super_admin" && req.user!.role !== "super_admin") {
+        return res.status(403).json({ error: "Only super admins can assign the super admin role" });
       }
 
       if (updateData.email) {
@@ -2409,15 +2414,30 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       const tracking = await storage.createDeliveryTracking(trackingData);
       
-      // Emit real-time location update to buyer
+      // Emit real-time location update to buyer and admins
       const order = await storage.getOrder(req.body.orderId);
       if (order) {
-        io.to(order.buyerId).emit("rider_location_updated", {
+        const rider = await storage.getUser(req.user!.id);
+        const locationUpdate = {
           orderId: order.id,
           orderNumber: order.orderNumber,
+          riderId: req.user!.id,
+          riderName: rider?.name || "Rider",
           latitude: tracking.latitude,
           longitude: tracking.longitude,
+          speed: tracking.speed,
+          heading: tracking.heading,
           timestamp: tracking.timestamp,
+        };
+        
+        // Send to buyer
+        io.to(order.buyerId).emit("rider_location_updated", locationUpdate);
+        
+        // Send to all admins for real-time tracking
+        const admins = await storage.getUsersByRole("admin");
+        const superAdmins = await storage.getUsersByRole("super_admin");
+        [...admins, ...superAdmins].forEach(admin => {
+          io.to(admin.id).emit("admin_rider_location_updated", locationUpdate);
         });
       }
       
@@ -2443,6 +2463,42 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const history = await storage.getDeliveryTrackingHistory(req.params.orderId);
       res.json(history);
+    } catch (error: any) {
+      res.status(400).json({ error: error.message });
+    }
+  });
+
+  // Get all active riders with their current locations (for admin tracking)
+  app.get("/api/admin/active-riders", requireAuth, requireRole("admin", "super_admin"), async (req, res) => {
+    try {
+      // Get all orders and filter for delivering status
+      const allOrders = await storage.getAllOrders();
+      const activeOrders = allOrders.filter(order => order.status === "delivering");
+      
+      const riderLocations = await Promise.all(
+        activeOrders.map(async (order: any) => {
+          if (!order.riderId) return null;
+          
+          const rider = await storage.getUser(order.riderId);
+          const latestLocation = await storage.getLatestDeliveryLocation(order.id);
+          
+          if (!latestLocation || !rider) return null;
+          
+          return {
+            riderId: rider.id,
+            riderName: rider.name,
+            orderId: order.id,
+            orderNumber: order.orderNumber,
+            latitude: latestLocation.latitude,
+            longitude: latestLocation.longitude,
+            speed: latestLocation.speed,
+            heading: latestLocation.heading,
+            timestamp: latestLocation.timestamp,
+          };
+        })
+      );
+      
+      res.json(riderLocations.filter(Boolean));
     } catch (error: any) {
       res.status(400).json({ error: error.message });
     }

@@ -5,6 +5,7 @@ import { useAuth } from "@/lib/auth";
 import DashboardSidebar from "@/components/DashboardSidebar";
 import MetricCard from "@/components/MetricCard";
 import ThemeToggle from "@/components/ThemeToggle";
+import RealTimeRiderMap from "@/components/RealTimeRiderMap";
 import { DollarSign, ShoppingBag, Users, Truck, Loader2, AlertCircle } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -172,6 +173,9 @@ export default function AdminDashboard() {
                 </CardContent>
               </Card>
             )}
+
+            {/* Real-Time Rider Tracking Map */}
+            <RealTimeRiderMap />
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <Card>

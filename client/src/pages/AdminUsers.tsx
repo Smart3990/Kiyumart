@@ -11,7 +11,8 @@ import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
-import { Loader2, Search, User, Edit, Ban, MessageSquare, Trash2, ArrowLeft, CheckCircle, XCircle } from "lucide-react";
+import { Loader2, Search, User, Edit, Ban, MessageSquare, Trash2, ArrowLeft, CheckCircle, XCircle, UserCog } from "lucide-react";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from "@/components/ui/dialog";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 
 interface UserData {
@@ -122,6 +123,33 @@ export default function AdminUsers() {
     }
   };
 
+  const [promoteDialogOpen, setPromoteDialogOpen] = useState(false);
+  const [userToPromote, setUserToPromote] = useState<string | null>(null);
+
+  const promoteToAdminMutation = useMutation({
+    mutationFn: async (userId: string) => {
+      return apiRequest("PATCH", `/api/users/${userId}`, { role: "admin" });
+    },
+    onSuccess: () => {
+      toast({
+        title: "Success",
+        description: "User has been promoted to admin",
+      });
+      queryClient.invalidateQueries({ queryKey: ["/api/users"] });
+      setPromoteDialogOpen(false);
+      setUserToPromote(null);
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to promote user",
+        variant: "destructive",
+      });
+      setPromoteDialogOpen(false);
+      setUserToPromote(null);
+    },
+  });
+
   const filterUsersByRole = (users: UserData[], role: string) => {
     if (role === "all") return users;
     return users.filter(u => u.role === role);
@@ -217,6 +245,47 @@ export default function AdminUsers() {
           </div>
         </div>
         <div className="flex gap-2">
+          {user?.role === "super_admin" && userData.role !== "admin" && userData.role !== "super_admin" && (
+            <Dialog open={promoteDialogOpen && userToPromote === userData.id} onOpenChange={(open) => {
+              setPromoteDialogOpen(open);
+              if (!open) setUserToPromote(null);
+            }}>
+              <DialogTrigger asChild>
+                <Button 
+                  variant="ghost" 
+                  size="icon"
+                  data-testid={`button-promote-${userData.id}`}
+                  title="Promote to Admin"
+                  onClick={() => {
+                    setUserToPromote(userData.id);
+                    setPromoteDialogOpen(true);
+                  }}
+                >
+                  <UserCog className="h-4 w-4 text-primary" />
+                </Button>
+              </DialogTrigger>
+              <DialogContent>
+                <DialogHeader>
+                  <DialogTitle>Promote to Admin</DialogTitle>
+                  <DialogDescription>
+                    Are you sure you want to promote {userData.name || userData.username} to admin? 
+                    They will have access to all administrative functions.
+                  </DialogDescription>
+                </DialogHeader>
+                <DialogFooter>
+                  <Button variant="outline" onClick={() => setPromoteDialogOpen(false)}>Cancel</Button>
+                  <Button 
+                    onClick={() => promoteToAdminMutation.mutate(userData.id)}
+                    disabled={promoteToAdminMutation.isPending}
+                    data-testid={`button-confirm-promote-${userData.id}`}
+                  >
+                    {promoteToAdminMutation.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                    Promote
+                  </Button>
+                </DialogFooter>
+              </DialogContent>
+            </Dialog>
+          )}
           <Button 
             variant="ghost" 
             size="icon"

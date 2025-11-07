@@ -28,7 +28,7 @@ const editUserSchema = z.object({
   name: z.string().min(2, "Name must be at least 2 characters"),
   email: z.string().email("Invalid email address"),
   phone: z.string().optional(),
-  role: z.enum(["buyer", "seller", "rider", "admin"]),
+  role: z.enum(["buyer", "seller", "rider", "agent", "admin", "super_admin"]),
 });
 
 type EditUserFormData = z.infer<typeof editUserSchema>;
@@ -199,7 +199,11 @@ export default function AdminUserEdit() {
                             <SelectItem value="buyer">Buyer</SelectItem>
                             <SelectItem value="seller">Seller</SelectItem>
                             <SelectItem value="rider">Rider</SelectItem>
+                            <SelectItem value="agent">Agent</SelectItem>
                             <SelectItem value="admin">Admin</SelectItem>
+                            {user?.role === "super_admin" && (
+                              <SelectItem value="super_admin">Super Admin</SelectItem>
+                            )}
                           </SelectContent>
                         </Select>
                         <FormMessage />
