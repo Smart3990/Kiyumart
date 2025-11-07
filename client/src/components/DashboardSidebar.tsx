@@ -32,14 +32,14 @@ interface MenuItem {
 }
 
 interface DashboardSidebarProps {
-  role: "admin" | "seller" | "buyer" | "rider" | "agent";
+  role: "admin" | "seller" | "buyer" | "rider" | "agent" | "super_admin";
   activeItem?: string;
   onItemClick?: (id: string) => void;
   userName?: string;
 }
 
 const menuItems: Record<string, MenuItem[]> = {
-  admin: [
+  super_admin: [
     { icon: LayoutDashboard, label: "Dashboard", id: "dashboard" },
     { icon: Palette, label: "Branding", id: "branding" },
     { icon: Grid3x3, label: "Categories", id: "categories" },
@@ -58,6 +58,21 @@ const menuItems: Record<string, MenuItem[]> = {
     { icon: MessageSquare, label: "Messages", id: "messages" },
     { icon: BarChart3, label: "Analytics", id: "analytics" },
     { icon: Settings, label: "Settings", id: "settings" },
+  ],
+  admin: [
+    { icon: LayoutDashboard, label: "Dashboard", id: "dashboard" },
+    { icon: Grid3x3, label: "Categories", id: "categories" },
+    { icon: Package, label: "Products", id: "products" },
+    { icon: ShoppingBag, label: "Orders", id: "orders" },
+    { icon: UserCog, label: "Sellers", id: "sellers" },
+    { icon: Truck, label: "Riders", id: "riders" },
+    { icon: MapPin, label: "Delivery Zones", id: "zones" },
+    { icon: ShoppingCart, label: "Shopping Cart", id: "my-cart", separator: true },
+    { icon: ShoppingBag, label: "My Purchases", id: "my-purchases" },
+    { icon: Heart, label: "My Wishlist", id: "my-wishlist" },
+    { icon: Bell, label: "Notifications", id: "notifications", badge: "dynamic", separator: true },
+    { icon: MessageSquare, label: "Messages", id: "messages" },
+    { icon: BarChart3, label: "Analytics", id: "analytics" },
   ],
   seller: [
     { icon: LayoutDashboard, label: "Dashboard", id: "dashboard" },

@@ -201,7 +201,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.patch("/api/profile", requireAuth, async (req: AuthRequest, res) => {
     try {
       // Only allow updating specific safe fields
-      const allowedFields = ['username', 'phone', 'address', 'city', 'country'];
+      const allowedFields = ['name', 'username', 'phone', 'address', 'city', 'country'];
       const updateData: Record<string, any> = {};
       
       for (const field of allowedFields) {
@@ -347,7 +347,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // ============ User Management (Admin only) ============
-  app.get("/api/users", requireAuth, requireRole("admin"), async (req, res) => {
+  app.get("/api/users", requireAuth, requireRole("admin", "super_admin"), async (req, res) => {
     try {
       const { role } = req.query;
       let users;
@@ -371,7 +371,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.get("/api/users/:id", requireAuth, requireRole("admin"), async (req, res) => {
+  app.get("/api/users/:id", requireAuth, requireRole("admin", "super_admin"), async (req, res) => {
     try {
       const user = await storage.getUser(req.params.id);
       if (!user) {
@@ -384,7 +384,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.patch("/api/users/:id/approve", requireAuth, requireRole("admin"), async (req, res) => {
+  app.patch("/api/users/:id/approve", requireAuth, requireRole("admin", "super_admin"), async (req, res) => {
     try {
       // First, get the user without approving yet
       const user = await storage.getUser(req.params.id);
@@ -449,7 +449,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.patch("/api/users/:id/reject", requireAuth, requireRole("admin"), async (req, res) => {
+  app.patch("/api/users/:id/reject", requireAuth, requireRole("admin", "super_admin"), async (req, res) => {
     try {
       const user = await storage.getUser(req.params.id);
       if (!user) {
@@ -482,7 +482,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.patch("/api/users/:id/status", requireAuth, requireRole("admin"), async (req, res) => {
+  app.patch("/api/users/:id/status", requireAuth, requireRole("admin", "super_admin"), async (req, res) => {
     try {
       const { isActive } = req.body;
       const user = await storage.getUser(req.params.id);
@@ -520,7 +520,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post("/api/users", requireAuth, requireRole("admin"), async (req, res) => {
+  app.post("/api/users", requireAuth, requireRole("admin", "super_admin"), async (req, res) => {
     try {
       // Capture store data before schema parsing strips it
       const { storeName, storeDescription, storeBanner } = req.body;
@@ -591,7 +591,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.patch("/api/users/:id", requireAuth, requireRole("admin"), async (req, res) => {
+  app.patch("/api/users/:id", requireAuth, requireRole("admin", "super_admin"), async (req, res) => {
     try {
       const allowedFields = ['name', 'email', 'phone', 'role', 'isActive', 'isApproved', 'vehicleInfo'];
       const updateData: Record<string, any> = {};
@@ -625,7 +625,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.delete("/api/users/:id", requireAuth, requireRole("admin"), async (req, res) => {
+  app.delete("/api/users/:id", requireAuth, requireRole("admin", "super_admin"), async (req, res) => {
     try {
       const user = await storage.getUser(req.params.id);
       if (!user) {

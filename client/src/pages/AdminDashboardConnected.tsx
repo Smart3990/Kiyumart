@@ -110,27 +110,29 @@ export default function AdminDashboardConnected() {
 
   const { data: analytics, isLoading: analyticsLoading } = useQuery<Analytics>({
     queryKey: ["/api/analytics"],
-    enabled: isAuthenticated && (user?.role === "admin" || user?.role === "super_admin"),
+    enabled: isAuthenticated && user?.role === "super_admin",
   });
 
   const { data: orders = [], isLoading: ordersLoading } = useQuery<Order[]>({
     queryKey: ["/api/orders"],
-    enabled: isAuthenticated && (user?.role === "admin" || user?.role === "super_admin"),
+    enabled: isAuthenticated && user?.role === "super_admin",
   });
 
   const { data: buyers = [] } = useQuery<User[]>({
     queryKey: ["/api/users", "buyer"],
     queryFn: async () => {
       const res = await fetch("/api/users?role=buyer");
-      return res.json();
+      if (!res.ok) return [];
+      const data = await res.json();
+      return Array.isArray(data) ? data : [];
     },
-    enabled: isAuthenticated && (user?.role === "admin" || user?.role === "super_admin"),
+    enabled: isAuthenticated && user?.role === "super_admin",
   });
 
-  if (authLoading || !isAuthenticated || (user?.role !== "admin" && user?.role !== "super_admin")) {
+  if (authLoading || !isAuthenticated || user?.role !== "super_admin") {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
-        <Loader2 className="h-8 w-8 animate-spin text-primary" data-testid="loader-admin" />
+        <Loader2 className="h-8 w-8 animate-spin text-primary" data-testid="loader-super-admin" />
       </div>
     );
   }
@@ -140,14 +142,14 @@ export default function AdminDashboardConnected() {
     .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
     .slice(0, 6);
 
-  const buyerMap = new Map(buyers.map(b => [b.id, b]));
+  const buyerMap = new Map(Array.isArray(buyers) ? buyers.map(b => [b.id, b]) : []);
 
   const deliveredCount = orders.filter(o => o.status === "delivered").length;
 
   return (
     <div className="flex h-screen bg-background">
       <DashboardSidebar
-        role="admin"
+        role="super_admin"
         activeItem={activeItem}
         onItemClick={handleItemClick}
         userName={user.name}
@@ -155,7 +157,7 @@ export default function AdminDashboardConnected() {
 
       <div className="flex-1 flex flex-col overflow-hidden">
         <header className="border-b p-4 flex items-center justify-between">
-          <h1 className="text-2xl font-bold" data-testid="text-dashboard-title">Admin Dashboard</h1>
+          <h1 className="text-2xl font-bold" data-testid="text-dashboard-title">Super Admin Dashboard</h1>
           <div className="flex items-center gap-2">
             <ThemeToggle />
             <Button variant="outline" onClick={() => navigate("/")} data-testid="button-shop">

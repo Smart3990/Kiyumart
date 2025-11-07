@@ -12,7 +12,7 @@ import Home from "@/pages/HomeConnected";
 import ProductDetails from "@/pages/ProductDetails";
 import Cart from "@/pages/Cart";
 import AuthPage from "@/pages/AuthPage";
-import AdminDashboard from "@/pages/AdminDashboardConnected";
+import AdminDashboard from "@/pages/AdminDashboardRouter";
 import SellerDashboard from "@/pages/SellerDashboardConnected";
 import RiderDashboard from "@/pages/RiderDashboard";
 import BuyerDashboard from "@/pages/BuyerDashboard";
