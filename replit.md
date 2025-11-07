@@ -6,6 +6,13 @@ KiyuMart is an e-commerce platform specializing in modest Islamic women's fashio
 
 ## Recent Changes (November 2025)
 
+### Store Creation & Product Linking (November 7, 2025)
+- **Automatic Store Creation on Seller Approval**: Refactored seller approval workflow to create stores BEFORE setting user approval status, ensuring atomicity. If store creation fails, seller remains unapproved and admin can safely retry.
+- **Product Auto-Linking**: Products created by sellers now automatically link to their store. System fetches seller's store and sets storeId, preventing orphaned products.
+- **Schema Fix for Seller Metadata**: Added `storeType`, `storeTypeMetadata`, and `storeBanner` to `insertUserSchema`, enabling proper persistence of seller application data including category selection and category-specific product information.
+- **Enhanced Error Handling**: Comprehensive logging and rollback logic for store creation failures. Admin receives clear error messages when store creation fails, with detailed logs for debugging.
+- **Database Cleanup**: Removed all test users (buyer, rider, seller) and associated stores. Only admin and agent accounts remain.
+
 ### Admin Dashboard Enhancements
 - **Fixed AdminUserEdit Page**: Corrected API request syntax to properly load and update user information. The edit form now successfully fetches user data via `GET /api/users/:id` and updates via `PATCH /api/users/:id`.
 - **Redesigned AdminMessages Page**: Completely overhauled the messaging interface to list all platform users organized by role categories (All, Sellers, Buyers, Riders, Admins, Agents). Admin can now search for users, filter by role, select any user to view message history, and start conversations directly from the admin dashboard.
