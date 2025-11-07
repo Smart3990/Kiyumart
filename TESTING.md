@@ -12,9 +12,9 @@ All test accounts use simple passwords for development/testing purposes only:
 | **Agent** | agent@kiyumart.com | agent123 | Customer support |
 
 ### Additional Seller Accounts (from marketplace seed)
-- seller1@kiyumart.com (Fatima's Boutique) - password123
-- seller2@kiyumart.com (Aisha's Collection) - password123
-- seller3@kiyumart.com (Zainab's Designs) - password123
+- seller1@kiyumart.com (Fatima's Boutique) - seller123
+- seller2@kiyumart.com (Aisha's Collection) - seller123
+- seller3@kiyumart.com (Zainab's Designs) - seller123
 
 ## Database Seeding
 

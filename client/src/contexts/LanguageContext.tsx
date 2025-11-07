@@ -1,7 +1,12 @@
 import { createContext, useContext, useState, useEffect, ReactNode } from "react";
+import { useQuery } from "@tanstack/react-query";
 
 export type Language = "en" | "fr" | "es" | "en-ng" | "fr-tg" | "ar";
 export type Currency = "GHS" | "EUR" | "USD" | "NGN" | "XOF" | "GBP" | "ZAR" | "KES";
+
+interface ExchangeRates {
+  [currency: string]: number;
+}
 
 interface LanguageConfig {
   code: Language;
@@ -145,6 +150,8 @@ interface LanguageContextType {
   countryName: string;
   setLanguage: (lang: Language) => void;
   t: (key: keyof typeof translations.en) => string;
+  formatPrice: (priceInGHS: number) => string;
+  convertPrice: (priceInGHS: number) => number;
 }
 
 const LanguageContext = createContext<LanguageContextType | undefined>(undefined);
@@ -159,6 +166,21 @@ export function LanguageProvider({ children }: { children: ReactNode }) {
   const currencySymbol = languages[language].symbol;
   const countryName = languages[language].country;
 
+  // Fetch exchange rates with React Query
+  const { data: ratesData } = useQuery<{ rates: ExchangeRates }>({
+    queryKey: ["/api/currency/rates"],
+    queryFn: async () => {
+      const res = await fetch("/api/currency/rates?base=GHS");
+      if (!res.ok) throw new Error("Failed to fetch exchange rates");
+      return res.json();
+    },
+    staleTime: 60 * 60 * 1000, // 1 hour
+    gcTime: 24 * 60 * 60 * 1000, // 24 hours
+    refetchInterval: 60 * 60 * 1000, // Refetch every hour
+  });
+
+  const exchangeRates = ratesData?.rates || { GHS: 1 };
+
   const setLanguage = (lang: Language) => {
     setLanguageState(lang);
     localStorage.setItem("language", lang);
@@ -168,13 +190,38 @@ export function LanguageProvider({ children }: { children: ReactNode }) {
     return translations[language][key] || translations.en[key] || key;
   };
 
+  // Convert price from GHS (base currency) to selected currency
+  const convertPrice = (priceInGHS: number): number => {
+    if (currency === "GHS") return priceInGHS;
+    const rate = exchangeRates[currency] || 1;
+    return priceInGHS * rate;
+  };
+
+  // Format price with conversion and currency symbol
+  const formatPrice = (priceInGHS: number): string => {
+    const convertedPrice = convertPrice(priceInGHS);
+    
+    // Use Intl.NumberFormat for proper currency formatting
+    try {
+      return new Intl.NumberFormat(language === "fr" || language === "fr-tg" ? "fr-FR" : "en-GH", {
+        style: "currency",
+        currency: currency === "XOF" ? "XOF" : currency,
+        minimumFractionDigits: 2,
+        maximumFractionDigits: 2,
+      }).format(convertedPrice);
+    } catch {
+      // Fallback to manual formatting if currency not supported by Intl
+      return `${currencySymbol}${convertedPrice.toFixed(2)}`;
+    }
+  };
+
   useEffect(() => {
     document.documentElement.lang = language;
     document.documentElement.dir = language === "ar" ? "rtl" : "ltr";
   }, [language]);
 
   return (
-    <LanguageContext.Provider value={{ language, currency, currencySymbol, countryName, setLanguage, t }}>
+    <LanguageContext.Provider value={{ language, currency, currencySymbol, countryName, setLanguage, t, formatPrice, convertPrice }}>
       {children}
     </LanguageContext.Provider>
   );

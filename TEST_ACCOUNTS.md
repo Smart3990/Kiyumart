@@ -17,7 +17,7 @@ All test accounts have been created and are ready for testing.
 ### 3. Buyer Account
 - **Email**: buyer@kiyumart.com
 - **Password**: buyer123
-- **Features**: Browse products, place orders, track deliveries, manage wishlist
+- **Features**: Browse products, place deliveries, track deliveries, manage wishlist
 
 ### 4. Rider Account
 - **Email**: rider@kiyumart.com

@@ -4,6 +4,7 @@ import { Badge } from "@/components/ui/badge";
 import { Heart, Star } from "lucide-react";
 import { useState, useEffect } from "react";
 import { useLocation } from "wouter";
+import { useLanguage } from "@/contexts/LanguageContext";
 
 interface ProductCardProps {
   id: string;
@@ -75,6 +76,7 @@ export default function ProductCard({
 }: ProductCardProps) {
   const [, navigate] = useLocation();
   const [isWishlisted, setIsWishlisted] = useState(initialWishlisted);
+  const { formatPrice } = useLanguage();
 
   useEffect(() => {
     setIsWishlisted(initialWishlisted);
@@ -168,14 +170,14 @@ export default function ProductCard({
               className="text-sm text-gray-500 dark:text-gray-400 line-through"
               data-testid={`text-cost-price-${id}`}
             >
-              {currency} {originalPrice.toFixed(2)}
+              {formatPrice(originalPrice)}
             </span>
           )}
           <span 
             className="text-xl font-bold text-primary"
             data-testid={`text-selling-price-${id}`}
           >
-            {currency} {sellingPrice.toFixed(2)}
+            {formatPrice(sellingPrice)}
           </span>
         </div>
       </div>

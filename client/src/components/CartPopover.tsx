@@ -25,7 +25,7 @@ interface CartPopoverProps {
 
 export default function CartPopover({ isAuthenticated = false }: CartPopoverProps) {
   const [, navigate] = useLocation();
-  const { currencySymbol } = useLanguage();
+  const { currencySymbol, formatPrice } = useLanguage();
 
   const { data: cart = [], isLoading } = useQuery<CartItem[]>({
     queryKey: ["/api/cart"],
@@ -131,7 +131,7 @@ export default function CartPopover({ isAuthenticated = false }: CartPopoverProp
                           {item.productName}
                         </h4>
                         <p className="text-sm font-semibold text-primary mt-1" data-testid={`text-price-${item.id}`}>
-                          {currencySymbol} {parseFloat(item.price).toFixed(2)}
+                          {formatPrice(parseFloat(item.price))}
                         </p>
                         <div className="flex items-center gap-2 mt-2">
                           <Button

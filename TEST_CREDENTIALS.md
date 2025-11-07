@@ -5,7 +5,7 @@ This document contains test login credentials for all user roles in the KiyuMart
 ## Test Accounts
 
 ### 1. Admin Account
-**Email:** `test@admin.com`  
+**Email:** `admin@kiyumart.com`  
 **Password:** `admin123`  
 **Dashboard URL:** `/admin`
 
@@ -23,7 +23,7 @@ This document contains test login credentials for all user roles in the KiyuMart
 ---
 
 ### 2. Seller Account
-**Email:** `test@seller.com`  
+**Email:** `seller@kiyumart.com`  
 **Password:** `seller123`  
 **Dashboard URL:** `/seller`
 
@@ -43,7 +43,7 @@ This document contains test login credentials for all user roles in the KiyuMart
 ---
 
 ### 3. Rider Account (Dispatch)
-**Email:** `test@rider.com`  
+**Email:** `rider@kiyumart.com`  
 **Password:** `rider123`  
 **Dashboard URL:** `/rider`
 

@@ -33,7 +33,7 @@ export default function Cart() {
   const [, navigate] = useLocation();
   const { isAuthenticated } = useAuth();
   const { toast } = useToast();
-  const { currencySymbol } = useLanguage();
+  const { currencySymbol, formatPrice } = useLanguage();
 
   useEffect(() => {
     if (!isAuthenticated) {
@@ -200,11 +200,11 @@ export default function Cart() {
                               className="font-bold text-primary"
                               data-testid={`text-cart-item-price-${item.productId}`}
                             >
-                              {currencySymbol} {item.price.toFixed(2)}
+                              {formatPrice(item.price)}
                             </span>
                             {item.originalPrice && item.originalPrice > item.price && (
                               <span className="text-sm text-muted-foreground line-through">
-                                {currencySymbol} {item.originalPrice.toFixed(2)}
+                                {formatPrice(item.originalPrice)}
                               </span>
                             )}
                           </div>
@@ -260,7 +260,7 @@ export default function Cart() {
                             className="text-sm font-semibold"
                             data-testid={`text-subtotal-${item.productId}`}
                           >
-                            {currencySymbol} {(item.price * item.quantity).toFixed(2)}
+                            {formatPrice(item.price * item.quantity)}
                           </span>
                         </div>
                       </div>
@@ -277,7 +277,7 @@ export default function Cart() {
                     <div className="flex justify-between">
                       <span className="text-muted-foreground">Subtotal</span>
                       <span className="font-semibold" data-testid="text-subtotal">
-                        {currencySymbol} {subtotal.toFixed(2)}
+                        {formatPrice(subtotal)}
                       </span>
                     </div>
                     <div className="flex justify-between">
