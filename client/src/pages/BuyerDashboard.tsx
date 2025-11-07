@@ -83,38 +83,6 @@ export default function BuyerDashboard() {
           </Card>
         </div>
 
-        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-          <Card className="cursor-pointer hover:bg-accent transition-colors" onClick={() => navigate("/orders")} data-testid="card-my-orders">
-            <CardHeader>
-              <Package className="h-8 w-8 text-primary mb-2" />
-              <CardTitle>My Orders</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <p className="text-sm text-muted-foreground">View and track all your orders</p>
-            </CardContent>
-          </Card>
-
-          <Card className="cursor-pointer hover:bg-accent transition-colors" onClick={() => navigate("/wishlist")} data-testid="card-wishlist">
-            <CardHeader>
-              <Heart className="h-8 w-8 text-primary mb-2" />
-              <CardTitle>Wishlist</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <p className="text-sm text-muted-foreground">Your saved favorite items</p>
-            </CardContent>
-          </Card>
-
-          <Card className="cursor-pointer hover:bg-accent transition-colors" onClick={() => navigate("/profile")} data-testid="card-profile">
-            <CardHeader>
-              <User className="h-8 w-8 text-primary mb-2" />
-              <CardTitle>Profile</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <p className="text-sm text-muted-foreground">Manage your account settings</p>
-            </CardContent>
-          </Card>
-        </div>
-
         {isLoading ? (
           <div className="mt-8 flex justify-center">
             <Loader2 className="h-8 w-8 animate-spin text-primary" />
@@ -126,25 +94,39 @@ export default function BuyerDashboard() {
             </CardHeader>
             <CardContent>
               <div className="space-y-4">
-                {orders.slice(0, 5).map((order) => (
-                  <div 
-                    key={order.id} 
-                    className="flex items-center justify-between p-4 border rounded-lg hover:bg-accent cursor-pointer transition-colors"
-                    onClick={() => navigate(`/track?orderId=${order.id}`)}
-                    data-testid={`order-${order.id}`}
-                  >
-                    <div>
-                      <p className="font-medium">{order.orderNumber}</p>
-                      <p className="text-sm text-muted-foreground">
-                        {new Date(order.createdAt).toLocaleDateString()}
-                      </p>
+                {orders.slice(0, 5).map((order) => {
+                  const isUnpaid = order.status === "pending" || order.status === "payment_pending" || order.status === "payment_failed";
+                  const handleClick = () => {
+                    if (isUnpaid) {
+                      navigate(`/payment/${order.id}`);
+                    } else {
+                      navigate(`/track?orderId=${order.id}`);
+                    }
+                  };
+
+                  return (
+                    <div 
+                      key={order.id} 
+                      className="flex items-center justify-between p-4 border rounded-lg hover:bg-accent cursor-pointer transition-colors"
+                      onClick={handleClick}
+                      data-testid={`order-${order.id}`}
+                    >
+                      <div>
+                        <p className="font-medium">{order.orderNumber}</p>
+                        <p className="text-sm text-muted-foreground">
+                          {new Date(order.createdAt).toLocaleDateString()}
+                        </p>
+                      </div>
+                      <div className="text-right">
+                        <p className="font-medium">GHS {order.total}</p>
+                        <p className="text-sm text-muted-foreground capitalize">{order.status}</p>
+                        {isUnpaid && (
+                          <p className="text-xs text-destructive font-medium mt-1">Click to pay</p>
+                        )}
+                      </div>
                     </div>
-                    <div className="text-right">
-                      <p className="font-medium">GHS {order.total}</p>
-                      <p className="text-sm text-muted-foreground capitalize">{order.status}</p>
-                    </div>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             </CardContent>
           </Card>

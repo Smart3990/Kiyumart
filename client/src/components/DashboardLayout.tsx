@@ -55,9 +55,9 @@ const routeToMenuId: Record<string, string> = {
   "/orders": "orders",
   "/wishlist": "wishlist",
   "/cart": "my-cart",
-  "/buyer/notifications": "notifications",
+  "/notifications": "notifications",
   "/support": "support",
-  "/buyer/settings": "settings",
+  "/settings": "settings",
   "/rider": "dashboard",
   "/rider/deliveries": "deliveries",
   "/rider/route": "route",
@@ -116,7 +116,8 @@ export default function DashboardLayout({
     } else if (id === "my-wishlist") {
       // All non-buyer roles access their wishlist at /wishlist
       setLocation("/wishlist");
-    } else if (role === "buyer" && (id === "orders" || id === "wishlist" || id === "support")) {
+    } else if (role === "buyer" && (id === "orders" || id === "wishlist" || id === "support" || id === "notifications" || id === "settings")) {
+      // Buyer uses global routes for these pages
       setLocation(`/${id}`);
     } else {
       setLocation(`${basePath}/${id}`);
