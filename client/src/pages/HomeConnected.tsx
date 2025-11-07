@@ -197,19 +197,13 @@ export default function HomeConnected() {
     },
   });
 
-  // Use database categories if available, otherwise fallback to hardcoded
-  const categories = dbCategories.length > 0 
-    ? dbCategories.map(cat => ({
-        id: cat.slug,
-        name: cat.name,
-        image: cat.image,
-        productCount: products.filter(p => p.category === cat.slug).length
-      }))
-    : [
-        { id: "abayas", name: "Elegant Abayas", image: abayaCategoryImage, productCount: products.filter(p => p.category === "abayas").length },
-        { id: "hijabs", name: "Hijabs & Accessories", image: hijabCategoryImage, productCount: products.filter(p => p.category === "hijabs").length },
-        { id: "evening", name: "Evening Wear", image: eveningCategoryImage, productCount: products.filter(p => p.category === "evening").length },
-      ];
+  // Use database categories only
+  const categories = dbCategories.map(cat => ({
+    id: cat.slug,
+    name: cat.name,
+    image: cat.image,
+    productCount: products.filter(p => p.category === cat.slug).length
+  }));
 
   const cartItemsForSidebar = cartItems.map(cartItem => {
     const product = cartProducts.find(p => p.id === cartItem.productId);
