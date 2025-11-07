@@ -3573,11 +3573,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       let store = await storage.getStoreByPrimarySeller(req.user!.id);
       
-      // If approved seller doesn't have a store, create one automatically
-      if (!store && req.user!.isApproved) {
-        console.log(`Auto-creating missing store for approved seller ${req.user!.id}`);
+      // If no store found, check if seller is approved and auto-create
+      if (!store) {
         const seller = await storage.getUser(req.user!.id);
-        if (seller) {
+        
+        if (seller && seller.isApproved) {
+          console.log(`Auto-creating missing store for approved seller ${req.user!.id}`);
           const storeData = {
             primarySellerId: req.user!.id,
             name: seller.storeName || seller.name + "'s Store",
