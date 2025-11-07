@@ -62,6 +62,15 @@
 - **Approved Stores Only**: Primary store selector displays only approved and active stores for quality control
 - **Clear Admin UX**: Warning message displays in Store Mode tab when operating in single-store mode without a selected primary store
 
+### Multi-Vendor "Shop By" Mode System
+- **Admin Shop By Mode Selector**: Added dropdown in Admin Store Manager > Store Mode tab (visible only in multi-vendor mode) allowing admins to choose between "Shop by Stores" and "Shop by Categories"
+- **Shop by Stores Mode**: Displays all approved and active stores with their logos, banners, and names on the marketplace homepage using dedicated StoreCard components
+- **Shop by Categories Mode**: Shows product categories aggregated from all stores, allowing customers to browse by product type rather than by store
+- **StoreCard Component**: New reusable component for displaying stores with store images (logo/banner) set by sellers, gracefully handling missing imagery
+- **Smart Empty States**: User-friendly messages when no stores or categories are available, guiding customers to check back or contact support
+- **Seamless Mode Switching**: Customers see a completely different browsing experience based on admin's selected mode without page reloads
+- **Query Optimization**: Stores are only fetched when in "Shop by Stores" mode to minimize unnecessary API calls
+
 ## Overview
 
 KiyuMart is an e-commerce platform specializing in modest Islamic women's fashion, designed to operate as either a single-store or a multi-vendor marketplace. Its core purpose is to provide a comprehensive online destination with functionalities including product and order management, real-time delivery tracking with map visualization, live chat, and Paystack payment integration. The platform aims to offer a diverse and inclusive product range, supported by dynamic category management, extensive admin dashboards for user and product management, and a robust application verification system for sellers and riders.
