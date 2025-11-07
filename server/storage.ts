@@ -768,14 +768,16 @@ export class DbStorage implements IStorage {
     // Basic analytics - can be expanded
     const result: any = {};
     
-    if (role === "admin" || !userId) {
+    if (role === "admin" || role === "super_admin" || !userId) {
       const totalOrders = await db.select({ count: sql<number>`count(*)` }).from(orders);
       const totalRevenue = await db.select({ sum: sql<number>`sum(${orders.total})` }).from(orders);
       const totalUsers = await db.select({ count: sql<number>`count(*)` }).from(users);
+      const totalProducts = await db.select({ count: sql<number>`count(*)` }).from(products);
       
-      result.totalOrders = totalOrders[0]?.count || 0;
-      result.totalRevenue = totalRevenue[0]?.sum || 0;
-      result.totalUsers = totalUsers[0]?.count || 0;
+      result.totalOrders = Number(totalOrders[0]?.count ?? 0);
+      result.totalRevenue = Number(totalRevenue[0]?.sum ?? 0);
+      result.totalUsers = Number(totalUsers[0]?.count ?? 0);
+      result.totalProducts = Number(totalProducts[0]?.count ?? 0);
     } else if (role === "seller") {
       const sellerOrders = await db.select({ count: sql<number>`count(*)` })
         .from(orders)
@@ -784,8 +786,8 @@ export class DbStorage implements IStorage {
         .from(orders)
         .where(eq(orders.sellerId, userId));
       
-      result.totalOrders = sellerOrders[0]?.count || 0;
-      result.totalRevenue = sellerRevenue[0]?.sum || 0;
+      result.totalOrders = Number(sellerOrders[0]?.count ?? 0);
+      result.totalRevenue = Number(sellerRevenue[0]?.sum ?? 0);
     }
     
     return result;

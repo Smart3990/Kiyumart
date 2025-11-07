@@ -192,14 +192,22 @@ export function LanguageProvider({ children }: { children: ReactNode }) {
 
   // Convert price from GHS (base currency) to selected currency
   const convertPrice = (priceInGHS: number): number => {
-    if (currency === "GHS") return priceInGHS;
+    // Coerce to number and handle invalid inputs
+    const numericPrice = Number(priceInGHS);
+    if (isNaN(numericPrice) || numericPrice === null || numericPrice === undefined) {
+      return 0;
+    }
+    if (currency === "GHS") return numericPrice;
     const rate = exchangeRates[currency] || 1;
-    return priceInGHS * rate;
+    return numericPrice * rate;
   };
 
   // Format price with conversion and currency symbol
   const formatPrice = (priceInGHS: number): string => {
-    const convertedPrice = convertPrice(priceInGHS);
+    // Coerce to number and handle invalid inputs gracefully
+    const numericPrice = Number(priceInGHS);
+    const validPrice = isNaN(numericPrice) ? 0 : numericPrice;
+    const convertedPrice = convertPrice(validPrice);
     
     // Use Intl.NumberFormat for proper currency formatting
     try {

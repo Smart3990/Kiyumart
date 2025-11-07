@@ -10,9 +10,9 @@ import { Loader2, TrendingUp, DollarSign, ShoppingCart, Users, ArrowLeft } from 
 
 interface Analytics {
   totalRevenue: number;
-  totalOrders: string;
-  totalUsers: string;
-  totalProducts: string;
+  totalOrders: number;
+  totalUsers: number;
+  totalProducts: number;
 }
 
 export default function AdminAnalytics() {

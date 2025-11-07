@@ -261,9 +261,13 @@ export default function AdminFooterPagesManager() {
                             {...field} 
                             placeholder="e.g., returns-refunds"
                             data-testid="input-slug"
-                            disabled={!!editingPage}
                           />
                         </FormControl>
+                        {editingPage && (
+                          <p className="text-xs text-muted-foreground">
+                            Changing the slug will update the page URL. Existing links may break.
+                          </p>
+                        )}
                         <FormMessage />
                       </FormItem>
                     )}
