@@ -3723,7 +3723,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.delete("/api/assets/delete", requireAuth, requireRole("admin"), async (req: AuthRequest, res) => {
+  app.delete("/api/assets/delete", requireAuth, requireRole("admin", "super_admin"), async (req: AuthRequest, res) => {
     try {
       const fs = await import('fs');
       const path = await import('path');

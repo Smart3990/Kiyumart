@@ -138,10 +138,10 @@ export default function AdminDashboardConnected() {
     enabled: isAuthenticated && user?.role === "super_admin",
   });
 
-  if (authLoading || !isAuthenticated || user?.role !== "super_admin") {
+  if (authLoading || !isAuthenticated || (user?.role !== "super_admin" && user?.role !== "admin")) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
-        <Loader2 className="h-8 w-8 animate-spin text-primary" data-testid="loader-super-admin" />
+        <Loader2 className="h-8 w-8 animate-spin text-primary" data-testid="loader-admin" />
       </div>
     );
   }
@@ -158,7 +158,7 @@ export default function AdminDashboardConnected() {
   return (
     <div className="flex h-screen bg-background">
       <DashboardSidebar
-        role="super_admin"
+        role={user.role as any}
         activeItem={activeItem}
         onItemClick={handleItemClick}
         userName={user.name}
@@ -166,7 +166,9 @@ export default function AdminDashboardConnected() {
 
       <div className="flex-1 flex flex-col overflow-hidden">
         <header className="border-b p-4 flex items-center justify-between">
-          <h1 className="text-2xl font-bold" data-testid="text-dashboard-title">Super Admin Dashboard</h1>
+          <h1 className="text-2xl font-bold" data-testid="text-dashboard-title">
+            {user.role === "super_admin" ? "Super Admin" : "Admin"} Dashboard
+          </h1>
           <div className="flex items-center gap-2">
             <ThemeToggle />
             <Button variant="outline" onClick={() => navigate("/")} data-testid="button-shop">
@@ -177,44 +179,46 @@ export default function AdminDashboardConnected() {
 
         <main className="flex-1 overflow-y-auto p-6">
           <div className="max-w-7xl mx-auto space-y-6">
-            {analyticsLoading ? (
-              <div className="flex justify-center p-8">
-                <Loader2 className="h-8 w-8 animate-spin text-primary" />
-              </div>
-            ) : analytics ? (
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-                <MetricCard
-                  title="Total Revenue"
-                  value={formatPrice(analytics.totalRevenue || 0)}
-                  icon={DollarSign}
-                  change={12.5}
-                />
-                <MetricCard
-                  title="Total Orders"
-                  value={(analytics.totalOrders || 0).toString()}
-                  icon={ShoppingBag}
-                  change={8.2}
-                />
-                <MetricCard
-                  title="Total Users"
-                  value={(analytics.totalUsers || 0).toString()}
-                  icon={Users}
-                  change={-3.1}
-                />
-                <MetricCard
-                  title="Deliveries"
-                  value={deliveredCount.toString()}
-                  icon={Truck}
-                  change={15.3}
-                />
-              </div>
-            ) : (
-              <Card>
-                <CardContent className="p-6 flex items-center gap-3 text-destructive">
-                  <AlertCircle className="h-5 w-5" />
-                  <span>Failed to load analytics</span>
-                </CardContent>
-              </Card>
+            {user.role === "super_admin" && (
+              analyticsLoading ? (
+                <div className="flex justify-center p-8">
+                  <Loader2 className="h-8 w-8 animate-spin text-primary" />
+                </div>
+              ) : analytics ? (
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                  <MetricCard
+                    title="Total Revenue"
+                    value={formatPrice(analytics.totalRevenue || 0)}
+                    icon={DollarSign}
+                    change={12.5}
+                  />
+                  <MetricCard
+                    title="Total Orders"
+                    value={(analytics.totalOrders || 0).toString()}
+                    icon={ShoppingBag}
+                    change={8.2}
+                  />
+                  <MetricCard
+                    title="Total Users"
+                    value={(analytics.totalUsers || 0).toString()}
+                    icon={Users}
+                    change={-3.1}
+                  />
+                  <MetricCard
+                    title="Deliveries"
+                    value={deliveredCount.toString()}
+                    icon={Truck}
+                    change={15.3}
+                  />
+                </div>
+              ) : (
+                <Card>
+                  <CardContent className="p-6 flex items-center gap-3 text-destructive">
+                    <AlertCircle className="h-5 w-5" />
+                    <span>Failed to load analytics</span>
+                  </CardContent>
+                </Card>
+              )
             )}
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
