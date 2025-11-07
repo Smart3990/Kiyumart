@@ -2,6 +2,7 @@ import { useState } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
+import { useAuth } from "@/lib/auth";
 import DashboardLayout from "@/components/DashboardLayout";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -37,6 +38,7 @@ interface AssetImage {
 }
 
 export default function AdminMediaLibrary() {
+  const { user } = useAuth();
   const { toast } = useToast();
   const [activeTab, setActiveTab] = useState<string>("assets");
   const [selectedCategory, setSelectedCategory] = useState<string>("all");
@@ -259,7 +261,7 @@ export default function AdminMediaLibrary() {
     : (mediaItems || []).filter(item => item.category === selectedCategory);
 
   return (
-    <DashboardLayout role="admin">
+    <DashboardLayout role={user?.role as any}>
       <div className="p-6 space-y-6">
       <div className="flex items-center justify-between">
         <div>

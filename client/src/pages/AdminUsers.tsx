@@ -38,14 +38,14 @@ export default function AdminUsers() {
   const [confirmDeleteUser, setConfirmDeleteUser] = useState<{ id: string; name: string } | null>(null);
 
   useEffect(() => {
-    if (!authLoading && (!isAuthenticated || user?.role !== "admin")) {
+    if (!authLoading && (!isAuthenticated || (user?.role !== "admin" && user?.role !== "super_admin"))) {
       navigate("/auth");
     }
   }, [isAuthenticated, authLoading, user, navigate]);
 
   const { data: users = [], isLoading } = useQuery<UserData[]>({
     queryKey: ["/api/users"],
-    enabled: isAuthenticated && user?.role === "admin",
+    enabled: isAuthenticated && (user?.role === "admin" || user?.role === "super_admin"),
   });
 
   const toggleUserStatusMutation = useMutation({
@@ -260,7 +260,7 @@ export default function AdminUsers() {
     </Card>
   );
 
-  if (authLoading || !isAuthenticated || user?.role !== "admin") {
+  if (authLoading || !isAuthenticated || (user?.role !== "admin" && user?.role !== "super_admin")) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
         <Loader2 className="h-8 w-8 animate-spin text-primary" />
@@ -269,7 +269,7 @@ export default function AdminUsers() {
   }
 
   return (
-    <DashboardLayout role="admin" showBackButton>
+    <DashboardLayout role={user?.role as any} showBackButton>
       <div className="p-8">
           <div className="flex items-center gap-4 mb-6">
             <Button

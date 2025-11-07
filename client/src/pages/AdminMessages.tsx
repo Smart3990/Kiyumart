@@ -47,14 +47,14 @@ export default function AdminMessages() {
   const userIdFilter = urlParams.get("userId");
 
   useEffect(() => {
-    if (!authLoading && (!isAuthenticated || user?.role !== "admin")) {
+    if (!authLoading && (!isAuthenticated || (user?.role !== "admin" && user?.role !== "super_admin"))) {
       navigate("/auth");
     }
   }, [isAuthenticated, authLoading, user, navigate]);
 
   const { data: users = [], isLoading: usersLoading } = useQuery<UserData[]>({
     queryKey: ["/api/users"],
-    enabled: isAuthenticated && user?.role === "admin",
+    enabled: isAuthenticated && (user?.role === "admin" || user?.role === "super_admin"),
   });
 
   // Auto-select user when filtering by userId
@@ -145,7 +145,7 @@ export default function AdminMessages() {
 
   const selectedUser = users.find((u) => u.id === selectedUserId);
 
-  if (authLoading || !isAuthenticated || user?.role !== "admin") {
+  if (authLoading || !isAuthenticated || (user?.role !== "admin" && user?.role !== "super_admin")) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
         <Loader2 className="h-8 w-8 animate-spin text-primary" />
@@ -154,7 +154,7 @@ export default function AdminMessages() {
   }
 
   return (
-    <DashboardLayout role="admin">
+    <DashboardLayout role={user?.role as any}>
       <div className="p-8">
         <div className="flex items-center gap-4 mb-6">
           <Button

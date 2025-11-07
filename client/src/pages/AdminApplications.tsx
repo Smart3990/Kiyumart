@@ -42,7 +42,7 @@ export default function AdminApplications() {
   const [viewDetailsOpen, setViewDetailsOpen] = useState(false);
 
   useEffect(() => {
-    if (!authLoading && (!isAuthenticated || user?.role !== "admin")) {
+    if (!authLoading && (!isAuthenticated || (user?.role !== "admin" && user?.role !== "super_admin"))) {
       navigate("/auth");
     }
   }, [isAuthenticated, authLoading, user, navigate]);
@@ -56,7 +56,7 @@ export default function AdminApplications() {
       if (!res.ok) throw new Error("Failed to fetch applications");
       return res.json();
     },
-    enabled: isAuthenticated && user?.role === "admin",
+    enabled: isAuthenticated && (user?.role === "admin" || user?.role === "super_admin"),
   });
 
   const { data: riderApplications = [], isLoading: ridersLoading } = useQuery<Application[]>({
@@ -68,7 +68,7 @@ export default function AdminApplications() {
       if (!res.ok) throw new Error("Failed to fetch applications");
       return res.json();
     },
-    enabled: isAuthenticated && user?.role === "admin",
+    enabled: isAuthenticated && (user?.role === "admin" || user?.role === "super_admin"),
   });
 
   const approveApplicationMutation = useMutation({
@@ -120,7 +120,7 @@ export default function AdminApplications() {
     setViewDetailsOpen(true);
   };
 
-  if (authLoading || !isAuthenticated || user?.role !== "admin") {
+  if (authLoading || !isAuthenticated || (user?.role !== "admin" && user?.role !== "super_admin")) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
         <Loader2 className="h-8 w-8 animate-spin text-primary" />
@@ -229,7 +229,7 @@ export default function AdminApplications() {
   );
 
   return (
-    <DashboardLayout role="admin">
+    <DashboardLayout role={user?.role as any}>
       <div className="p-8">
         <div className="flex items-center gap-4 mb-6">
           <Button

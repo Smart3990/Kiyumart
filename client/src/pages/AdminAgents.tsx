@@ -183,7 +183,7 @@ export default function AdminAgents() {
       if (!res.ok) throw new Error("Failed to fetch agents");
       return res.json();
     },
-    enabled: isAuthenticated && user?.role === "admin",
+    enabled: isAuthenticated && (user?.role === "admin" || user?.role === "super_admin"),
   });
 
   const filteredAgents = agents.filter((agent) =>
@@ -192,7 +192,7 @@ export default function AdminAgents() {
   );
 
   return (
-    <DashboardLayout role="admin">
+    <DashboardLayout role={user?.role as any}>
       <div className="space-y-6">
         <div className="flex items-center justify-between">
           <div>

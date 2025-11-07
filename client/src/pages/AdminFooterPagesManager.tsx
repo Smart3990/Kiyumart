@@ -200,7 +200,7 @@ export default function AdminFooterPagesManager() {
   }
 
   return (
-    <DashboardLayout role="admin">
+    <DashboardLayout role={user?.role as any}>
       <div className="p-8">
         <div className="flex items-center gap-4 mb-6">
           <Button

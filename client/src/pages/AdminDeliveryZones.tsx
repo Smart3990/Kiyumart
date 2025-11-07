@@ -60,14 +60,14 @@ export default function AdminDeliveryZones() {
   const { user, isAuthenticated, isLoading: authLoading } = useAuth();
 
   useEffect(() => {
-    if (!authLoading && (!isAuthenticated || user?.role !== "admin")) {
+    if (!authLoading && (!isAuthenticated || (user?.role !== "admin" && user?.role !== "super_admin"))) {
       navigate("/auth");
     }
   }, [isAuthenticated, authLoading, user, navigate]);
 
   const { data: zones = [], isLoading } = useQuery<DeliveryZone[]>({
     queryKey: ["/api/delivery-zones"],
-    enabled: isAuthenticated && user?.role === "admin",
+    enabled: isAuthenticated && (user?.role === "admin" || user?.role === "super_admin"),
   });
 
   const form = useForm<ZoneFormData>({
@@ -175,7 +175,7 @@ export default function AdminDeliveryZones() {
     setIsDialogOpen(true);
   };
 
-  if (authLoading || isLoading || !isAuthenticated || user?.role !== "admin") {
+  if (authLoading || isLoading || !isAuthenticated || (user?.role !== "admin" && user?.role !== "super_admin")) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <Loader2 className="h-8 w-8 animate-spin text-primary" />
@@ -184,7 +184,7 @@ export default function AdminDeliveryZones() {
   }
 
   return (
-    <DashboardLayout role="admin">
+    <DashboardLayout role={user?.role as any}>
       <div className="p-8">
         <div className="mb-6 flex items-center justify-between">
           <div>

@@ -814,19 +814,19 @@ export default function AdminSellers() {
   const { toast } = useToast();
 
   useEffect(() => {
-    if (!authLoading && (!isAuthenticated || user?.role !== "admin")) {
+    if (!authLoading && (!isAuthenticated || (user?.role !== "admin" && user?.role !== "super_admin"))) {
       navigate("/auth");
     }
   }, [isAuthenticated, authLoading, user, navigate]);
 
   const { data: users = [], isLoading } = useQuery<SellerData[]>({
     queryKey: ["/api/users"],
-    enabled: isAuthenticated && user?.role === "admin",
+    enabled: isAuthenticated && (user?.role === "admin" || user?.role === "super_admin"),
   });
 
   const { data: stores = [] } = useQuery<Array<{ id: string; primarySellerId: string }>>({
     queryKey: ["/api/stores"],
-    enabled: isAuthenticated && user?.role === "admin",
+    enabled: isAuthenticated && (user?.role === "admin" || user?.role === "super_admin"),
   });
 
   // All sellers
@@ -854,7 +854,7 @@ export default function AdminSellers() {
     (s.storeName?.toLowerCase() || '').includes(searchQuery.toLowerCase())
   );
 
-  if (authLoading || !isAuthenticated || user?.role !== "admin") {
+  if (authLoading || !isAuthenticated || (user?.role !== "admin" && user?.role !== "super_admin")) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
         <Loader2 className="h-8 w-8 animate-spin text-primary" />
@@ -863,7 +863,7 @@ export default function AdminSellers() {
   }
 
   return (
-    <DashboardLayout role="admin" showBackButton>
+    <DashboardLayout role={user?.role as any} showBackButton>
       <div className="p-8">
           <div className="flex items-center gap-4 mb-6">
             <Button

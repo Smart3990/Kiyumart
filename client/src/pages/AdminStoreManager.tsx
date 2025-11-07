@@ -61,16 +61,16 @@ export default function AdminStoreManager() {
 
   const { data: settings, isLoading } = useQuery<PlatformSettings>({
     queryKey: ["/api/settings"],
-    enabled: isAuthenticated && user?.role === "admin",
+    enabled: isAuthenticated && (user?.role === "admin" || user?.role === "super_admin"),
   });
 
   const { data: stores = [] } = useQuery<Array<{id: string; name: string; isActive: boolean; isApproved: boolean}>>({
     queryKey: ["/api/stores"],
-    enabled: isAuthenticated && user?.role === "admin",
+    enabled: isAuthenticated && (user?.role === "admin" || user?.role === "super_admin"),
   });
 
   useEffect(() => {
-    if (!authLoading && (!isAuthenticated || user?.role !== "admin")) {
+    if (!authLoading && (!isAuthenticated || (user?.role !== "admin" && user?.role !== "super_admin"))) {
       navigate("/auth");
     }
   }, [isAuthenticated, authLoading, user, navigate]);
@@ -132,7 +132,7 @@ export default function AdminStoreManager() {
     setShowModeWarning(true);
   };
 
-  if (authLoading || isLoading || !isAuthenticated || user?.role !== "admin") {
+  if (authLoading || isLoading || !isAuthenticated || (user?.role !== "admin" && user?.role !== "super_admin")) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
         <Loader2 className="h-8 w-8 animate-spin text-primary" />
@@ -141,7 +141,7 @@ export default function AdminStoreManager() {
   }
 
   return (
-    <DashboardLayout role="admin" showBackButton>
+    <DashboardLayout role={user?.role as any} showBackButton>
       <div className="p-8">
           <div className="flex items-center gap-4 mb-6">
             <Button

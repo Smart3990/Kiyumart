@@ -41,14 +41,14 @@ export default function AdminUserEdit() {
   const userId = window.location.pathname.split("/")[3];
 
   useEffect(() => {
-    if (!authLoading && (!isAuthenticated || user?.role !== "admin")) {
+    if (!authLoading && (!isAuthenticated || (user?.role !== "admin" && user?.role !== "super_admin"))) {
       navigate("/auth");
     }
   }, [isAuthenticated, authLoading, user, navigate]);
 
   const { data: userData, isLoading: userLoading } = useQuery<User>({
     queryKey: ["/api/users", userId],
-    enabled: !!userId && isAuthenticated && user?.role === "admin",
+    enabled: !!userId && isAuthenticated && (user?.role === "admin" || user?.role === "super_admin"),
   });
 
   const form = useForm<EditUserFormData>({
@@ -98,7 +98,7 @@ export default function AdminUserEdit() {
     updateUserMutation.mutate(data);
   };
 
-  if (authLoading || !isAuthenticated || user?.role !== "admin") {
+  if (authLoading || !isAuthenticated || (user?.role !== "admin" && user?.role !== "super_admin")) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
         <Loader2 className="h-8 w-8 animate-spin text-primary" />
@@ -115,7 +115,7 @@ export default function AdminUserEdit() {
   }
 
   return (
-    <DashboardLayout role="admin" showBackButton>
+    <DashboardLayout role={user?.role as any} showBackButton>
       <div className="p-8">
           <div className="flex items-center gap-4 mb-6">
             <Button

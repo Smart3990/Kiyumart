@@ -29,7 +29,7 @@ export default function AdminBannerManager() {
   const [editingBanner, setEditingBanner] = useState<MarketplaceBanner | null>(null);
 
   useEffect(() => {
-    if (!authLoading && (!isAuthenticated || user?.role !== "admin")) {
+    if (!authLoading && (!isAuthenticated || (user?.role !== "admin" && user?.role !== "super_admin"))) {
       navigate("/auth");
     }
   }, [isAuthenticated, authLoading, user, navigate]);
@@ -114,7 +114,7 @@ export default function AdminBannerManager() {
     createBannerMutation.mutate(formData);
   };
 
-  if (authLoading || !isAuthenticated || user?.role !== "admin") {
+  if (authLoading || !isAuthenticated || (user?.role !== "admin" && user?.role !== "super_admin")) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
         <Loader2 className="h-8 w-8 animate-spin text-primary" />
@@ -123,7 +123,7 @@ export default function AdminBannerManager() {
   }
 
   return (
-    <DashboardLayout role="admin">
+    <DashboardLayout role={user?.role as any}>
       <div className="p-8">
           <div className="flex items-center gap-4 mb-6">
             <Button

@@ -85,7 +85,7 @@ export default function AdminSettings() {
   });
 
   useEffect(() => {
-    if (!authLoading && (!isAuthenticated || user?.role !== "admin")) {
+    if (!authLoading && (!isAuthenticated || (user?.role !== "admin" && user?.role !== "super_admin"))) {
       navigate("/auth");
     }
   }, [isAuthenticated, authLoading, user, navigate]);
@@ -151,7 +151,7 @@ export default function AdminSettings() {
     updateSettingsMutation.mutate(data);
   };
 
-  if (authLoading || isLoading || !isAuthenticated || user?.role !== "admin") {
+  if (authLoading || isLoading || !isAuthenticated || (user?.role !== "admin" && user?.role !== "super_admin")) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
         <Loader2 className="h-8 w-8 animate-spin text-primary" />
@@ -160,7 +160,7 @@ export default function AdminSettings() {
   }
 
   return (
-    <DashboardLayout role="admin" showBackButton>
+    <DashboardLayout role={user?.role as any} showBackButton>
       <div className="p-8">
           <div className="flex items-center gap-4 mb-6">
             <Button

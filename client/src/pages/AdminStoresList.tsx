@@ -217,14 +217,14 @@ export default function AdminStoresList() {
   const { toast } = useToast();
 
   useEffect(() => {
-    if (!authLoading && (!isAuthenticated || user?.role !== "admin")) {
+    if (!authLoading && (!isAuthenticated || (user?.role !== "admin" && user?.role !== "super_admin"))) {
       navigate("/auth");
     }
   }, [isAuthenticated, authLoading, user, navigate]);
 
   const { data: stores = [], isLoading: storesLoading } = useQuery<StoreType[]>({
     queryKey: ["/api/stores"],
-    enabled: isAuthenticated && user?.role === "admin",
+    enabled: isAuthenticated && (user?.role === "admin" || user?.role === "super_admin"),
   });
 
   const { data: sellers = [] } = useQuery<Seller[]>({
@@ -233,7 +233,7 @@ export default function AdminStoresList() {
       const res = await fetch("/api/users?role=seller");
       return res.json();
     },
-    enabled: isAuthenticated && user?.role === "admin",
+    enabled: isAuthenticated && (user?.role === "admin" || user?.role === "super_admin"),
   });
 
   const deleteStoreMutation = useMutation({
@@ -266,7 +266,7 @@ export default function AdminStoresList() {
     (s.name?.toLowerCase() || '').includes(searchQuery.toLowerCase())
   );
 
-  if (authLoading || !isAuthenticated || user?.role !== "admin") {
+  if (authLoading || !isAuthenticated || (user?.role !== "admin" && user?.role !== "super_admin")) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
         <Loader2 className="h-8 w-8 animate-spin text-primary" />
@@ -275,7 +275,7 @@ export default function AdminStoresList() {
   }
 
   return (
-    <DashboardLayout role="admin" showBackButton>
+    <DashboardLayout role={user?.role as any} showBackButton>
       <div className="p-8">
           <div className="flex items-center gap-4 mb-6">
             <Button
