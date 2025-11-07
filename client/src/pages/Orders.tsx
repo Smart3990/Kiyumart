@@ -28,7 +28,7 @@ interface Order {
 
 export default function Orders() {
   const [, navigate] = useLocation();
-  const { currencySymbol } = useLanguage();
+  const { currencySymbol, formatPrice } = useLanguage();
 
   // Always fetch orders where the user is the buyer (their purchases)
   const { data: orders = [], isLoading } = useQuery<Order[]>({
@@ -107,7 +107,7 @@ export default function Orders() {
           <div className="flex justify-between text-sm">
             <span className="text-muted-foreground">Total:</span>
             <span className="font-bold text-primary">
-              {currencySymbol} {parseFloat(order.totalAmount).toFixed(2)}
+              {formatPrice(parseFloat(order.totalAmount))}
             </span>
           </div>
           <div className="flex justify-between text-sm">
@@ -129,14 +129,18 @@ export default function Orders() {
         </div>
         <Button
           className="w-full mt-4"
-          variant="outline"
+          variant={order.paymentStatus !== 'completed' ? 'default' : 'outline'}
           onClick={(e) => {
             e.stopPropagation();
-            navigate(`/track?orderId=${order.id}`);
+            if (order.paymentStatus !== 'completed') {
+              navigate(`/payment/${order.id}`);
+            } else {
+              navigate(`/track?orderId=${order.id}`);
+            }
           }}
           data-testid={`button-track-${order.id}`}
         >
-          Track Order
+          {order.paymentStatus !== 'completed' ? 'Continue Payment' : 'Track Order'}
         </Button>
       </CardContent>
     </Card>

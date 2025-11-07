@@ -62,7 +62,7 @@ export default function ProductDetails() {
   const [, navigate] = useLocation();
   const { isAuthenticated } = useAuth();
   const { toast } = useToast();
-  const { currencySymbol } = useLanguage();
+  const { currencySymbol, formatPrice } = useLanguage();
   const [quantity, setQuantity] = useState(1);
   const [selectedImage, setSelectedImage] = useState(0);
   const [selectedColor, setSelectedColor] = useState<string>("");
@@ -456,14 +456,14 @@ export default function ProductDetails() {
                     className="text-4xl font-bold text-primary"
                     data-testid="text-selling-price"
                   >
-                    {currencySymbol} {sellingPrice.toFixed(2)}
+                    {formatPrice(sellingPrice)}
                   </span>
                   {originalPrice && originalPrice > sellingPrice && (
                     <span 
                       className="text-2xl text-gray-500 dark:text-gray-400 line-through font-medium"
                       data-testid="text-cost-price"
                     >
-                      {currencySymbol} {originalPrice.toFixed(2)}
+                      {formatPrice(originalPrice)}
                     </span>
                   )}
                 </div>
