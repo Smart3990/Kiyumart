@@ -136,7 +136,7 @@ export default function AdminUserEdit() {
 
           <Form {...form}>
             <form onSubmit={form.handleSubmit(onSubmit)} className="max-w-2xl space-y-6">
-              <Card>
+              <Card className="max-h-[calc(100vh-200px)] overflow-y-auto">
                 <CardHeader>
                   <CardTitle>User Information</CardTitle>
                 </CardHeader>

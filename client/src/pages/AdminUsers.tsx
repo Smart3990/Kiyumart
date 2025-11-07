@@ -353,14 +353,27 @@ export default function AdminUsers() {
               <h1 className="text-3xl font-bold text-foreground" data-testid="heading-users">Users Management</h1>
               <p className="text-muted-foreground mt-1">Manage platform users and roles</p>
             </div>
-            <Button
-              onClick={() => navigate("/admin/users/create?role=agent")}
-              data-testid="button-create-agent"
-              className="gap-2"
-            >
-              <UserCog className="h-4 w-4" />
-              Create Agent
-            </Button>
+            <div className="flex gap-2">
+              {user?.role === "super_admin" && (
+                <Button
+                  onClick={() => navigate("/admin/users/create?role=admin")}
+                  data-testid="button-create-admin"
+                  className="gap-2"
+                  variant="default"
+                >
+                  <UserCog className="h-4 w-4" />
+                  Create Admin
+                </Button>
+              )}
+              <Button
+                onClick={() => navigate("/admin/users/create?role=agent")}
+                data-testid="button-create-agent"
+                className="gap-2"
+              >
+                <UserCog className="h-4 w-4" />
+                Create Agent
+              </Button>
+            </div>
           </div>
 
           <div className="mb-6 space-y-4">

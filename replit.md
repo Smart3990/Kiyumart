@@ -89,9 +89,10 @@ The platform prioritizes a mobile-first, responsive design with a green color sc
    - Listen for `charge.success` events
    - Record final split amounts and fees
 
-### Agent Management
+### Agent Management & Admin User Creation
 **Completed**:
 - Added "Create Agent" button in AdminUsers page (navigates to `/admin/users/create?role=agent`)
+- **NEW**: Added "Create Admin" button for super_admin users (navigates to `/admin/users/create?role=admin`)
 - Created complete `AdminUserCreate` page component with:
   - Form validation using Zod schema
   - All user fields (name, email, password, phone, role)
@@ -100,6 +101,40 @@ The platform prioritizes a mobile-first, responsive design with a green color sc
   - Full data-testid coverage for testing
 - Agent role fully integrated in permissions system with dashboard access
 - User creation fully functional for all roles (buyer, seller, rider, agent, admin)
+- Super admin can now create admin users with proper permissions
+
+### Seller Store Auto-Creation System
+**Completed**:
+- Auto-creation logic implemented in `/api/stores/my-store` endpoint (routes.ts lines 3579-3597)
+- Approved sellers automatically get stores created on first dashboard access
+- Store creation also triggered during seller approval process (routes.ts lines 414-455)
+- Prevents "Store Not Found" errors for approved sellers
+- All stores include seller's name, description, logo, and store type metadata
+
+### Form UX Improvements (November 2025)
+**Completed**:
+- Fixed scrolling issues in admin forms:
+  - `AdminUserEdit`: Added `max-h-[calc(100vh-200px)] overflow-y-auto` to form card
+  - `AdminRiders` (Add Rider Dialog): Added `max-h-[90vh] overflow-y-auto` to dialog content
+  - All admin forms now properly scrollable on small viewports
+- Enhanced mobile responsiveness for long forms
+
+### Role-Based Access Control Enhancements
+**Completed**:
+- Super Admin has 100% feature parity with Admin:
+  - Full access to `/api/admin/active-riders` endpoint for live rider tracking
+  - Access to RealTimeRiderMap component on admin dashboard
+  - Complete visibility of all riders and their locations
+  - All admin management features available to super_admin
+- Sidebar menu items aligned between admin and super_admin roles
+- Permission system ready for granular access control expansion
+
+### Admin Messaging System Improvements
+**In Progress**:
+- Socket.IO instant messaging working across all roles
+- Current implementation: Contact list shows all users for admin
+- **Future Enhancement**: Add message preview with latest message snippet and unread counts
+- Recommended: Implement `/api/messages/summary` endpoint for conversation previews
 
 ## External Dependencies
 
