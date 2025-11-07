@@ -12,7 +12,7 @@ import {
   type Coupon, type InsertCoupon, type BannerCollection, type InsertBannerCollection,
   type MarketplaceBanner, type InsertMarketplaceBanner, type Store, type CategoryField,
   type Category, type Notification, type InsertNotification, type MediaLibrary,
-  type InsertMediaLibrary, type FooterPage
+  type InsertMediaLibrary, type FooterPage, type InsertFooterPage
 } from "@shared/schema";
 import { eq, and, desc, sql, lte, gte, or, isNull } from "drizzle-orm";
 
@@ -147,6 +147,13 @@ export interface IStorage {
   getActiveMarketplaceBanners(): Promise<MarketplaceBanner[]>;
   updateMarketplaceBanner(id: string, data: Partial<MarketplaceBanner>): Promise<MarketplaceBanner | undefined>;
   deleteMarketplaceBanner(id: string): Promise<boolean>;
+  
+  // Footer Pages operations
+  getActiveFooterPages(): Promise<FooterPage[]>;
+  getAllFooterPages(): Promise<FooterPage[]>;
+  createFooterPage(data: InsertFooterPage): Promise<FooterPage>;
+  updateFooterPage(id: string, data: Partial<FooterPage>): Promise<FooterPage | undefined>;
+  deleteFooterPage(id: string): Promise<boolean>;
   reorderMarketplaceBanners(bannerIds: string[]): Promise<void>;
   
   // Multi-vendor homepage data
@@ -836,6 +843,26 @@ export class DbStorage implements IStorage {
     return db.select().from(footerPages)
       .where(eq(footerPages.isActive, true))
       .orderBy(footerPages.group, footerPages.displayOrder);
+  }
+
+  async getAllFooterPages(): Promise<FooterPage[]> {
+    return db.select().from(footerPages)
+      .orderBy(footerPages.group, footerPages.displayOrder);
+  }
+
+  async createFooterPage(data: InsertFooterPage): Promise<FooterPage> {
+    const [created] = await db.insert(footerPages).values(data).returning();
+    return created;
+  }
+
+  async updateFooterPage(id: string, data: Partial<FooterPage>): Promise<FooterPage | undefined> {
+    const [updated] = await db.update(footerPages).set(data).where(eq(footerPages.id, id)).returning();
+    return updated;
+  }
+
+  async deleteFooterPage(id: string): Promise<boolean> {
+    await db.delete(footerPages).where(eq(footerPages.id, id));
+    return true;
   }
 
   async updateMarketplaceBanner(id: string, data: Partial<MarketplaceBanner>): Promise<MarketplaceBanner | undefined> {

@@ -17,7 +17,7 @@ import {
 import { uploadToCloudinary, uploadWithMetadata } from "./cloudinary";
 import { getExchangeRates, convertCurrency, SUPPORTED_CURRENCIES } from "./currency";
 import multer from "multer";
-import { insertUserSchema, insertProductSchema, insertDeliveryZoneSchema, insertOrderSchema, insertWishlistSchema, insertReviewSchema, insertBannerCollectionSchema, insertMarketplaceBannerSchema } from "@shared/schema";
+import { insertUserSchema, insertProductSchema, insertDeliveryZoneSchema, insertOrderSchema, insertWishlistSchema, insertReviewSchema, insertBannerCollectionSchema, insertMarketplaceBannerSchema, insertFooterPageSchema } from "@shared/schema";
 import { getStoreTypeSchema, type StoreType, STORE_TYPES } from "@shared/storeTypes";
 
 const upload = multer({ storage: multer.memoryStorage() });
@@ -1479,6 +1479,49 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const pages = await storage.getActiveFooterPages();
       res.json(pages);
+    } catch (error: any) {
+      res.status(400).json({ error: error.message });
+    }
+  });
+
+  app.get("/api/admin/footer-pages", requireAuth, requireRole("admin", "super_admin"), async (req, res) => {
+    try {
+      const pages = await storage.getAllFooterPages();
+      res.json(pages);
+    } catch (error: any) {
+      res.status(400).json({ error: error.message });
+    }
+  });
+
+  app.post("/api/admin/footer-pages", requireAuth, requireRole("admin", "super_admin"), async (req, res) => {
+    try {
+      const data = insertFooterPageSchema.parse(req.body);
+      const page = await storage.createFooterPage(data);
+      res.status(201).json(page);
+    } catch (error: any) {
+      res.status(400).json({ error: error.message });
+    }
+  });
+
+  app.patch("/api/admin/footer-pages/:id", requireAuth, requireRole("admin", "super_admin"), async (req, res) => {
+    try {
+      const { id } = req.params;
+      const data = insertFooterPageSchema.partial().parse(req.body);
+      const page = await storage.updateFooterPage(id, data);
+      if (!page) {
+        return res.status(404).json({ error: "Page not found" });
+      }
+      res.json(page);
+    } catch (error: any) {
+      res.status(400).json({ error: error.message });
+    }
+  });
+
+  app.delete("/api/admin/footer-pages/:id", requireAuth, requireRole("admin", "super_admin"), async (req, res) => {
+    try {
+      const { id } = req.params;
+      await storage.deleteFooterPage(id);
+      res.json({ success: true });
     } catch (error: any) {
       res.status(400).json({ error: error.message });
     }

@@ -214,7 +214,7 @@ export default function Profile() {
               <div className="relative">
                 <Avatar className="h-24 w-24">
                   <AvatarImage src={profile?.profileImage || user?.profileImage || `https://api.dicebear.com/7.x/avataaars/svg?seed=${user?.name || user?.email}`} />
-                  <AvatarFallback>{getInitials(user?.name || profile?.username)}</AvatarFallback>
+                  <AvatarFallback>{getInitials(user?.name || profile?.name)}</AvatarFallback>
                 </Avatar>
                 <Button
                   size="icon"
