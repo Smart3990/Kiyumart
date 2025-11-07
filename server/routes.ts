@@ -667,6 +667,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Parse dynamic fields if provided
       const dynamicFields = req.body.dynamicFields ? JSON.parse(req.body.dynamicFields) : undefined;
 
+      // Auto-link products to seller's store if seller is creating the product
+      let storeId = req.body.storeId;
+      if (req.user!.role === "seller") {
+        const sellerStore = await storage.getStoreByPrimarySeller(req.user!.id);
+        if (sellerStore) {
+          storeId = sellerStore.id;
+        } else {
+          return res.status(400).json({ 
+            error: "Store not found. Please contact support to set up your store." 
+          });
+        }
+      }
+
       const productData = {
         ...req.body,
         images: imageUrls,
@@ -675,7 +688,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         dynamicFields,
         price: req.body.price,
         sellerId: req.user!.id,
-        storeId: req.body.storeId || undefined, // Optional store linkage for multi-vendor
+        storeId: storeId || undefined,
       };
 
       const validatedData = insertProductSchema.parse(productData);
