@@ -7,8 +7,10 @@ import { useToast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
-import { Loader2, Store, Bike, Check, X, ArrowLeft, Eye, MapPin, CreditCard, User, Car } from "lucide-react";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import { Loader2, Store, Bike, Check, X, ArrowLeft, Eye, MapPin, CreditCard, User, Car, AlertTriangle } from "lucide-react";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 
 interface Application {
@@ -18,6 +20,8 @@ interface Application {
   phone: string | null;
   role: string;
   isApproved: boolean;
+  applicationStatus?: "pending" | "approved" | "rejected";
+  rejectionReason?: string | null;
   createdAt: string;
   profileImage?: string;
   ghanaCardFront?: string;
@@ -40,6 +44,8 @@ export default function AdminApplications() {
   const { toast } = useToast();
   const [selectedApplication, setSelectedApplication] = useState<Application | null>(null);
   const [viewDetailsOpen, setViewDetailsOpen] = useState(false);
+  const [rejectDialogOpen, setRejectDialogOpen] = useState(false);
+  const [rejectionReason, setRejectionReason] = useState("");
 
   useEffect(() => {
     if (!authLoading && (!isAuthenticated || (user?.role !== "admin" && user?.role !== "super_admin"))) {
@@ -47,10 +53,11 @@ export default function AdminApplications() {
     }
   }, [isAuthenticated, authLoading, user, navigate]);
 
-  const { data: sellerApplications = [], isLoading: sellersLoading } = useQuery<Application[]>({
+  // Pending Seller Applications
+  const { data: pendingSellerApplications = [], isLoading: pendingSellersLoading } = useQuery<Application[]>({
     queryKey: ["/api/users", "seller", "pending"],
     queryFn: async () => {
-      const res = await fetch("/api/users?role=seller&isApproved=false", {
+      const res = await fetch("/api/users?role=seller&isApproved=false&applicationStatus=pending", {
         credentials: "include",
       });
       if (!res.ok) throw new Error("Failed to fetch applications");
@@ -59,10 +66,37 @@ export default function AdminApplications() {
     enabled: isAuthenticated && (user?.role === "admin" || user?.role === "super_admin"),
   });
 
-  const { data: riderApplications = [], isLoading: ridersLoading } = useQuery<Application[]>({
+  // Pending Rider Applications
+  const { data: pendingRiderApplications = [], isLoading: pendingRidersLoading } = useQuery<Application[]>({
     queryKey: ["/api/users", "rider", "pending"],
     queryFn: async () => {
-      const res = await fetch("/api/users?role=rider&isApproved=false", {
+      const res = await fetch("/api/users?role=rider&isApproved=false&applicationStatus=pending", {
+        credentials: "include",
+      });
+      if (!res.ok) throw new Error("Failed to fetch applications");
+      return res.json();
+    },
+    enabled: isAuthenticated && (user?.role === "admin" || user?.role === "super_admin"),
+  });
+
+  // Rejected Seller Applications
+  const { data: rejectedSellerApplications = [], isLoading: rejectedSellersLoading } = useQuery<Application[]>({
+    queryKey: ["/api/users", "seller", "rejected"],
+    queryFn: async () => {
+      const res = await fetch("/api/users?role=seller&applicationStatus=rejected", {
+        credentials: "include",
+      });
+      if (!res.ok) throw new Error("Failed to fetch applications");
+      return res.json();
+    },
+    enabled: isAuthenticated && (user?.role === "admin" || user?.role === "super_admin"),
+  });
+
+  // Rejected Rider Applications
+  const { data: rejectedRiderApplications = [], isLoading: rejectedRidersLoading } = useQuery<Application[]>({
+    queryKey: ["/api/users", "rider", "rejected"],
+    queryFn: async () => {
+      const res = await fetch("/api/users?role=rider&applicationStatus=rejected", {
         credentials: "include",
       });
       if (!res.ok) throw new Error("Failed to fetch applications");
@@ -80,8 +114,7 @@ export default function AdminApplications() {
         title: "Success",
         description: "Application approved successfully",
       });
-      queryClient.invalidateQueries({ queryKey: ["/api/users", "seller", "pending"] });
-      queryClient.invalidateQueries({ queryKey: ["/api/users", "rider", "pending"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/users"] });
       setViewDetailsOpen(false);
     },
     onError: (error: any) => {
@@ -94,17 +127,18 @@ export default function AdminApplications() {
   });
 
   const rejectApplicationMutation = useMutation({
-    mutationFn: async ({ userId }: { userId: string }) => {
-      return apiRequest("DELETE", `/api/users/${userId}`);
+    mutationFn: async ({ userId, reason }: { userId: string; reason?: string }) => {
+      return apiRequest("PATCH", `/api/users/${userId}/reject`, { reason });
     },
     onSuccess: () => {
       toast({
         title: "Success",
-        description: "Application rejected and deleted",
+        description: "Application rejected",
       });
-      queryClient.invalidateQueries({ queryKey: ["/api/users", "seller", "pending"] });
-      queryClient.invalidateQueries({ queryKey: ["/api/users", "rider", "pending"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/users"] });
       setViewDetailsOpen(false);
+      setRejectDialogOpen(false);
+      setRejectionReason("");
     },
     onError: (error: any) => {
       toast({
@@ -120,6 +154,20 @@ export default function AdminApplications() {
     setViewDetailsOpen(true);
   };
 
+  const openRejectDialog = (application: Application) => {
+    setSelectedApplication(application);
+    setRejectDialogOpen(true);
+  };
+
+  const handleReject = () => {
+    if (selectedApplication) {
+      rejectApplicationMutation.mutate({
+        userId: selectedApplication.id,
+        reason: rejectionReason.trim() || undefined,
+      });
+    }
+  };
+
   if (authLoading || !isAuthenticated || (user?.role !== "admin" && user?.role !== "super_admin")) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
@@ -128,14 +176,22 @@ export default function AdminApplications() {
     );
   }
 
-  const ApplicationCard = ({ application, type }: { application: Application; type: "seller" | "rider" }) => (
+  const ApplicationCard = ({ 
+    application, 
+    type, 
+    status 
+  }: { 
+    application: Application; 
+    type: "seller" | "rider"; 
+    status: "pending" | "rejected";
+  }) => (
     <Card className="p-4 hover:shadow-md transition-shadow" data-testid={`card-${type}-${application.id}`}>
       <div className="flex items-start gap-4">
         <div className={`p-3 rounded-full ${type === "seller" ? "bg-blue-500/10" : "bg-orange-500/10"}`}>
           {type === "seller" ? (
-            <Store className={`h-6 w-6 ${type === "seller" ? "text-blue-500" : "text-orange-500"}`} />
+            <Store className="h-6 w-6 text-blue-500" />
           ) : (
-            <Bike className={`h-6 w-6 ${type === "seller" ? "text-blue-500" : "text-orange-500"}`} />
+            <Bike className="h-6 w-6 text-orange-500" />
           )}
         </div>
         
@@ -184,6 +240,15 @@ export default function AdminApplications() {
                 <span className="font-medium">Vehicle:</span> {application.vehicleInfo.type}
               </p>
             )}
+            {status === "rejected" && application.rejectionReason && (
+              <div className="mt-2 p-2 bg-destructive/10 rounded border border-destructive/20">
+                <p className="text-sm font-medium text-destructive flex items-center gap-2">
+                  <AlertTriangle className="h-3 w-3" />
+                  Rejection Reason:
+                </p>
+                <p className="text-sm text-muted-foreground mt-1">{application.rejectionReason}</p>
+              </div>
+            )}
             <p className="text-xs text-muted-foreground mt-2" data-testid={`text-date-${application.id}`}>
               Applied: {new Date(application.createdAt).toLocaleDateString()}
             </p>
@@ -201,28 +266,32 @@ export default function AdminApplications() {
             <Eye className="h-4 w-4" />
             View Details
           </Button>
-          <Button
-            variant="default"
-            size="sm"
-            onClick={() => approveApplicationMutation.mutate({ userId: application.id })}
-            disabled={approveApplicationMutation.isPending}
-            data-testid={`button-approve-${application.id}`}
-            className="gap-2"
-          >
-            <Check className="h-4 w-4" />
-            Approve
-          </Button>
-          <Button
-            variant="destructive"
-            size="sm"
-            onClick={() => rejectApplicationMutation.mutate({ userId: application.id })}
-            disabled={rejectApplicationMutation.isPending}
-            data-testid={`button-reject-${application.id}`}
-            className="gap-2"
-          >
-            <X className="h-4 w-4" />
-            Reject
-          </Button>
+          {status === "pending" && (
+            <>
+              <Button
+                variant="default"
+                size="sm"
+                onClick={() => approveApplicationMutation.mutate({ userId: application.id })}
+                disabled={approveApplicationMutation.isPending}
+                data-testid={`button-approve-${application.id}`}
+                className="gap-2"
+              >
+                <Check className="h-4 w-4" />
+                Approve
+              </Button>
+              <Button
+                variant="destructive"
+                size="sm"
+                onClick={() => openRejectDialog(application)}
+                disabled={rejectApplicationMutation.isPending}
+                data-testid={`button-reject-${application.id}`}
+                className="gap-2"
+              >
+                <X className="h-4 w-4" />
+                Reject
+              </Button>
+            </>
+          )}
         </div>
       </div>
     </Card>
@@ -249,27 +318,30 @@ export default function AdminApplications() {
         </div>
 
         <Tabs defaultValue="sellers" className="w-full">
-          <TabsList className="grid w-full max-w-md grid-cols-2">
+          <TabsList className="grid w-full max-w-2xl grid-cols-3">
             <TabsTrigger value="sellers" data-testid="tab-sellers">
-              Seller Applications ({sellerApplications.length})
+              Pending Sellers ({pendingSellerApplications.length})
             </TabsTrigger>
             <TabsTrigger value="riders" data-testid="tab-riders">
-              Rider Applications ({riderApplications.length})
+              Pending Riders ({pendingRiderApplications.length})
+            </TabsTrigger>
+            <TabsTrigger value="rejected" data-testid="tab-rejected">
+              Rejected ({rejectedSellerApplications.length + rejectedRiderApplications.length})
             </TabsTrigger>
           </TabsList>
 
           <TabsContent value="sellers" className="mt-6">
-            {sellersLoading ? (
+            {pendingSellersLoading ? (
               <div className="flex justify-center py-12">
                 <Loader2 className="h-8 w-8 animate-spin text-primary" />
               </div>
             ) : (
               <div className="grid gap-4">
-                {sellerApplications.map((application) => (
-                  <ApplicationCard key={application.id} application={application} type="seller" />
+                {pendingSellerApplications.map((application) => (
+                  <ApplicationCard key={application.id} application={application} type="seller" status="pending" />
                 ))}
                 
-                {sellerApplications.length === 0 && (
+                {pendingSellerApplications.length === 0 && (
                   <div className="text-center py-12">
                     <p className="text-muted-foreground" data-testid="text-no-sellers">
                       No pending seller applications
@@ -281,17 +353,17 @@ export default function AdminApplications() {
           </TabsContent>
 
           <TabsContent value="riders" className="mt-6">
-            {ridersLoading ? (
+            {pendingRidersLoading ? (
               <div className="flex justify-center py-12">
                 <Loader2 className="h-8 w-8 animate-spin text-primary" />
               </div>
             ) : (
               <div className="grid gap-4">
-                {riderApplications.map((application) => (
-                  <ApplicationCard key={application.id} application={application} type="rider" />
+                {pendingRiderApplications.map((application) => (
+                  <ApplicationCard key={application.id} application={application} type="rider" status="pending" />
                 ))}
                 
-                {riderApplications.length === 0 && (
+                {pendingRiderApplications.length === 0 && (
                   <div className="text-center py-12">
                     <p className="text-muted-foreground" data-testid="text-no-riders">
                       No pending rider applications
@@ -301,7 +373,102 @@ export default function AdminApplications() {
               </div>
             )}
           </TabsContent>
+
+          <TabsContent value="rejected" className="mt-6">
+            {rejectedSellersLoading || rejectedRidersLoading ? (
+              <div className="flex justify-center py-12">
+                <Loader2 className="h-8 w-8 animate-spin text-primary" />
+              </div>
+            ) : (
+              <div className="space-y-6">
+                {rejectedSellerApplications.length > 0 && (
+                  <div>
+                    <h3 className="text-lg font-semibold mb-4">Rejected Sellers</h3>
+                    <div className="grid gap-4">
+                      {rejectedSellerApplications.map((application) => (
+                        <ApplicationCard key={application.id} application={application} type="seller" status="rejected" />
+                      ))}
+                    </div>
+                  </div>
+                )}
+                
+                {rejectedRiderApplications.length > 0 && (
+                  <div>
+                    <h3 className="text-lg font-semibold mb-4">Rejected Riders</h3>
+                    <div className="grid gap-4">
+                      {rejectedRiderApplications.map((application) => (
+                        <ApplicationCard key={application.id} application={application} type="rider" status="rejected" />
+                      ))}
+                    </div>
+                  </div>
+                )}
+                
+                {rejectedSellerApplications.length === 0 && rejectedRiderApplications.length === 0 && (
+                  <div className="text-center py-12">
+                    <p className="text-muted-foreground" data-testid="text-no-rejected">
+                      No rejected applications
+                    </p>
+                  </div>
+                )}
+              </div>
+            )}
+          </TabsContent>
         </Tabs>
+
+        {/* Rejection Dialog */}
+        <Dialog open={rejectDialogOpen} onOpenChange={setRejectDialogOpen}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Reject Application</DialogTitle>
+              <DialogDescription>
+                Are you sure you want to reject {selectedApplication?.name}'s application? 
+                You can optionally provide a reason.
+              </DialogDescription>
+            </DialogHeader>
+            
+            <div className="space-y-4 py-4">
+              <div>
+                <Label htmlFor="reason">Rejection Reason (Optional)</Label>
+                <Textarea
+                  id="reason"
+                  placeholder="e.g., Incomplete documentation, invalid Ghana Card, etc."
+                  value={rejectionReason}
+                  onChange={(e) => setRejectionReason(e.target.value)}
+                  className="mt-2"
+                  rows={4}
+                  data-testid="input-rejection-reason"
+                />
+              </div>
+            </div>
+
+            <DialogFooter>
+              <Button
+                variant="outline"
+                onClick={() => {
+                  setRejectDialogOpen(false);
+                  setRejectionReason("");
+                }}
+                data-testid="button-cancel-reject"
+              >
+                Cancel
+              </Button>
+              <Button
+                variant="destructive"
+                onClick={handleReject}
+                disabled={rejectApplicationMutation.isPending}
+                data-testid="button-confirm-reject"
+                className="gap-2"
+              >
+                {rejectApplicationMutation.isPending ? (
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                ) : (
+                  <X className="h-4 w-4" />
+                )}
+                Reject Application
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
 
         {/* Application Details Dialog */}
         <Dialog open={viewDetailsOpen} onOpenChange={setViewDetailsOpen}>
@@ -323,6 +490,17 @@ export default function AdminApplications() {
                 </DialogHeader>
 
                 <div className="space-y-6 mt-4">
+                  {/* Rejection Reason (if rejected) */}
+                  {selectedApplication.applicationStatus === "rejected" && selectedApplication.rejectionReason && (
+                    <div className="bg-destructive/10 border border-destructive/20 rounded-lg p-4">
+                      <div className="flex items-center gap-2 mb-2">
+                        <AlertTriangle className="h-5 w-5 text-destructive" />
+                        <h3 className="text-lg font-semibold text-destructive">Rejection Reason</h3>
+                      </div>
+                      <p className="text-sm text-muted-foreground">{selectedApplication.rejectionReason}</p>
+                    </div>
+                  )}
+
                   {/* Personal Information */}
                   <div>
                     <h3 className="text-lg font-semibold mb-3 flex items-center gap-2">
@@ -455,43 +633,43 @@ export default function AdminApplications() {
                   )}
 
                   {/* Action Buttons */}
-                  <div className="flex justify-end gap-3 pt-4 border-t">
-                    <Button
-                      variant="outline"
-                      onClick={() => setViewDetailsOpen(false)}
-                      data-testid="button-close-details"
-                    >
-                      Close
-                    </Button>
-                    <Button
-                      variant="destructive"
-                      onClick={() => rejectApplicationMutation.mutate({ userId: selectedApplication.id })}
-                      disabled={rejectApplicationMutation.isPending}
-                      data-testid="button-reject-details"
-                      className="gap-2"
-                    >
-                      {rejectApplicationMutation.isPending ? (
-                        <Loader2 className="h-4 w-4 animate-spin" />
-                      ) : (
+                  {selectedApplication.applicationStatus === "pending" && (
+                    <div className="flex justify-end gap-3 pt-4 border-t">
+                      <Button
+                        variant="outline"
+                        onClick={() => setViewDetailsOpen(false)}
+                        data-testid="button-close-details"
+                      >
+                        Close
+                      </Button>
+                      <Button
+                        variant="destructive"
+                        onClick={() => {
+                          setViewDetailsOpen(false);
+                          openRejectDialog(selectedApplication);
+                        }}
+                        data-testid="button-reject-details"
+                        className="gap-2"
+                      >
                         <X className="h-4 w-4" />
-                      )}
-                      Reject Application
-                    </Button>
-                    <Button
-                      variant="default"
-                      onClick={() => approveApplicationMutation.mutate({ userId: selectedApplication.id })}
-                      disabled={approveApplicationMutation.isPending}
-                      data-testid="button-approve-details"
-                      className="gap-2"
-                    >
-                      {approveApplicationMutation.isPending ? (
-                        <Loader2 className="h-4 w-4 animate-spin" />
-                      ) : (
-                        <Check className="h-4 w-4" />
-                      )}
-                      Approve Application
-                    </Button>
-                  </div>
+                        Reject Application
+                      </Button>
+                      <Button
+                        variant="default"
+                        onClick={() => approveApplicationMutation.mutate({ userId: selectedApplication.id })}
+                        disabled={approveApplicationMutation.isPending}
+                        data-testid="button-approve-details"
+                        className="gap-2"
+                      >
+                        {approveApplicationMutation.isPending ? (
+                          <Loader2 className="h-4 w-4 animate-spin" />
+                        ) : (
+                          <Check className="h-4 w-4" />
+                        )}
+                        Approve Application
+                      </Button>
+                    </div>
+                  )}
                 </div>
               </>
             )}

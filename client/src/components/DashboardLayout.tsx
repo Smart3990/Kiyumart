@@ -37,6 +37,7 @@ const routeToMenuId: Record<string, string> = {
   "/admin/sellers": "sellers",
   "/admin/riders": "riders",
   "/admin/applications": "applications",
+  "/admin/permissions": "permissions",
   "/admin/zones": "zones",
   "/admin/notifications": "notifications",
   "/admin/messages": "messages",

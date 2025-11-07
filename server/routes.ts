@@ -357,7 +357,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // ============ User Management (Admin only) ============
   app.get("/api/users", requireAuth, requireRole("admin", "super_admin"), async (req, res) => {
     try {
-      const { role } = req.query;
+      const { role, isApproved, applicationStatus } = req.query;
       let users;
       
       if (role && role !== "all") {
@@ -370,6 +370,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
           const roleUsers = await storage.getUsersByRole(r);
           users.push(...roleUsers);
         }
+      }
+      
+      // Apply additional filters
+      if (isApproved !== undefined) {
+        const isApprovedBool = isApproved === "true";
+        users = users.filter(u => u.isApproved === isApprovedBool);
+      }
+      
+      if (applicationStatus) {
+        users = users.filter(u => u.applicationStatus === applicationStatus);
       }
       
       const usersWithoutPasswords = users.map(({ password, ...user }) => user);
@@ -571,6 +581,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         ...validatedData,
         password: hashedPassword,
         isApproved: true,
+        applicationStatus: "approved", // Auto-approve manually created users
       };
       
       const user = await storage.createUser(userData);
@@ -2599,6 +2610,38 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const { amount, from, to } = req.body;
       const converted = await convertCurrency(amount, from, to);
       res.json({ amount: converted, from, to });
+    } catch (error: any) {
+      res.status(400).json({ error: error.message });
+    }
+  });
+
+  // ============ Role Features Management (Super Admin Only) ============
+  app.get("/api/role-features", requireAuth, requireRole("super_admin"), async (req, res) => {
+    try {
+      const { role } = req.query;
+      const features = await storage.getRoleFeatures(role as string | undefined);
+      res.json(features);
+    } catch (error: any) {
+      res.status(400).json({ error: error.message });
+    }
+  });
+
+  app.put("/api/role-features/:role", requireAuth, requireRole("super_admin"), async (req: AuthRequest, res) => {
+    try {
+      const { role } = req.params;
+      const { features } = req.body;
+      
+      if (!features || typeof features !== 'object') {
+        return res.status(400).json({ error: "Features object is required" });
+      }
+      
+      const updatedFeatures = await storage.updateRoleFeatures(
+        role,
+        features,
+        req.user!.id
+      );
+      
+      res.json(updatedFeatures);
     } catch (error: any) {
       res.status(400).json({ error: error.message });
     }

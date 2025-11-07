@@ -80,6 +80,7 @@ import RiderEdit from "@/pages/RiderEdit";
 import AdminApplications from "@/pages/AdminApplications";
 import AdminProductEdit from "@/pages/AdminProductEdit";
 import AdminProductCreate from "@/pages/AdminProductCreate";
+import SuperAdminPermissions from "@/pages/SuperAdminPermissions";
 import DynamicPage from "@/pages/DynamicPage";
 
 function Router() {
@@ -132,6 +133,7 @@ function Router() {
       <Route path="/admin/riders" component={AdminRiders} />
       <Route path="/admin/agents" component={AdminAgents} />
       <Route path="/admin/applications" component={AdminApplications} />
+      <Route path="/admin/permissions" component={SuperAdminPermissions} />
       <Route path="/admin/messages" component={AdminMessages} />
       <Route path="/admin/analytics" component={AdminAnalytics} />
       <Route path="/admin/notifications" component={AdminNotifications} />

@@ -19,6 +19,7 @@ import {
   UserCog,
   ImagePlus,
   ShoppingCart,
+  Shield,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useQuery } from "@tanstack/react-query";
@@ -50,6 +51,7 @@ const menuItems: Record<string, MenuItem[]> = {
     { icon: UserCog, label: "Sellers", id: "sellers" },
     { icon: Truck, label: "Riders", id: "riders" },
     { icon: Ticket, label: "Applications", id: "applications" },
+    { icon: Shield, label: "Permissions", id: "permissions" },
     { icon: MapPin, label: "Delivery Zones", id: "zones" },
     { icon: ShoppingCart, label: "Shopping Cart", id: "my-cart", separator: true },
     { icon: ShoppingBag, label: "My Purchases", id: "my-purchases" },
