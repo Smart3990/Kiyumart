@@ -133,6 +133,7 @@ export default function AdminSettings() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/settings"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/platform-settings"] });
       toast({
         title: "Settings updated",
         description: "Platform settings have been saved successfully.",

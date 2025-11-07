@@ -73,6 +73,7 @@ export default function AdminBranding() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/settings"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/platform-settings"] });
       toast({
         title: "Success",
         description: "Branding colors updated successfully",

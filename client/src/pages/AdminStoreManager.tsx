@@ -103,6 +103,7 @@ export default function AdminStoreManager() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/settings"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/platform-settings"] });
       toast({
         title: "Settings updated",
         description: "Store settings have been saved successfully.",
