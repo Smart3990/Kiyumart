@@ -27,12 +27,11 @@ interface Product {
   price: string;
   compareAtPrice: string | null;
   images: string[];
-  videoUrl: string | null;
-  categoryId: string | null;
+  video: string | null;
+  category: string;
   sellerId: string;
   storeId: string | null;
-  inStock: boolean;
-  stockQuantity: number;
+  stock: number;
   tags: string[] | null;
   isActive: boolean;
   createdAt: string;
@@ -54,7 +53,7 @@ const productSchema = z.object({
   description: z.string().min(10, "Description must be at least 10 characters"),
   price: z.string().regex(/^\d+(\.\d{1,2})?$/, "Invalid price format"),
   compareAtPrice: z.string().regex(/^\d+(\.\d{1,2})?$/, "Invalid price format").optional().or(z.literal("")),
-  categoryId: z.string().optional(),
+  category: z.string().min(1, "Category is required"),
   stockQuantity: z.string().regex(/^\d+$/, "Must be a valid number"),
   tags: z.string().optional(),
   imageUrl: z.string().url("Invalid image URL").optional().or(z.literal("")),
@@ -96,18 +95,18 @@ function ProductFormDialog({ product, mode }: { product?: Product; mode: "create
       description: product.description,
       price: product.price,
       compareAtPrice: product.compareAtPrice || "",
-      categoryId: product.categoryId || "",
-      stockQuantity: product.stockQuantity.toString(),
+      category: product.category || "",
+      stockQuantity: product.stock.toString(),
       tags: product.tags?.join(", ") || "",
       imageUrl: product.images[0] || "",
-      videoUrl: product.videoUrl || "",
-      inStock: product.inStock,
+      videoUrl: product.video || "",
+      inStock: true,
     } : {
       name: "",
       description: "",
       price: "",
       compareAtPrice: "",
-      categoryId: "",
+      category: "",
       stockQuantity: "0",
       tags: "",
       imageUrl: "",
@@ -123,9 +122,8 @@ function ProductFormDialog({ product, mode }: { product?: Product; mode: "create
       formData.append("description", data.description);
       formData.append("price", data.price);
       if (data.compareAtPrice) formData.append("compareAtPrice", data.compareAtPrice);
-      if (data.categoryId) formData.append("categoryId", data.categoryId);
-      formData.append("stockQuantity", data.stockQuantity);
-      formData.append("inStock", data.inStock.toString());
+      formData.append("category", data.category);
+      formData.append("stock", data.stockQuantity);
       
       if (data.tags) {
         const tagsArray = data.tags.split(",").map(t => t.trim()).filter(Boolean);
@@ -137,7 +135,7 @@ function ProductFormDialog({ product, mode }: { product?: Product; mode: "create
       }
       
       if (data.videoUrl) {
-        formData.append("videoUrl", data.videoUrl);
+        formData.append("video", data.videoUrl);
       }
 
       const res = await fetch("/api/products", {
@@ -173,27 +171,27 @@ function ProductFormDialog({ product, mode }: { product?: Product; mode: "create
 
   const updateProductMutation = useMutation({
     mutationFn: async (data: ProductFormData) => {
+      // Determine images array: preserve all existing images, update primary if changed
+      let images = product?.images || [];
+      if (data.imageUrl && product && data.imageUrl !== product.images[0]) {
+        // Replace primary image but keep secondary images
+        images = [data.imageUrl, ...product.images.slice(1)];
+      }
+
       const updateData: any = {
         name: data.name,
         description: data.description,
         price: data.price,
         compareAtPrice: data.compareAtPrice || null,
-        categoryId: data.categoryId || null,
-        stockQuantity: parseInt(data.stockQuantity),
-        inStock: data.inStock,
+        category: data.category,
+        stock: parseInt(data.stockQuantity),
+        images, // Always include full images array to prevent data loss
+        video: data.videoUrl || null, // Always include video (or null if empty)
       };
 
       if (data.tags) {
         const tagsArray = data.tags.split(",").map(t => t.trim()).filter(Boolean);
         updateData.tags = tagsArray;
-      }
-
-      if (data.imageUrl && product && data.imageUrl !== product.images[0]) {
-        updateData.images = [data.imageUrl];
-      }
-
-      if (data.videoUrl !== product?.videoUrl) {
-        updateData.videoUrl = data.videoUrl || null;
       }
 
       return apiRequest("PATCH", `/api/products/${product?.id}`, updateData);
@@ -319,10 +317,10 @@ function ProductFormDialog({ product, mode }: { product?: Product; mode: "create
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <FormField
                 control={form.control}
-                name="categoryId"
+                name="category"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Category</FormLabel>
+                    <FormLabel>Category *</FormLabel>
                     <Select onValueChange={field.onChange} value={field.value}>
                       <FormControl>
                         <SelectTrigger data-testid="select-category">
@@ -331,7 +329,7 @@ function ProductFormDialog({ product, mode }: { product?: Product; mode: "create
                       </FormControl>
                       <SelectContent>
                         {filteredCategories.map((category) => (
-                          <SelectItem key={category.id} value={category.id}>
+                          <SelectItem key={category.id} value={category.name}>
                             {category.name}
                           </SelectItem>
                         ))}
@@ -609,8 +607,8 @@ export default function SellerProducts() {
                         )}
                       </div>
                       
-                      <Badge variant={product.inStock ? "default" : "destructive"}>
-                        {product.inStock ? `${product.stockQuantity} in stock` : "Out of stock"}
+                      <Badge variant={product.stock > 0 ? "default" : "destructive"}>
+                        {product.stock > 0 ? `${product.stock} in stock` : "Out of stock"}
                       </Badge>
                       
                       <Badge variant={product.isActive ? "default" : "secondary"}>

@@ -37,7 +37,9 @@ export default function SellerMediaLibrary() {
     queryKey: ["/api/media-library", "product"],
     queryFn: async () => {
       const res = await fetch("/api/media-library?category=product");
-      return res.json();
+      const data = await res.json();
+      // Ensure we always return an array
+      return Array.isArray(data) ? data : [];
     },
   });
 
