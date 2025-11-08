@@ -109,7 +109,7 @@ export default function ChatPageConnected() {
   // Auto-select disabled to prevent infinite loop - users must manually select contact
   // TODO: Fix and re-enable auto-selection for non-admin users
 
-  const { data: chatMessages = [], refetch: refetchMessages } = useQuery<ChatMessage[]>({
+  const { data: chatMessages = [] } = useQuery<ChatMessage[]>({
     queryKey: ["/api/messages", selectedContact?.id],
     queryFn: async () => {
       if (!selectedContact) return [];
@@ -122,6 +122,7 @@ export default function ChatPageConnected() {
     enabled: !!selectedContact && isAuthenticated,
   });
 
+  // Sync chatMessages to local state
   useEffect(() => {
     setMessages(chatMessages);
   }, [chatMessages]);
@@ -219,7 +220,7 @@ export default function ChatPageConnected() {
                     key={contact.id}
                     onClick={() => {
                       setSelectedContact(contact);
-                      refetchMessages();
+                      // TanStack Query will auto-refetch when selectedContact?.id changes
                     }}
                     className={`w-full text-left p-3 rounded-lg transition-colors hover-elevate ${
                       selectedContact?.id === contact.id 
