@@ -42,6 +42,7 @@ export default function MobileProductDetail() {
       if (!res.ok) throw new Error("Product not found");
       return res.json();
     },
+    enabled: Boolean(id), // Only fetch when we have a valid ID
   });
 
   const addToCartMutation = useMutation({

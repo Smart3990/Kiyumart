@@ -1,17 +1,28 @@
 import { useState, useEffect } from "react";
 
 export function useIsMobile(breakpoint = 768) {
-  const [isMobile, setIsMobile] = useState(false);
+  // Initialize with actual screen size to prevent desktop flash on mobile
+  const [isMobile, setIsMobile] = useState(() => {
+    if (typeof window !== "undefined") {
+      return window.innerWidth < breakpoint;
+    }
+    return false;
+  });
 
   useEffect(() => {
-    const checkMobile = () => {
-      setIsMobile(window.innerWidth < breakpoint);
+    const mediaQuery = window.matchMedia(`(max-width: ${breakpoint - 1}px)`);
+    
+    const handleChange = (e: MediaQueryListEvent | MediaQueryList) => {
+      setIsMobile(e.matches);
     };
 
-    checkMobile();
-    window.addEventListener("resize", checkMobile);
+    // Set initial value
+    setIsMobile(mediaQuery.matches);
 
-    return () => window.removeEventListener("resize", checkMobile);
+    // Listen for changes
+    mediaQuery.addEventListener("change", handleChange);
+
+    return () => mediaQuery.removeEventListener("change", handleChange);
   }, [breakpoint]);
 
   return isMobile;
