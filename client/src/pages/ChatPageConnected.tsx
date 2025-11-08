@@ -17,6 +17,7 @@ interface ChatMessage {
   receiverId: string;
   message: string;
   messageType: string;
+  readAt?: string | null;
   isRead: boolean;
   createdAt: string;
 }
@@ -182,6 +183,7 @@ export default function ChatPageConnected() {
       hour: '2-digit', 
       minute: '2-digit' 
     }),
+    isRead: !!msg.readAt,
   }));
 
   return (

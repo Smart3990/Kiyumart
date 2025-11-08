@@ -36,6 +36,8 @@ const settingsSchema = z.object({
   paystackPublicKey: z.string().optional(),
   paystackSecretKey: z.string().optional(),
   processingFeePercent: z.string().min(0),
+  defaultCommissionRate: z.string().min(0).max(100),
+  minimumPayoutAmount: z.string().min(0),
   cloudinaryCloudName: z.string().optional(),
   cloudinaryApiKey: z.string().optional(),
   cloudinaryApiSecret: z.string().optional(),
@@ -104,6 +106,8 @@ export default function AdminSettings() {
       paystackPublicKey: settings.paystackPublicKey || "",
       paystackSecretKey: settings.paystackSecretKey || "",
       processingFeePercent: settings.processingFeePercent,
+      defaultCommissionRate: (settings as any).defaultCommissionRate || "10",
+      minimumPayoutAmount: (settings as any).minimumPayoutAmount || "50",
       cloudinaryCloudName: (settings as any).cloudinaryCloudName || "",
       cloudinaryApiKey: (settings as any).cloudinaryApiKey || "",
       cloudinaryApiSecret: (settings as any).cloudinaryApiSecret || "",
@@ -405,6 +409,36 @@ export default function AdminSettings() {
                     />
                     <p className="text-xs text-muted-foreground">
                       Percentage fee charged per transaction
+                    </p>
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="defaultCommissionRate">Default Commission Rate (%)</Label>
+                    <Input
+                      id="defaultCommissionRate"
+                      type="number"
+                      step="0.01"
+                      {...form.register("defaultCommissionRate")}
+                      placeholder="10.00"
+                      data-testid="input-commission-rate"
+                    />
+                    <p className="text-xs text-muted-foreground">
+                      Platform commission charged on each sale (used for multi-vendor payment splits)
+                    </p>
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="minimumPayoutAmount">Minimum Payout Amount</Label>
+                    <Input
+                      id="minimumPayoutAmount"
+                      type="number"
+                      step="0.01"
+                      {...form.register("minimumPayoutAmount")}
+                      placeholder="50.00"
+                      data-testid="input-minimum-payout"
+                    />
+                    <p className="text-xs text-muted-foreground">
+                      Minimum amount sellers must have before requesting a payout
                     </p>
                   </div>
                 </CardContent>
