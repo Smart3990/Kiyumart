@@ -10,13 +10,15 @@ interface ProductGalleryProps {
   onChange: (images: string[]) => void;
   maxImages?: number;
   required?: boolean;
+  description?: string;
 }
 
 export default function ProductGallery({ 
   images, 
   onChange, 
-  maxImages = 10,
-  required = true 
+  maxImages = 5,
+  required = false,
+  description = "Capture product from all angles - front, back, sides, and detailed shots"
 }: ProductGalleryProps) {
   const handleAddImage = (url: string) => {
     if (url && images.length < maxImages) {
@@ -42,10 +44,17 @@ export default function ProductGallery({
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
-        <Label>
-          Product Gallery {required && <span className="text-destructive">*</span>}
-        </Label>
-        <span className="text-sm text-muted-foreground">
+        <div className="space-y-1">
+          <Label>
+            Product Gallery {required && <span className="text-destructive">*</span>}
+          </Label>
+          {description && (
+            <p className="text-xs text-muted-foreground">
+              {description}
+            </p>
+          )}
+        </div>
+        <span className="text-sm text-muted-foreground font-medium">
           {images.length}/{maxImages}
         </span>
       </div>
@@ -62,10 +71,13 @@ export default function ProductGallery({
             <ImageIcon className="h-12 w-12 text-muted-foreground" />
             <div className="space-y-1">
               <p className="text-sm font-medium">
-                Drop your image here, or browse
+                Drop your images here, or browse
               </p>
               <p className="text-xs text-muted-foreground">
-                jpeg, png are allowed
+                Upload up to {maxImages} images • jpeg, png are allowed
+              </p>
+              <p className="text-xs text-primary font-medium mt-2">
+                📸 Capture from all angles: front, back, sides, details
               </p>
             </div>
             <MediaUploadInput
@@ -154,9 +166,6 @@ export default function ProductGallery({
         </div>
       )}
 
-      {required && images.length === 0 && (
-        <p className="text-sm text-destructive">At least one product image is required</p>
-      )}
     </div>
   );
 }

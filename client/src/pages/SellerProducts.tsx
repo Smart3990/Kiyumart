@@ -57,7 +57,7 @@ const productSchema = z.object({
   category: z.string().min(1, "Category is required"),
   stockQuantity: z.string().regex(/^\d+$/, "Must be a valid number"),
   tags: z.string().optional(),
-  images: z.array(z.string().url()).min(1, "At least one product image is required"),
+  images: z.array(z.string().url()).max(5, "Maximum 5 images allowed").optional().default([]),
   videoUrl: z.string().url("Invalid video URL").optional().or(z.literal("")),
   inStock: z.boolean().default(true),
 });
@@ -118,38 +118,29 @@ function ProductFormDialog({ product, mode }: { product?: Product; mode: "create
 
   const createProductMutation = useMutation({
     mutationFn: async (data: ProductFormData) => {
-      const formData = new FormData();
-      formData.append("name", data.name);
-      formData.append("description", data.description);
-      formData.append("price", data.price);
-      if (data.compareAtPrice) formData.append("compareAtPrice", data.compareAtPrice);
-      formData.append("category", data.category);
-      formData.append("stock", data.stockQuantity);
-      
+      if (!user?.id) {
+        throw new Error("User not authenticated");
+      }
+
+      const productData: any = {
+        name: data.name,
+        description: data.description,
+        price: data.price,
+        compareAtPrice: data.compareAtPrice || null,
+        category: data.category,
+        stock: parseInt(data.stockQuantity),
+        images: data.images || [], // Optional images array (0-5)
+        video: data.videoUrl || null,
+        sellerId: user.id, // Required: authenticated seller ID
+        storeId: store?.id || null, // Optional: multi-vendor store ID
+      };
+
       if (data.tags) {
         const tagsArray = data.tags.split(",").map(t => t.trim()).filter(Boolean);
-        formData.append("tags", JSON.stringify(tagsArray));
-      }
-      
-      // Images array is required (validation ensures at least 1)
-      formData.append("images", JSON.stringify(data.images));
-      
-      if (data.videoUrl) {
-        formData.append("video", data.videoUrl);
+        productData.tags = tagsArray;
       }
 
-      const res = await fetch("/api/products", {
-        method: "POST",
-        credentials: "include",
-        body: formData,
-      });
-
-      if (!res.ok) {
-        const error = await res.json();
-        throw new Error(error.error || "Failed to create product");
-      }
-
-      return res.json();
+      return apiRequest("POST", "/api/products", productData);
     },
     onSuccess: () => {
       toast({
@@ -375,10 +366,11 @@ function ProductFormDialog({ product, mode }: { product?: Product; mode: "create
                 <FormItem>
                   <FormControl>
                     <ProductGallery
-                      images={field.value}
+                      images={field.value || []}
                       onChange={field.onChange}
-                      maxImages={10}
-                      required
+                      maxImages={5}
+                      required={false}
+                      description="Capture product from all angles - front, back, sides, and detailed shots"
                     />
                   </FormControl>
                   <FormMessage />
