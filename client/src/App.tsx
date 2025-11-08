@@ -59,6 +59,7 @@ import SellerNotifications from "@/pages/SellerNotifications";
 import SellerMessages from "@/pages/SellerMessages";
 import SellerAnalytics from "@/pages/SellerAnalytics";
 import SellerSettings from "@/pages/SellerSettings";
+import SellerPaymentSetup from "@/pages/SellerPaymentSetup";
 import RiderDeliveries from "@/pages/RiderDeliveries";
 import RiderActiveRoute from "@/pages/RiderActiveRoute";
 import RiderNotifications from "@/pages/RiderNotifications";
@@ -151,6 +152,7 @@ function Router() {
       <Route path="/seller/messages" component={SellerMessages} />
       <Route path="/seller/analytics" component={SellerAnalytics} />
       <Route path="/seller/settings" component={SellerSettings} />
+      <Route path="/seller/payment-setup" component={SellerPaymentSetup} />
       <Route path="/rider" component={RiderDashboard} />
       <Route path="/rider/deliveries" component={RiderDeliveries} />
       <Route path="/rider/route" component={RiderActiveRoute} />

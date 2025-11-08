@@ -3997,5 +3997,121 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // ============ Paystack Integration Routes ============
+  const { paystackService } = await import("./paystack");
+
+  // Get Ghana banks list
+  app.get("/api/paystack/banks", requireAuth, async (req: AuthRequest, res) => {
+    try {
+      const banks = await paystackService.getGhanaBanks();
+      res.json(banks.data);
+    } catch (error: any) {
+      res.status(400).json({ error: error.message });
+    }
+  });
+
+  // Verify bank account
+  app.post("/api/paystack/verify-account", requireAuth, async (req: AuthRequest, res) => {
+    try {
+      const { accountNumber, bankCode } = req.body;
+      const verification = await paystackService.verifyAccountNumber(accountNumber, bankCode);
+      res.json(verification.data);
+    } catch (error: any) {
+      res.status(400).json({ error: error.message });
+    }
+  });
+
+  // Create Paystack subaccount for store
+  app.post("/api/stores/:storeId/setup-paystack", requireAuth, requireRole("seller"), async (req: AuthRequest, res) => {
+    try {
+      const store = await storage.getStore(req.params.storeId);
+      if (!store) {
+        return res.status(404).json({ error: "Store not found" });
+      }
+
+      if (store.primarySellerId !== req.user!.id) {
+        return res.status(403).json({ error: "Unauthorized" });
+      }
+
+      const { payoutType, payoutDetails } = req.body;
+
+      // Validate bank account payout (only supported method currently)
+      if (payoutType !== "bank_account") {
+        return res.status(400).json({ 
+          error: "Only bank account payouts are currently supported. Mobile money support coming soon." 
+        });
+      }
+
+      if (!payoutDetails.bankCode || !payoutDetails.accountNumber) {
+        return res.status(400).json({ 
+          error: "Bank code and account number are required for bank account payouts" 
+        });
+      }
+
+      // Create Paystack subaccount
+      const settings = await storage.getPlatformSettings();
+      const commissionRate = parseFloat(settings.defaultCommissionRate?.toString() || "10");
+
+      const seller = await storage.getUser(store.primarySellerId!);
+      const subaccountData = {
+        business_name: store.name,
+        bank_code: payoutDetails.bankCode || "",
+        account_number: payoutDetails.accountNumber || payoutDetails.mobileNumber || "",
+        percentage_charge: commissionRate,
+        description: `Seller: ${store.name}`,
+        primary_contact_email: req.user!.email,
+        primary_contact_name: seller?.name || req.user!.email,
+      };
+
+      const paystackResponse = await paystackService.createSubaccount(subaccountData);
+
+      // Update store with Paystack details
+      const updatedStore = await storage.updateStore(req.params.storeId, {
+        paystackSubaccountId: paystackResponse.data.subaccount_code,
+        payoutType: payoutType,
+        payoutDetails: payoutDetails,
+        isPayoutVerified: true,
+      });
+
+      res.json({
+        success: true,
+        subaccount_code: paystackResponse.data.subaccount_code,
+        store: updatedStore
+      });
+    } catch (error: any) {
+      res.status(400).json({ error: error.message });
+    }
+  });
+
+  // Paystack Webhook Handler
+  app.post("/webhooks/paystack", async (req, res) => {
+    try {
+      const signature = req.headers['x-paystack-signature'] as string;
+      const payload = JSON.stringify(req.body);
+
+      if (!paystackService.verifyWebhookSignature(payload, signature)) {
+        return res.status(401).json({ error: "Invalid signature" });
+      }
+
+      const event = req.body;
+
+      if (event.event === "charge.success") {
+        const reference = event.data.reference;
+        const transaction = await storage.getTransactionByReference(reference);
+
+        if (transaction && transaction.orderId) {
+          // Update order payment status
+          await storage.updateOrder(transaction.orderId, {
+            paymentStatus: "completed"
+          });
+        }
+      }
+
+      res.status(200).json({ status: "success" });
+    } catch (error: any) {
+      res.status(400).json({ error: error.message });
+    }
+  });
+
   return httpServer;
 }
