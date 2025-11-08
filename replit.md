@@ -10,6 +10,39 @@ Preferred communication style: Simple, everyday language.
 
 ## Recent Changes
 
+### Enhanced Seller Product Management (November 8, 2025)
+
+**Category Filtering by Store Type:**
+- ✅ Added `storeTypes` array field to categories table for multi-store-type support
+- ✅ Sellers now see only categories relevant to their store type during product creation/editing
+- ✅ Intelligent filtering logic:
+  - Categories with no store type restrictions → visible to all sellers
+  - Categories with store type restrictions → only visible to matching store types
+- ✅ Helpful UI feedback showing which categories are available for the seller's store type
+- ✅ Graceful fallback: sellers without approved stores see all categories
+
+**File Upload from Computer:**
+- ✅ Replaced URL text inputs with MediaUploadInput component for images and videos
+- ✅ Sellers can now:
+  - Upload images directly from their computer (max 10MB)
+  - Upload videos directly from their computer (max 30MB)
+  - Or manually enter Cloudinary URLs for flexibility
+- ✅ Integrated with existing Cloudinary upload endpoints (`/api/upload/image`, `/api/upload/video`)
+- ✅ Proper validation for file type and size with user-friendly error messages
+- ✅ Upload progress indication and success/error toast notifications
+
+**Technical Implementation:**
+- Database schema updated with `storeTypes` column in categories table
+- SellerProducts form fetches seller's store to determine filtering criteria
+- MediaUploadInput component maintains backend compatibility by submitting Cloudinary URLs
+- No breaking changes to existing product creation/update flows
+
+**Pending Enhancement:**
+- 🔶 Admin category manager needs update to allow managing `storeTypes` for categories
+  - Admins can currently create categories but can't assign store types via UI
+  - Backend and schema fully support the feature
+  - UI update needed in `AdminCategoryManager.tsx`
+
 ### Critical Routing Conflict Fix (November 8, 2025)
 
 **Problem Resolved:**
