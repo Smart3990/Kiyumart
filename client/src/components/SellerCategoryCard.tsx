@@ -13,7 +13,7 @@ export default function SellerCategoryCard({ seller, productCount = 0 }: SellerC
   const [, navigate] = useLocation();
 
   const handleClick = () => {
-    navigate(`/seller/${seller.id}`);
+    navigate(`/sellers/${seller.id}`);
   };
 
   return (

@@ -95,7 +95,7 @@ function Router() {
       <Route path="/" component={Home} />
       <Route path="/products" component={AllProducts} />
       <Route path="/stores" component={BrowseStores} />
-      <Route path="/seller/:id" component={SellerStorePage} />
+      <Route path="/sellers/:id" component={SellerStorePage} />
       <Route path="/product/:id" component={ProductDetails} />
       <Route path="/category/:id" component={CategoryPage} />
       <Route path="/cart" component={Cart} />

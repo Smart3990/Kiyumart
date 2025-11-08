@@ -937,7 +937,7 @@ export default function AdminSellers() {
                             <Button 
                               variant="outline" 
                               size="icon"
-                              onClick={() => navigate(`/seller/${seller.id}`)}
+                              onClick={() => navigate(`/sellers/${seller.id}`)}
                               data-testid={`button-view-store-${seller.id}`}
                               title="View Store"
                             >

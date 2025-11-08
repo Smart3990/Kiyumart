@@ -12,7 +12,7 @@ import type { User as BaseUser, Product } from "@shared/schema";
 type Seller = BaseUser;
 
 export default function SellerStorePage() {
-  const [, params] = useRoute("/seller/:id");
+  const [, params] = useRoute("/sellers/:id");
   const sellerId = params?.id;
 
   const { data: seller, isLoading: sellerLoading } = useQuery<Seller>({
