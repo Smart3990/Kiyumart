@@ -443,7 +443,7 @@ export default function SellerDashboardConnected() {
                 <div>
                   <div className="flex items-center justify-between mb-4">
                     <h2 className="text-xl font-bold">My Products</h2>
-                    <Button onClick={() => navigate("/seller/add-product")} data-testid="button-add-product">
+                    <Button onClick={() => navigate("/seller/products")} data-testid="button-add-product">
                       <Plus className="mr-2 h-4 w-4" />
                       Add New Product
                     </Button>
@@ -472,7 +472,7 @@ export default function SellerDashboardConnected() {
                     <Card>
                       <CardContent className="p-8 text-center text-muted-foreground">
                         <p className="mb-4">No products yet</p>
-                        <Button onClick={() => navigate("/seller/add-product")}>
+                        <Button onClick={() => navigate("/seller/products")}>
                           Add Your First Product
                         </Button>
                       </CardContent>
