@@ -10,6 +10,27 @@ Preferred communication style: Simple, everyday language.
 
 ## Recent Changes
 
+### Critical Routing Conflict Fix (November 8, 2025)
+
+**Problem Resolved:**
+- Fixed major routing conflict where `/seller/:id` pattern for public seller store pages conflicted with seller dashboard routes
+- Routes like `/seller/orders` and `/seller/products` were incorrectly interpreted as seller IDs
+- This caused 403 errors (`/api/users/orders`, `/api/users/products`) and "Store Not Found" errors
+
+**Solution Implemented:**
+- Changed public seller store route from `/seller/:id` to `/sellers/:id` (plural)
+- Clean separation: `/seller/*` for authenticated dashboard, `/sellers/:id` for public stores
+- Updated all navigation links and components:
+  - `SellerStorePage.tsx`: Route changed to `/sellers/:id`
+  - `Footer.tsx`: Simplified logic, removed unnecessary dashboard route filtering
+  - `SellerCategoryCard.tsx`: Navigation updated to `/sellers/:id`
+  - `AdminSellers.tsx`: View store button updated to `/sellers/:id`
+
+**Benefits:**
+- No more routing conflicts or 403 errors
+- Improved semantic clarity (plural for browsing stores, singular for dashboard)
+- Simplified Footer component logic
+
 ### Mobile Money & Cryptocurrency Support (November 8, 2025)
 
 **Mobile Money Integration:**
