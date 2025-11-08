@@ -1,10 +1,11 @@
 import { useState } from "react";
 import { useParams, useLocation } from "wouter";
 import { useQuery, useMutation } from "@tanstack/react-query";
-import { ChevronLeft, Heart, Star, Plus, Minus, ShoppingCart } from "lucide-react";
+import { ChevronLeft, Heart, Star, Plus, Minus, ShoppingCart, Share2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
@@ -21,6 +22,7 @@ export default function MobileProductDetail() {
   const [selectedColor, setSelectedColor] = useState(0);
   const [selectedSize, setSelectedSize] = useState("");
   const [quantity, setQuantity] = useState(1);
+  const [showVariantsSheet, setShowVariantsSheet] = useState(false);
 
   const { data: product, isLoading } = useQuery<{
     id: string;
@@ -63,8 +65,15 @@ export default function MobileProductDetail() {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-background flex items-center justify-center">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
+      <div className="min-h-screen bg-background">
+        <div className="p-4 space-y-4">
+          <div className="native-skeleton aspect-square rounded-2xl" />
+          <div className="space-y-2">
+            <div className="native-skeleton h-8 w-3/4 rounded" />
+            <div className="native-skeleton h-4 w-1/2 rounded" />
+            <div className="native-skeleton h-20 w-full rounded" />
+          </div>
+        </div>
       </div>
     );
   }
@@ -90,60 +99,78 @@ export default function MobileProductDetail() {
     : null;
 
   // Mock variants (in production, these would come from API)
-  const colors = images.map((img: string, idx: number) => ({ id: idx, name: `Color ${idx + 1}`, image: img }));
+  const colors = images.filter((img): img is string => !!img).map((img: string, idx: number) => ({ id: idx, name: `Color ${idx + 1}`, image: img }));
   const sizes = ["38", "39", "40", "41", "42"];
 
   return (
     <div className="min-h-screen bg-background pb-32">
-      {/* Header */}
-      <header className="sticky top-0 z-40 bg-card/95 backdrop-blur-lg">
+      {/* Native Header */}
+      <header className="native-sticky-header">
         <div className="flex items-center justify-between px-4 py-3">
           <Button
             variant="ghost"
             size="icon"
             onClick={() => navigate("/")}
+            className="native-haptic rounded-full"
             data-testid="button-back"
           >
-            <ChevronLeft className="h-5 w-5" />
+            <ChevronLeft className="h-6 w-6" />
           </Button>
-          <Button
-            variant="ghost"
-            size="icon"
-            data-testid="button-wishlist"
-          >
-            <Heart className="h-5 w-5" />
-          </Button>
+          <div className="flex gap-2">
+            <Button
+              variant="ghost"
+              size="icon"
+              className="native-haptic rounded-full"
+              data-testid="button-share"
+            >
+              <Share2 className="h-5 w-5" />
+            </Button>
+            <Button
+              variant="ghost"
+              size="icon"
+              className="native-haptic rounded-full"
+              data-testid="button-wishlist"
+            >
+              <Heart className="h-5 w-5" />
+            </Button>
+          </div>
         </div>
       </header>
 
-      {/* Main Product Image */}
+      {/* Native Product Gallery */}
       <div className="relative aspect-square bg-muted">
         <img
           src={images[selectedImage]}
           alt={product.name}
           className="w-full h-full object-cover"
+          loading="lazy"
           data-testid="img-product-main"
         />
+        <div className="absolute bottom-4 right-4 bg-black/60 backdrop-blur-sm text-white px-3 py-1 rounded-full text-xs font-medium">
+          {selectedImage + 1} / {images.length}
+        </div>
       </div>
 
-      {/* Image Thumbnails */}
-      <div className="flex gap-2 p-4 overflow-x-auto">
-        {images.map((img: string, idx: number) => (
-          <button
-            key={idx}
-            onClick={() => setSelectedImage(idx)}
-            className={cn(
-              "flex-shrink-0 w-16 h-16 rounded-lg overflow-hidden border-2 transition-all",
-              selectedImage === idx
-                ? "border-primary ring-2 ring-primary/20"
-                : "border-transparent"
-            )}
-            data-testid={`thumb-${idx}`}
-          >
-            <img src={img} alt="" className="w-full h-full object-cover" />
-          </button>
-        ))}
-      </div>
+      {/* Image Thumbnails with native feel */}
+      {images.length > 1 && (
+        <div className="flex gap-2 px-4 py-3 overflow-x-auto hide-scrollbar">
+          {images.filter((img): img is string => !!img).map((img: string, idx: number) => (
+            <button
+              key={idx}
+              onClick={() => setSelectedImage(idx)}
+              className={cn(
+                "flex-shrink-0 w-14 h-14 rounded-xl overflow-hidden border-2 native-transition native-haptic",
+                selectedImage === idx
+                  ? "border-primary scale-105"
+                  : "border-border/20"
+              )}
+              data-testid={`thumb-${idx}`}
+            >
+              <img src={img} alt="" className="w-full h-full object-cover" loading="lazy" />
+            </button>
+          ))}
+        </div>
+      )}
 
       <div className="p-4 space-y-4">
         {/* Product Info */}

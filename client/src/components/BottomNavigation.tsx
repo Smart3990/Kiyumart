@@ -27,8 +27,8 @@ export default function BottomNavigation() {
   ];
 
   return (
-    <nav className="fixed bottom-0 left-0 right-0 z-50 bg-card border-t border-border backdrop-blur-lg bg-card/95 md:hidden">
-      <div className="flex items-center justify-around h-16 px-2">
+    <nav className="fixed bottom-0 left-0 right-0 z-50 bg-card/95 backdrop-blur-lg border-t border-border/30 md:hidden safe-bottom">
+      <div className="flex items-center justify-around h-16 px-2 max-w-2xl mx-auto">
         {navItems.map((item) => {
           const isActive = location === item.path;
           const Icon = item.icon;
@@ -38,20 +38,20 @@ export default function BottomNavigation() {
               key={item.path}
               onClick={() => navigate(item.path)}
               className={cn(
-                "flex flex-col items-center justify-center flex-1 h-full gap-1 transition-colors relative",
+                "flex flex-col items-center justify-center flex-1 h-full gap-1 native-transition native-haptic relative",
                 isActive ? "text-primary" : "text-muted-foreground"
               )}
               data-testid={`nav-${item.label.toLowerCase()}`}
             >
               <div className="relative">
-                <Icon className={cn("h-6 w-6", isActive && "stroke-[2.5]")} />
+                <Icon className={cn("h-6 w-6 native-transition", isActive && "stroke-[2.5] scale-110")} />
                 {item.badge !== undefined && item.badge > 0 && (
-                  <span className="absolute -top-2 -right-2 min-w-5 h-5 flex items-center justify-center rounded-full bg-primary text-primary-foreground text-xs font-bold border-2 border-card px-1">
+                  <span className="absolute -top-2 -right-2 min-w-4 h-4 flex items-center justify-center rounded-full bg-primary text-primary-foreground text-[10px] font-bold shadow-lg px-1">
                     {item.badge > 99 ? "99+" : item.badge}
                   </span>
                 )}
               </div>
-              <span className={cn("text-xs font-medium", isActive && "font-semibold")}>
+              <span className={cn("text-[11px] font-medium", isActive && "font-semibold opacity-100", !isActive && "opacity-70")}>
                 {item.label}
               </span>
             </button>
