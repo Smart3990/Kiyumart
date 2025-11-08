@@ -3606,14 +3606,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Get current seller's store (auto-create if missing)
   app.get("/api/stores/my-store", requireAuth, requireRole("seller"), async (req: AuthRequest, res) => {
     try {
+      console.log(`[/api/stores/my-store] Request from seller ${req.user!.id}`);
       let store = await storage.getStoreByPrimarySeller(req.user!.id);
       
       // If no store found, check if seller is approved and auto-create
       if (!store) {
+        console.log(`[/api/stores/my-store] No store found for seller ${req.user!.id}, checking if approved...`);
         const seller = await storage.getUser(req.user!.id);
         
         if (seller && seller.isApproved) {
-          console.log(`Auto-creating missing store for approved seller ${req.user!.id}`);
+          console.log(`[/api/stores/my-store] Auto-creating missing store for approved seller ${req.user!.id}`);
           const storeData = {
             primarySellerId: req.user!.id,
             name: seller.storeName || seller.name + "'s Store",
@@ -3625,17 +3627,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
             isApproved: true
           };
           store = await storage.createStore(storeData);
-          console.log(`Successfully auto-created store ${store.id} for seller ${req.user!.id}`);
+          console.log(`[/api/stores/my-store] Successfully auto-created store ${store.id} for seller ${req.user!.id}`);
+        } else {
+          console.log(`[/api/stores/my-store] Seller ${req.user!.id} is not approved (isApproved: ${seller?.isApproved}), cannot auto-create store`);
         }
+      } else {
+        console.log(`[/api/stores/my-store] Found existing store ${store.id} for seller ${req.user!.id}`);
       }
       
       if (!store) {
+        console.log(`[/api/stores/my-store] Returning 404 for seller ${req.user!.id} - no store available`);
         return res.status(404).json({ error: "Store not found" });
       }
       
+      console.log(`[/api/stores/my-store] Returning store ${store.id} for seller ${req.user!.id}`);
       res.json(store);
     } catch (error: any) {
-      console.error("Error fetching seller store:", error);
+      console.error(`[/api/stores/my-store] Error fetching seller store for ${req.user!.id}:`, error);
       res.status(500).json({ error: error.message });
     }
   });

@@ -109,12 +109,14 @@ export default function AdminApplications() {
     mutationFn: async ({ userId }: { userId: string }) => {
       return apiRequest("PATCH", `/api/users/${userId}/approve`, {});
     },
-    onSuccess: () => {
+    onSuccess: async () => {
       toast({
         title: "Success",
         description: "Application approved successfully",
       });
-      queryClient.invalidateQueries({ queryKey: ["/api/users"] });
+      await queryClient.invalidateQueries({ queryKey: ["/api/users"] });
+      await queryClient.invalidateQueries({ queryKey: ["/api/stores"] });
+      await queryClient.invalidateQueries({ queryKey: ["/api/stores/my-store"] });
       setViewDetailsOpen(false);
     },
     onError: (error: any) => {

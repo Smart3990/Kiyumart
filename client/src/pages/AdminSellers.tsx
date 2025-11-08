@@ -629,6 +629,7 @@ function ApproveRejectDialog({ sellerData }: { sellerData: SellerData }) {
       await queryClient.invalidateQueries({ queryKey: ["/api/users"] });
       await queryClient.refetchQueries({ queryKey: ["/api/users"] });
       await queryClient.invalidateQueries({ queryKey: ["/api/stores"] });
+      await queryClient.invalidateQueries({ queryKey: ["/api/stores/my-store"] });
       setOpen(false);
       setAction(null);
     },
