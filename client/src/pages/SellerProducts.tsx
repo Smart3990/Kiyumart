@@ -18,6 +18,7 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { apiRequest, queryClient } from "@/lib/queryClient";
+import MediaUploadInput from "@/components/MediaUploadInput";
 
 interface Product {
   id: string;
@@ -40,6 +41,12 @@ interface Product {
 interface Category {
   id: string;
   name: string;
+  storeTypes: string[] | null;
+}
+
+interface Store {
+  id: string;
+  storeType: string;
 }
 
 const productSchema = z.object({
@@ -60,10 +67,27 @@ type ProductFormData = z.infer<typeof productSchema>;
 function ProductFormDialog({ product, mode }: { product?: Product; mode: "create" | "edit" }) {
   const [open, setOpen] = useState(false);
   const { toast } = useToast();
+  const { user } = useAuth();
+
+  // Fetch seller's store to get storeType
+  const { data: store } = useQuery<Store>({
+    queryKey: ["/api/stores/my-store"],
+    enabled: !!user?.id,
+  });
 
   const { data: categories = [] } = useQuery<Category[]>({
     queryKey: ["/api/categories"],
   });
+
+  // Filter categories based on seller's store type
+  const filteredCategories = store?.storeType
+    ? categories.filter((cat) => {
+        if (!cat.storeTypes || cat.storeTypes.length === 0) {
+          return true; // Show categories with no store type restriction
+        }
+        return cat.storeTypes.includes(store.storeType);
+      })
+    : categories;
 
   const form = useForm<ProductFormData>({
     resolver: zodResolver(productSchema),
@@ -306,13 +330,18 @@ function ProductFormDialog({ product, mode }: { product?: Product; mode: "create
                         </SelectTrigger>
                       </FormControl>
                       <SelectContent>
-                        {categories.map((category) => (
+                        {filteredCategories.map((category) => (
                           <SelectItem key={category.id} value={category.id}>
                             {category.name}
                           </SelectItem>
                         ))}
                       </SelectContent>
                     </Select>
+                    <FormDescription>
+                      {filteredCategories.length === 0 && "No categories available for your store type"}
+                      {store?.storeType && filteredCategories.length > 0 && 
+                        `Categories for ${store.storeType.replace('_', ' ')} stores`}
+                    </FormDescription>
                     <FormMessage />
                   </FormItem>
                 )}
@@ -353,11 +382,15 @@ function ProductFormDialog({ product, mode }: { product?: Product; mode: "create
               name="imageUrl"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Product Image URL</FormLabel>
-                  <FormControl>
-                    <Input placeholder="https://..." {...field} data-testid="input-product-image" />
-                  </FormControl>
-                  <FormDescription>Enter the Cloudinary image URL</FormDescription>
+                  <MediaUploadInput
+                    id="product-image"
+                    label="Product Image *"
+                    value={field.value || ""}
+                    onChange={field.onChange}
+                    accept="image"
+                    placeholder="https://... or upload from computer"
+                    description="Upload an image or enter a Cloudinary image URL"
+                  />
                   <FormMessage />
                 </FormItem>
               )}
@@ -368,11 +401,15 @@ function ProductFormDialog({ product, mode }: { product?: Product; mode: "create
               name="videoUrl"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Product Video URL (Optional)</FormLabel>
-                  <FormControl>
-                    <Input placeholder="https://..." {...field} data-testid="input-product-video" />
-                  </FormControl>
-                  <FormDescription>Enter the Cloudinary video URL</FormDescription>
+                  <MediaUploadInput
+                    id="product-video"
+                    label="Product Video (Optional)"
+                    value={field.value || ""}
+                    onChange={field.onChange}
+                    accept="video"
+                    placeholder="https://... or upload from computer"
+                    description="Upload a video or enter a Cloudinary video URL (max 30 seconds)"
+                  />
                   <FormMessage />
                 </FormItem>
               )}

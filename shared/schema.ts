@@ -175,6 +175,7 @@ export const categories = pgTable("categories", {
   slug: text("slug").notNull().unique(),
   image: text("image").notNull(),
   description: text("description"),
+  storeTypes: text("store_types").array(), // Array of store types this category applies to
   displayOrder: integer("display_order").default(0),
   isActive: boolean("is_active").default(true),
   createdAt: timestamp("created_at").defaultNow(),
