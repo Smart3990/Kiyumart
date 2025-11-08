@@ -37,6 +37,33 @@ Preferred communication style: Simple, everyday language.
 - Backend logic differentiates between bank accounts (Paystack subaccounts) and mobile money (stored for transfers)
 - Mobile money identifier format: `mobile_{provider}_{number}` for tracking
 
+### Real-Time Seller Store Updates Fix (November 8, 2025)
+
+**Problem Identified:**
+- Sellers didn't see their assigned stores immediately after admin approval
+- Root cause: React Query cache issue - cached 404 responses persisted after store creation
+- Browser-specific caching prevented cross-session updates
+
+**Solution Implemented:**
+- ✅ Cross-session Socket.IO notification system for real-time updates
+- ✅ Backend emits `seller-approved:${sellerId}` event when seller is approved (server/routes.ts)
+- ✅ Shared NotificationProvider listens for seller-approved events with authenticated connection
+- ✅ Automatic store query refetch and cache invalidation on approval
+- ✅ Toast notification shows "Application Approved!" to seller in real-time
+- ✅ Enhanced logging for debugging store creation and retrieval flow
+
+**Technical Details:**
+- Socket.IO event emission in `/api/users/:id/approve` endpoint after store creation
+- NotificationProvider (client/src/contexts/NotificationContext.tsx) handles seller-approved listener
+- Prevents duplicate socket connections (uses shared authenticated socket instance)
+- Store query (`/api/stores/my-store`) automatically refetches when event received
+- Works even if seller dashboard is open during admin approval (no page refresh needed)
+
+**Key Learning:**
+- React Query caches are per-browser-instance - admin cache invalidation doesn't affect seller's browser
+- Cross-session updates require real-time communication (Socket.IO, SSE, or polling)
+- Always use shared socket connections to preserve authentication and prevent resource leaks
+
 ## System Architecture
 
 ### Frontend Architecture
