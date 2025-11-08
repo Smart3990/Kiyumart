@@ -196,6 +196,27 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
       });
     });
 
+    // Seller Application Approved (for real-time store updates)
+    if (user.role === "seller") {
+      const sellerApprovedEvent = `seller-approved:${user.id}`;
+      socket.on(sellerApprovedEvent, (data: {
+        sellerId: string;
+        timestamp: string;
+      }) => {
+        console.log("🎉 Seller application approved:", data);
+        
+        // Immediately refetch store to show the newly created store
+        queryClient.invalidateQueries({ queryKey: ["/api/stores/my-store"] });
+        queryClient.refetchQueries({ queryKey: ["/api/stores/my-store"] });
+        
+        toast({
+          title: "🎉 Application Approved!",
+          description: "Your seller application has been approved. Your store is now ready!",
+          duration: 7000,
+        });
+      });
+    }
+
     socketRef.current = socket;
 
     return () => {
@@ -203,7 +224,7 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
       socketRef.current = null;
       isConnectedRef.current = false;
     };
-  }, [user?.id, toast]);
+  }, [user?.id, user?.role, toast]);
 
   return (
     <NotificationContext.Provider value={{ isConnected: isConnectedRef.current }}>

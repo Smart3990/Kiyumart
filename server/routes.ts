@@ -472,6 +472,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
         message: `Congratulations! Your ${user.role} application has been approved. You can now access your dashboard and start ${user.role === "seller" ? "selling products" : "accepting deliveries"}.`
       });
       
+      // Emit Socket.IO event for real-time seller dashboard update
+      if (user.role === "seller") {
+        console.log(`[Socket.IO] Emitting seller-approved event for seller ${approvedUser.id}`);
+        io.emit(`seller-approved:${approvedUser.id}`, {
+          sellerId: approvedUser.id,
+          timestamp: new Date().toISOString()
+        });
+      }
+      
       const { password, ...userWithoutPassword } = approvedUser;
       res.json(userWithoutPassword);
     } catch (error: any) {
