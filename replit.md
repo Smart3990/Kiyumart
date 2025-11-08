@@ -37,11 +37,12 @@ Preferred communication style: Simple, everyday language.
 - MediaUploadInput component maintains backend compatibility by submitting Cloudinary URLs
 - No breaking changes to existing product creation/update flows
 
-**Pending Enhancement:**
-- 🔶 Admin category manager needs update to allow managing `storeTypes` for categories
-  - Admins can currently create categories but can't assign store types via UI
-  - Backend and schema fully support the feature
-  - UI update needed in `AdminCategoryManager.tsx`
+**Admin Category Manager Update:**
+- ✅ Added store types multi-select (checkboxes) to category create/edit form
+- ✅ Admins can now assign specific store types to categories or leave empty for all stores
+- ✅ Store type restrictions displayed as badges in category list
+- ✅ Two-column checkbox grid for all 10 store types (clothing, electronics, food_beverages, etc.)
+- ✅ Complete integration with seller-side category filtering
 
 ### Critical Routing Conflict Fix (November 8, 2025)
 
