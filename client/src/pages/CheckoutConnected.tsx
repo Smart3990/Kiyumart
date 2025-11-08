@@ -522,6 +522,17 @@ export default function CheckoutConnected() {
                   </div>
                 </div>
 
+                <div className="p-3 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-md">
+                  <p className="text-xs font-medium text-blue-900 dark:text-blue-100 mb-2">
+                    💳 Available Payment Methods:
+                  </p>
+                  <ul className="text-xs text-blue-700 dark:text-blue-300 space-y-1">
+                    <li>• Card (Visa, Mastercard)</li>
+                    <li>• Bank Transfer</li>
+                    <li>• Mobile Money (MTN, Vodafone/Telecel, AirtelTigo)</li>
+                  </ul>
+                </div>
+
                 <Button
                   className="w-full"
                   size="lg"

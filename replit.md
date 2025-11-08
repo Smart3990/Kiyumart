@@ -8,6 +8,35 @@ KiyuMart is an e-commerce platform for modest Islamic women's fashion, supportin
 
 Preferred communication style: Simple, everyday language.
 
+## Recent Changes
+
+### Mobile Money & Cryptocurrency Support (November 8, 2025)
+
+**Mobile Money Integration:**
+- ✅ Enabled mobile money payment channels for buyers (MTN, Vodafone/Telecel, AirtelTigo)
+- ✅ Updated seller payment setup page with dual-mode support:
+  - Bank account payouts (via Paystack subaccounts with automatic split payments)
+  - Mobile money payouts (stores details for manual transfer processing)
+- ✅ Enhanced payment setup UI with radio button selection between bank and mobile money
+- ✅ Backend validation for both payout types with proper error handling
+- ✅ Mobile money providers: MTN Mobile Money, Vodafone/Telecel Cash, AirtelTigo Money
+
+**Cryptocurrency Payment Research:**
+- ✅ Created comprehensive documentation: `docs/cryptocurrency-payment-integration.md`
+- ✅ Identified best gateways for Ghana market:
+  - **NOWPayments**: 300+ cryptos, 0.5% fees, global coverage
+  - **BitAfrika**: Local Ghana platform with mobile money integration
+  - **CoinGate**: Developer-friendly with Lightning Network support
+- ✅ Implementation roadmap and sample code prepared
+- ✅ Database schema designs for crypto transactions ready
+- 🔶 Awaiting user demand assessment before full implementation
+
+**Technical Implementation:**
+- Added `channels: ["card", "bank_transfer", "mobile_money"]` to Paystack payment initialization
+- Updated `SellerPaymentSetup.tsx` with RadioGroup for payment method selection
+- Backend logic differentiates between bank accounts (Paystack subaccounts) and mobile money (stored for transfers)
+- Mobile money identifier format: `mobile_{provider}_{number}` for tracking
+
 ## System Architecture
 
 ### Frontend Architecture
