@@ -4,584 +4,176 @@
 
 /* LIGHT MODE */
 :root {
-  --button-outline: rgba(0,0,0, .10);
-  --badge-outline: rgba(0,0,0, .05);
-
-  /* Automatic computation of border around primary / danger buttons */
-  --opaque-button-border-intensity: -8; /* In terms of percentages */
-
-  /* Backgrounds applied on top of other backgrounds when hovered/active */
-  --elevate-1: rgba(0,0,0, .03);
-  --elevate-2: rgba(0,0,0, .08);
-
-  --background: 0 0% 100%;
-
-  --foreground: 240 6% 10%;
-
-  --border: 240 6% 88%;
-
-  --card: 0 0% 100%;
-
-  --card-foreground: 240 6% 12%;
-
-  --card-border: 240 4% 90%;
-
-  --sidebar: 240 4% 94%;
-
-  --sidebar-foreground: 240 6% 12%;
-
-  --sidebar-border: 240 4% 88%;
-
-  --sidebar-primary: 16 100% 60%;
-
-  --sidebar-primary-foreground: 0 0% 100%;
-
-  --sidebar-accent: 240 6% 90%;
-
-  --sidebar-accent-foreground: 240 6% 15%;
-
-  --sidebar-ring: 16 100% 60%;
-
-  --popover: 0 0% 100%;
-
-  --popover-foreground: 240 6% 10%;
-
-  --popover-border: 240 4% 86%;
-
-  --primary: 16 100% 60%;
-
-  --primary-foreground: 0 0% 100%;
-
-  --secondary: 240 6% 88%;
-
-  --secondary-foreground: 240 8% 12%;
-
-  --muted: 240 8% 90%;
-
-  --muted-foreground: 240 6% 35%;
-
-  --accent: 240 12% 88%;
-
-  --accent-foreground: 240 8% 12%;
-
-  --destructive: 0 72% 51%;
-
-  --destructive-foreground: 0 0% 100%;
-
-  --input: 240 8% 75%;
-  --ring: 16 100% 60%;
-  --chart-1: 16 100% 60%;
-  --chart-2: 200 82% 46%;
-  --chart-3: 280 65% 48%;
-  --chart-4: 32 95% 52%;
-  --chart-5: 340 75% 52%;
-
-  /* Native App Typography */
-  --font-sans: -apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text", "Roboto", "Segoe UI", system-ui, sans-serif;
-  --font-serif: Georgia, serif;
-  --font-mono: "SF Mono", Menlo, Monaco, "Courier New", monospace;
+  /* Glass Effects - HSL Format */
+  --glass-bg: 0 0% 100% / 0.7;
+  --glass-border: 0 0% 100% / 0.3;
+  --glass-shadow: 0 0% 0% / 0.1;
+  --glass-hover: 0 0% 100% / 0.85;
   
-  /* Native Mobile Radius - iOS: 12-16px, Material: 8-12px */
-  --radius: .75rem; /* 12px - native app standard */
-  --radius-sm: .5rem; /* 8px */
-  --radius-lg: 1rem; /* 16px */
-  /* Native App Shadows - Minimal, subtle elevation */
-  --shadow-2xs: 0px 0px 0px 0px transparent; /* No shadow for ultra-flat */
-  --shadow-xs: 0px 1px 2px 0px hsl(240 6% 10% / 0.04); /* Minimal */
-  --shadow-sm: 0px 1px 3px 0px hsl(240 6% 10% / 0.06); /* Subtle */
-  --shadow: 0px 2px 4px 0px hsl(240 6% 10% / 0.08); /* Default card */
-  --shadow-md: 0px 4px 8px 0px hsl(240 6% 10% / 0.10); /* Elevated */
-  --shadow-lg: 0px 8px 16px 0px hsl(240 6% 10% / 0.12); /* Modal/Sheet */
-  --shadow-xl: 0px 12px 24px 0px hsl(240 6% 10% / 0.14); /* Floating button */
-  --shadow-2xl: 0px 16px 32px 0px hsl(240 6% 10% / 0.16); /* Maximum */
+  /* Glowing Accents - HSL Format */
+  --glow-primary: 16 100% 61% / 0.5;
+  --glow-accent: 280 80% 65% / 0.4;
+  --glow-success: 142 76% 45% / 0.4;
   
-  /* Native Spacing Grid - 4px base (iOS/Material standard) */
-  --space-1: 0.25rem; /* 4px */
-  --space-2: 0.5rem; /* 8px */
-  --space-3: 0.75rem; /* 12px */
-  --space-4: 1rem; /* 16px - Primary mobile spacing */
-  --space-5: 1.25rem; /* 20px */
-  --space-6: 1.5rem; /* 24px */
-  --space-8: 2rem; /* 32px */
-  --space-12: 3rem; /* 48px */
-  --space-16: 4rem; /* 64px */
-  --tracking-normal: 0em;
-  --spacing: 0.25rem;
-
-  /* Automatically computed borders - intensity can be controlled by the user by the --opaque-button-border-intensity setting */
-
-  /* Fallback for older browsers */
-  --sidebar-primary-border: hsl(var(--sidebar-primary));
-  --sidebar-primary-border: hsl(from hsl(var(--sidebar-primary)) h s calc(l + var(--opaque-button-border-intensity)) / alpha);
-
-  /* Fallback for older browsers */
-  --sidebar-accent-border: hsl(var(--sidebar-accent));
-  --sidebar-accent-border: hsl(from hsl(var(--sidebar-accent)) h s calc(l + var(--opaque-button-border-intensity)) / alpha);
-
-  /* Fallback for older browsers */
-  --primary-border: hsl(var(--primary));
-  --primary-border: hsl(from hsl(var(--primary)) h s calc(l + var(--opaque-button-border-intensity)) / alpha);
-
-  /* Fallback for older browsers */
-  --secondary-border: hsl(var(--secondary));
-  --secondary-border: hsl(from hsl(var(--secondary)) h s calc(l + var(--opaque-button-border-intensity)) / alpha);
-
-  /* Fallback for older browsers */
-  --muted-border: hsl(var(--muted));
-  --muted-border: hsl(from hsl(var(--muted)) h s calc(l + var(--opaque-button-border-intensity)) / alpha);
-
-  /* Fallback for older browsers */
-  --accent-border: hsl(var(--accent));
-  --accent-border: hsl(from hsl(var(--accent)) h s calc(l + var(--opaque-button-border-intensity)) / alpha);
-
-  /* Fallback for older browsers */
-  --destructive-border: hsl(var(--destructive));
-  --destructive-border: hsl(from hsl(var(--destructive)) h s calc(l + var(--opaque-button-border-intensity)) / alpha);
+  /* Premium Gradients */
+  --gradient-primary: linear-gradient(135deg, hsl(16 100% 61%) 0%, hsl(32 95% 55%) 100%);
+  --gradient-accent: linear-gradient(135deg, hsl(280 80% 65%) 0%, hsl(330 81% 60%) 100%);
+  --gradient-glass: linear-gradient(135deg, hsl(0 0% 100% / 0.9) 0%, hsl(0 0% 100% / 0.6) 100%);
+  --gradient-mesh: radial-gradient(at 0% 0%, hsl(16 100% 61% / 0.15) 0px, transparent 50%),
+                    radial-gradient(at 100% 100%, hsl(280 80% 65% / 0.15) 0px, transparent 50%);
+  
+  /* Blur Intensity */
+  --blur-sm: 8px;
+  --blur-md: 12px;
+  --blur-lg: 16px;
+  --blur-xl: 24px;
 }
 
 .dark {
-  --button-outline: rgba(255,255,255, .10);
-  --badge-outline: rgba(255,255,255, .05);
-
-  --opaque-button-border-intensity: 9;  /* In terms of percentages */
-
-  /* Backgrounds applied on top of other backgrounds when hovered/active */
-  --elevate-1: rgba(255,255,255, .04);
-  --elevate-2: rgba(255,255,255, .09);
-
-  --background: 0 0% 6%;
-
-  --foreground: 0 0% 98%;
-
-  --border: 240 4% 16%;
-
-  --card: 0 0% 9%;
-
-  --card-foreground: 0 0% 98%;
-
-  --card-border: 240 4% 14%;
-
-  --sidebar: 240 4% 12%;
-
-  --sidebar-foreground: 0 0% 98%;
-
-  --sidebar-border: 240 4% 16%;
-
-  --sidebar-primary: 16 100% 60%;
-
-  --sidebar-primary-foreground: 0 0% 100%;
-
-  --sidebar-accent: 240 6% 16%;
-
-  --sidebar-accent-foreground: 0 0% 95%;
-
-  --sidebar-ring: 16 100% 60%;
-
-  --popover: 240 4% 14%;
-
-  --popover-foreground: 0 0% 98%;
-
-  --popover-border: 240 4% 18%;
-
-  --primary: 16 100% 60%;
-
-  --primary-foreground: 0 0% 100%;
-
-  --secondary: 240 6% 18%;
-
-  --secondary-foreground: 0 0% 98%;
-
-  --muted: 240 6% 16%;
-
-  --muted-foreground: 0 0% 70%;
-
-  --accent: 240 8% 18%;
-
-  --accent-foreground: 0 0% 98%;
-
-  --destructive: 0 72% 51%;
-
-  --destructive-foreground: 0 0% 100%;
-
-  --input: 240 6% 28%;
-  --ring: 16 100% 60%;
-  --chart-1: 16 100% 60%;
-  --chart-2: 200 82% 60%;
-  --chart-3: 280 65% 62%;
-  --chart-4: 32 95% 62%;
-  --chart-5: 340 75% 62%;
-
-  /* Dark Mode Native Shadows - More prominent but still minimal */
-  --shadow-2xs: 0px 0px 0px 0px transparent;
-  --shadow-xs: 0px 1px 2px 0px hsl(0 0% 0% / 0.20);
-  --shadow-sm: 0px 1px 3px 0px hsl(0 0% 0% / 0.25);
-  --shadow: 0px 2px 4px 0px hsl(0 0% 0% / 0.30);
-  --shadow-md: 0px 4px 8px 0px hsl(0 0% 0% / 0.35);
-  --shadow-lg: 0px 8px 16px 0px hsl(0 0% 0% / 0.40);
-  --shadow-xl: 0px 12px 24px 0px hsl(0 0% 0% / 0.45);
-  --shadow-2xl: 0px 16px 32px 0px hsl(0 0% 0% / 0.50);
-
-  /* Automatically computed borders - intensity can be controlled by the user by the --opaque-button-border-intensity setting */
-
-  /* Fallback for older browsers */
-  --sidebar-primary-border: hsl(var(--sidebar-primary));
-  --sidebar-primary-border: hsl(from hsl(var(--sidebar-primary)) h s calc(l + var(--opaque-button-border-intensity)) / alpha);
-
-  /* Fallback for older browsers */
-  --sidebar-accent-border: hsl(var(--sidebar-accent));
-  --sidebar-accent-border: hsl(from hsl(var(--sidebar-accent)) h s calc(l + var(--opaque-button-border-intensity)) / alpha);
-
-  /* Fallback for older browsers */
-  --primary-border: hsl(var(--primary));
-  --primary-border: hsl(from hsl(var(--primary)) h s calc(l + var(--opaque-button-border-intensity)) / alpha);
-
-  /* Fallback for older browsers */
-  --secondary-border: hsl(var(--secondary));
-  --secondary-border: hsl(from hsl(var(--secondary)) h s calc(l + var(--opaque-button-border-intensity)) / alpha);
-
-  /* Fallback for older browsers */
-  --muted-border: hsl(var(--muted));
-  --muted-border: hsl(from hsl(var(--muted)) h s calc(l + var(--opaque-button-border-intensity)) / alpha);
-
-  /* Fallback for older browsers */
-  --accent-border: hsl(var(--accent));
-  --accent-border: hsl(from hsl(var(--accent)) h s calc(l + var(--opaque-button-border-intensity)) / alpha);
-
-  /* Fallback for older browsers */
-  --destructive-border: hsl(var(--destructive));
-  --destructive-border: hsl(from hsl(var(--destructive)) h s calc(l + var(--opaque-button-border-intensity)) / alpha);
+  /* Dark Mode Glass - HSL Format */
+  --glass-bg: 228 16% 15% / 0.7;
+  --glass-border: 0 0% 100% / 0.1;
+  --glass-shadow: 0 0% 0% / 0.4;
+  --glass-hover: 230 20% 20% / 0.85;
+  
+  /* Dark Gradients */
+  --gradient-glass: linear-gradient(135deg, hsl(230 20% 20% / 0.9) 0%, hsl(228 16% 15% / 0.7) 100%);
+  --gradient-mesh: radial-gradient(at 0% 0%, hsl(16 100% 61% / 0.08) 0px, transparent 50%),
+                    radial-gradient(at 100% 100%, hsl(280 80% 65% / 0.08) 0px, transparent 50%);
 }
 
-@layer base {
-  * {
-    @apply border-border;
-  }
-
-  body {
-    @apply font-sans antialiased bg-background text-foreground;
-  }
-}
-
-/**
- * Using the elevate system.
- * Automatic contrast adjustment.
- *
- * <element className="hover-elevate" />
- * <element className="active-elevate-2" />
- *
- * // Using the tailwind utility when a data attribute is "on"
- * <element className="toggle-elevate data-[state=on]:toggle-elevated" />
- * // Or manually controlling the toggle state
- * <element className="toggle-elevate toggle-elevated" />
- *
- * Elevation systems have to handle many states.
- * - not-hovered, vs. hovered vs. active  (three mutually exclusive states)
- * - toggled or not
- * - focused or not (this is not handled with these utilities)
- *
- * Even without handling focused or not, this is six possible combinations that
- * need to be distinguished from eachother visually.
- */
-@layer utilities {
-
-  /* Hide ugly search cancel button in Chrome until we can style it properly */
-  input[type="search"]::-webkit-search-cancel-button {
-    @apply hidden;
-  }
-
-  /* Placeholder styling for contentEditable div */
-  [contenteditable][data-placeholder]:empty::before {
-    content: attr(data-placeholder);
-    color: hsl(var(--muted-foreground));
-    pointer-events: none;
-  }
-
-  /* .no-default-hover-elevate/no-default-active-elevate is an escape hatch so consumers of
-   * buttons/badges can remove the automatic brightness adjustment on interactions
-   * and program their own. */
-  .no-default-hover-elevate {}
-
-  .no-default-active-elevate {}
-
-
-  /**
-   * Toggleable backgrounds go behind the content. Hoverable/active goes on top.
-   * This way they can stack/compound. Both will overlap the parent's borders!
-   * So borders will be automatically adjusted both on toggle, and hover/active,
-   * and they will be compounded.
-   */
-  .toggle-elevate::before,
-  .toggle-elevate-2::before {
-    content: "";
-    pointer-events: none;
-    position: absolute;
-    inset: 0px;
-    /*border-radius: inherit;   match rounded corners */
-    border-radius: inherit;
-    z-index: -1;
-    /* sits behind content but above backdrop */
-  }
-
-  .toggle-elevate.toggle-elevated::before {
-    background-color: var(--elevate-2);
-  }
-
-  /* If there's a 1px border, adjust the inset so that it covers that parent's border */
-  .border.toggle-elevate::before {
-    inset: -1px;
-  }
-
-  /* Does not work on elements with overflow:hidden! */
-  .hover-elevate:not(.no-default-hover-elevate),
-  .active-elevate:not(.no-default-active-elevate),
-  .hover-elevate-2:not(.no-default-hover-elevate),
-  .active-elevate-2:not(.no-default-active-elevate) {
-    position: relative;
-    z-index: 0;
-  }
-
-  .hover-elevate:not(.no-default-hover-elevate)::after,
-  .active-elevate:not(.no-default-active-elevate)::after,
-  .hover-elevate-2:not(.no-default-hover-elevate)::after,
-  .active-elevate-2:not(.no-default-active-elevate)::after {
-    content: "";
-    pointer-events: none;
-    position: absolute;
-    inset: 0px;
-    /*border-radius: inherit;   match rounded corners */
-    border-radius: inherit;
-    z-index: 999;
-    /* sits in front of content */
-  }
-
-  .hover-elevate:hover:not(.no-default-hover-elevate)::after,
-  .active-elevate:active:not(.no-default-active-elevate)::after {
-    background-color: var(--elevate-1);
-  }
-
-  .hover-elevate-2:hover:not(.no-default-hover-elevate)::after,
-  .active-elevate-2:active:not(.no-default-active-elevate)::after {
-    background-color: var(--elevate-2);
-  }
-
-  /* If there's a 1px border, adjust the inset so that it covers that parent's border */
-  .border.hover-elevate:not(.no-hover-interaction-elevate)::after,
-  .border.active-elevate:not(.no-active-interaction-elevate)::after,
-  .border.hover-elevate-2:not(.no-hover-interaction-elevate)::after,
-  .border.active-elevate-2:not(.no-active-interaction-elevate)::after,
-  .border.hover-elevate:not(.no-hover-interaction-elevate)::after {
-    inset: -1px;
-  }
-}
-
-/* Category Grid - Multi-Vendor Mode (Limited width for single items) */
-.category-grid {
-  display: grid;
-  gap: 1rem;
-  grid-template-columns: repeat(auto-fit, minmax(200px, min(33.333%, 320px)));
-  align-items: start;
-}
-
-@media (min-width: 640px) {
-  .category-grid {
-    grid-template-columns: repeat(auto-fit, minmax(220px, min(33.333%, 340px)));
-  }
-}
-
-@media (min-width: 1024px) {
-  .category-grid {
-    grid-template-columns: repeat(auto-fit, minmax(240px, min(33.333%, 360px)));
-  }
-}
-
-/* Category Grid - Single Store Mode (Auto-adjusting responsive layout) */
-.category-grid-single-store {
-  display: grid;
-  gap: 1rem;
-  grid-template-columns: repeat(auto-fit, minmax(180px, min(33.333%, 280px)));
-  align-items: start;
-}
-
-@media (min-width: 640px) {
-  .category-grid-single-store {
-    grid-template-columns: repeat(auto-fit, minmax(200px, min(33.333%, 300px)));
-  }
-}
-
-@media (min-width: 1024px) {
-  .category-grid-single-store {
-    grid-template-columns: repeat(auto-fit, minmax(220px, min(33.333%, 320px)));
-  }
-}
 /* ============================================
-   NATIVE MOBILE APP UTILITIES
+   GLASSMORPHISM DESIGN SYSTEM
    ============================================ */
 
-/* Native List Item - iOS/Android style */
-.native-list-item {
-  @apply px-4 py-3 active:bg-accent/50 transition-colors border-b border-border/30;
+/* Glass Components */
+.glass-card {
+  background: hsl(var(--glass-bg));
+  backdrop-filter: blur(var(--blur-md));
+  -webkit-backdrop-filter: blur(var(--blur-md));
+  border: 1px solid hsl(var(--border) / 0.2);
+  border-radius: 20px;
+  box-shadow: 0 8px 32px 0 hsl(0 0% 0% / 0.1),
+              inset 0 1px 1px 0 hsl(0 0% 100% / 0.2);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
-/* Native Card - Minimal shadow, rounded */
-.native-card {
-  @apply rounded-xl bg-card border border-border/20 overflow-hidden;
-  box-shadow: var(--shadow-xs);
+.glass-card:hover {
+  box-shadow: 0 16px 48px 0 hsl(0 0% 0% / 0.15),
+              inset 0 1px 1px 0 hsl(0 0% 100% / 0.3);
+  transform: translateY(-2px);
 }
 
-/* Native Button - Touch-optimized */
-.native-button {
-  @apply min-h-[44px] min-w-[44px] rounded-xl font-medium transition-all active:scale-95;
+.glass-panel {
+  background: hsl(var(--card) / 0.7);
+  backdrop-filter: blur(24px);
+  -webkit-backdrop-filter: blur(24px);
+  border: 1px solid hsl(var(--border) / 0.2);
+  border-radius: 24px;
+  box-shadow: 0 12px 40px 0 hsl(0 0% 0% / 0.1),
+              0 0 0 1px hsl(0 0% 100% / 0.1) inset;
 }
 
-/* Native Input - Clean, minimal */
-.native-input {
-  @apply rounded-xl px-4 py-3 bg-background border border-input focus:border-primary focus:ring-2 focus:ring-primary/20;
+.glass-button {
+  background: hsl(var(--card) / 0.7);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  border: 1px solid hsl(var(--border) / 0.2);
+  border-radius: 16px;
+  box-shadow: 0 4px 12px 0 hsl(0 0% 0% / 0.08),
+              inset 0 1px 1px 0 hsl(0 0% 100% / 0.2);
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
-/* Native Separator - Subtle divider */
-.native-separator {
-  @apply h-px bg-border/30 my-2;
+.glass-button:active {
+  transform: scale(0.96);
+  box-shadow: 0 2px 6px 0 hsl(0 0% 0% / 0.08);
 }
 
-/* Native Section Header - Like iOS grouped lists */
-.native-section-header {
-  @apply px-4 py-2 text-xs font-semibold text-muted-foreground uppercase tracking-wider bg-background/50;
+.glass-nav {
+  background: hsl(var(--card) / 0.95);
+  backdrop-filter: blur(24px);
+  -webkit-backdrop-filter: blur(24px);
+  border-top: 1px solid hsl(var(--border) / 0.2);
+  box-shadow: 0 -4px 24px 0 hsl(0 0% 0% / 0.08),
+              inset 0 1px 0 0 hsl(0 0% 100% / 0.1);
 }
 
-/* Native Safe Area - iOS notch/dynamic island safe zones */
-.safe-top {
-  padding-top: max(env(safe-area-inset-top), 12px);
+.glass-bg-gradient {
+  background: radial-gradient(at 0% 0%, hsl(16 100% 61% / 0.05) 0px, transparent 50%),
+              radial-gradient(at 100% 100%, hsl(280 80% 65% / 0.05) 0px, transparent 50%);
 }
 
-.safe-bottom {
-  padding-bottom: max(env(safe-area-inset-bottom), 12px);
+.glow-border::before {
+  content: '';
+  position: absolute;
+  inset: -2px;
+  background: linear-gradient(135deg, hsl(16 100% 61%) 0%, hsl(32 95% 55%) 100%);
+  border-radius: inherit;
+  opacity: 0;
+  transition: opacity 0.3s;
+  z-index: -1;
 }
 
-/* Native Touch Feedback */
-.native-touch {
-  @apply active:bg-foreground/5 transition-colors;
+.glow-border:hover::before {
+  opacity: 0.6;
+  filter: blur(8px);
 }
 
-/* Native Floating Action Button */
-.native-fab {
-  @apply fixed bottom-6 right-6 w-14 h-14 rounded-full bg-primary text-primary-foreground shadow-xl flex items-center justify-center active:scale-90 transition-transform;
-  box-shadow: var(--shadow-xl);
+.floating-glass {
+  animation: float 6s ease-in-out infinite;
 }
 
-/* Native Bottom Sheet */
-.native-bottom-sheet {
-  @apply rounded-t-3xl bg-background;
+@keyframes float {
+  0%, 100% { transform: translateY(0px); }
+  50% { transform: translateY(-10px); }
 }
 
-/* Native Pull Indicator - for sheets/drawers */
-.native-pull-indicator {
-  @apply w-10 h-1 rounded-full bg-foreground/20 mx-auto my-2;
+.glass-skeleton {
+  background: linear-gradient(
+    90deg,
+    hsl(var(--muted) / 0.5) 0%,
+    hsl(var(--muted) / 0.8) 50%,
+    hsl(var(--muted) / 0.5) 100%
+  );
+  background-size: 200% 100%;
+  animation: shimmer 1.5s ease-in-out infinite;
+  border-radius: 12px;
+  border: 1px solid hsl(var(--border) / 0.2);
 }
 
-/* Mobile-First Responsive Padding */
-@media (max-width: 768px) {
-  .mobile-px {
-    @apply px-4;
-  }
-  
-  .mobile-py {
-    @apply py-3;
-  }
-  
-  .mobile-gap {
-    @apply gap-4;
-  }
+@keyframes shimmer {
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
 }
 
-/* Tablet Breakpoint (1024px) */
-@media (min-width: 1024px) {
-  .tablet-grid-2 {
-    @apply grid-cols-2;
-  }
-  
-  .tablet-grid-3 {
-    @apply grid-cols-3;
-  }
+.micro-scale {
+  transition: transform 0.15s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
-/* Native Skeleton Loader */
-.native-skeleton {
-  @apply animate-pulse bg-foreground/10 rounded-lg;
+.micro-scale:active {
+  transform: scale(0.97);
 }
 
-/* Native Badge/Pill */
-.native-badge {
-  @apply inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium;
+.gradient-text {
+  background: linear-gradient(135deg, hsl(16 100% 61%) 0%, hsl(32 95% 55%) 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
 }
 
-/* Native Avatar */
-.native-avatar {
-  @apply rounded-full overflow-hidden bg-muted flex items-center justify-center;
+.glass-badge {
+  background: hsl(var(--card) / 0.7);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  border: 1px solid hsl(var(--border) / 0.2);
+  border-radius: 20px;
+  padding: 4px 12px;
+  font-size: 11px;
+  font-weight: 600;
+  box-shadow: 0 2px 8px 0 hsl(0 0% 0% / 0.08);
 }
 
-/* Native Typography Scale - Mobile-optimized */
-@media (max-width: 768px) {
-  .native-title-large {
-    @apply text-2xl font-bold tracking-tight;
-  }
-  
-  .native-title {
-    @apply text-xl font-semibold;
-  }
-  
-  .native-headline {
-    @apply text-lg font-medium;
-  }
-  
-  .native-body {
-    @apply text-base;
-  }
-  
-  .native-caption {
-    @apply text-sm text-muted-foreground;
-  }
-  
-  .native-label {
-    @apply text-xs font-medium uppercase tracking-wide;
-  }
-}
-
-/* Native Transitions */
-.native-transition {
-  @apply transition-all duration-200 ease-out;
-}
-
-.native-transition-slow {
-  @apply transition-all duration-300 ease-in-out;
-}
-
-/* Native Backdrop */
-.native-backdrop {
-  @apply backdrop-blur-sm bg-black/20;
-}
-
-/* Native Sticky Header */
-.native-sticky-header {
-  @apply sticky top-0 z-10 bg-background/95 backdrop-blur-sm border-b border-border/30;
-}
-
-/* Edge-to-Edge Content */
-.edge-to-edge {
-  margin-left: calc(-1 * var(--space-4));
-  margin-right: calc(-1 * var(--space-4));
-  padding-left: var(--space-4);
-  padding-right: var(--space-4);
-}
-
-/* Native Press State */
-@media (hover: none) {
-  .native-press:active {
-    opacity: 0.7;
-    transform: scale(0.98);
-  }
-}
-
-/* Haptic Feedback Visual */
-.native-haptic:active {
-  @apply scale-95;
+.transition-smooth {
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }

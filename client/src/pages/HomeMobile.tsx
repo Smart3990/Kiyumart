@@ -83,18 +83,18 @@ export default function HomeMobile() {
   const activeBanner = heroBanners.find((b: any) => b.isActive);
   const isLoading = isLoadingBanners || isLoadingCategories || isLoadingProducts;
 
-  // Skeleton Loaders
+  // Premium Glass Skeleton Loaders
   const HeroSkeleton = () => (
     <div className="px-4">
-      <div className="native-skeleton aspect-[16/9] rounded-2xl" />
+      <div className="glass-skeleton aspect-[16/9] rounded-3xl" />
     </div>
   );
 
   const CategorySkeleton = () => (
     <div className="px-4">
-      <div className="flex gap-2 overflow-x-auto hide-scrollbar">
+      <div className="flex gap-3 overflow-x-auto hide-scrollbar">
         {[...Array(5)].map((_, i) => (
-          <div key={i} className="native-skeleton h-10 w-24 rounded-full flex-shrink-0" />
+          <div key={i} className="glass-skeleton h-11 w-28 rounded-full flex-shrink-0" />
         ))}
       </div>
     </div>
@@ -102,13 +102,13 @@ export default function HomeMobile() {
 
   const ProductGridSkeleton = () => (
     <div className="px-4">
-      <div className="native-skeleton h-6 w-32 mb-3 rounded" />
-      <div className="grid grid-cols-2 gap-3">
+      <div className="glass-skeleton h-7 w-36 mb-4 rounded-xl" />
+      <div className="grid grid-cols-2 gap-4">
         {[...Array(4)].map((_, i) => (
-          <div key={i} className="space-y-2">
-            <div className="native-skeleton aspect-square rounded-xl" />
-            <div className="native-skeleton h-4 w-3/4 rounded" />
-            <div className="native-skeleton h-3 w-1/2 rounded" />
+          <div key={i} className="space-y-3">
+            <div className="glass-skeleton aspect-square rounded-2xl" />
+            <div className="glass-skeleton h-5 w-4/5 rounded-lg" />
+            <div className="glass-skeleton h-4 w-2/3 rounded-lg" />
           </div>
         ))}
       </div>
@@ -116,13 +116,13 @@ export default function HomeMobile() {
   );
 
   return (
-    <div className="min-h-screen bg-background pb-20">
+    <div className="min-h-screen bg-background pb-20 glass-bg-gradient">
       <MobileHeader showSearch onSearchChange={setSearchQuery} />
 
-      {/* Pull-to-Refresh Indicator */}
+      {/* Pull-to-Refresh Indicator - Glass Style */}
       {isRefreshing && (
-        <div className="flex justify-center py-2 bg-primary/10">
-          <RefreshCw className="h-4 w-4 animate-spin text-primary" />
+        <div className="flex justify-center py-3 glass-card mx-4 mb-3">
+          <RefreshCw className="h-5 w-5 animate-spin gradient-text" />
         </div>
       )}
 
@@ -146,12 +146,12 @@ export default function HomeMobile() {
           }}
         />
 
-        {/* Hero Banner */}
+        {/* Hero Banner - Premium Glass */}
         {isLoading ? (
           <HeroSkeleton />
         ) : activeBanner ? (
           <div className="px-4">
-            <div className="relative aspect-[16/9] overflow-hidden rounded-2xl bg-gradient-to-br from-primary/20 to-primary/5 native-card">
+            <div className="relative aspect-[16/9] overflow-hidden rounded-3xl glass-panel glow-border floating-glass">
               {activeBanner.imageUrl ? (
                 <>
                   <img
@@ -160,14 +160,16 @@ export default function HomeMobile() {
                     className="w-full h-full object-cover"
                     loading="lazy"
                   />
-                  <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/30 to-transparent" />
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/40 to-transparent" />
                 </>
-              ) : null}
-              <div className="absolute bottom-0 left-0 right-0 p-5">
-                <h2 className="native-title-large text-white mb-1" data-testid="text-hero-title">
+              ) : (
+                <div className="w-full h-full bg-gradient-to-br from-primary via-primary/80 to-accent" />
+              )}
+              <div className="absolute bottom-0 left-0 right-0 p-6 glass-card m-3">
+                <h2 className="text-2xl font-bold text-white mb-2 gradient-text" data-testid="text-hero-title">
                   {activeBanner.title || "Welcome to KiyuMart"}
                 </h2>
-                <p className="native-body text-white/90" data-testid="text-hero-description">
+                <p className="text-sm text-white/90 leading-relaxed" data-testid="text-hero-description">
                   {activeBanner.description || "Discover modest fashion"}
                 </p>
               </div>

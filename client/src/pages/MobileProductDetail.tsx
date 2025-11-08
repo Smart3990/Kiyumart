@@ -65,13 +65,13 @@ export default function MobileProductDetail() {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-background">
-        <div className="p-4 space-y-4">
-          <div className="native-skeleton aspect-square rounded-2xl" />
-          <div className="space-y-2">
-            <div className="native-skeleton h-8 w-3/4 rounded" />
-            <div className="native-skeleton h-4 w-1/2 rounded" />
-            <div className="native-skeleton h-20 w-full rounded" />
+      <div className="min-h-screen bg-background glass-bg-gradient">
+        <div className="p-4 space-y-5">
+          <div className="glass-skeleton aspect-square rounded-3xl" />
+          <div className="space-y-3">
+            <div className="glass-skeleton h-9 w-4/5 rounded-2xl" />
+            <div className="glass-skeleton h-5 w-2/3 rounded-xl" />
+            <div className="glass-skeleton h-24 w-full rounded-2xl" />
           </div>
         </div>
       </div>
@@ -103,42 +103,36 @@ export default function MobileProductDetail() {
   const sizes = ["38", "39", "40", "41", "42"];
 
   return (
-    <div className="min-h-screen bg-background pb-32">
-      {/* Native Header */}
-      <header className="native-sticky-header">
+    <div className="min-h-screen bg-background glass-bg-gradient pb-32">
+      {/* Premium Glass Header */}
+      <header className="glass-nav border-b border-border/20">
         <div className="flex items-center justify-between px-4 py-3">
-          <Button
-            variant="ghost"
-            size="icon"
+          <button
             onClick={() => navigate("/")}
-            className="native-haptic rounded-full"
+            className="glass-button p-2 micro-scale"
             data-testid="button-back"
           >
             <ChevronLeft className="h-6 w-6" />
-          </Button>
+          </button>
           <div className="flex gap-2">
-            <Button
-              variant="ghost"
-              size="icon"
-              className="native-haptic rounded-full"
+            <button
+              className="glass-button p-2 micro-scale"
               data-testid="button-share"
             >
               <Share2 className="h-5 w-5" />
-            </Button>
-            <Button
-              variant="ghost"
-              size="icon"
-              className="native-haptic rounded-full"
+            </button>
+            <button
+              className="glass-button p-2 micro-scale glow-border"
               data-testid="button-wishlist"
             >
               <Heart className="h-5 w-5" />
-            </Button>
+            </button>
           </div>
         </div>
       </header>
 
-      {/* Native Product Gallery */}
-      <div className="relative aspect-square bg-muted">
+      {/* Premium Glass Product Gallery */}
+      <div className="relative aspect-square bg-gradient-to-br from-muted via-muted/50 to-background">
         <img
           src={images[selectedImage]}
           alt={product.name}
@@ -146,23 +140,23 @@ export default function MobileProductDetail() {
           loading="lazy"
           data-testid="img-product-main"
         />
-        <div className="absolute bottom-4 right-4 bg-black/60 backdrop-blur-sm text-white px-3 py-1 rounded-full text-xs font-medium">
+        <div className="absolute bottom-5 right-5 glass-badge text-white font-semibold">
           {selectedImage + 1} / {images.length}
         </div>
       </div>
 
-      {/* Image Thumbnails with native feel */}
+      {/* Glass Thumbnail Gallery */}
       {images.length > 1 && (
-        <div className="flex gap-2 px-4 py-3 overflow-x-auto hide-scrollbar">
+        <div className="flex gap-3 px-4 py-4 overflow-x-auto hide-scrollbar">
           {images.filter((img): img is string => !!img).map((img: string, idx: number) => (
             <button
               key={idx}
               onClick={() => setSelectedImage(idx)}
               className={cn(
-                "flex-shrink-0 w-14 h-14 rounded-xl overflow-hidden border-2 native-transition native-haptic",
+                "flex-shrink-0 w-16 h-16 rounded-2xl overflow-hidden transition-smooth micro-scale",
                 selectedImage === idx
-                  ? "border-primary scale-105"
-                  : "border-border/20"
+                  ? "glass-card ring-2 ring-primary shadow-lg scale-105"
+                  : "glass-card ring-1 ring-border/30 opacity-70 hover:opacity-100"
               )}
               data-testid={`thumb-${idx}`}
             >
