@@ -2,237 +2,36 @@
 
 ## Overview
 
-KiyuMart is an e-commerce platform for modest Islamic women's fashion, supporting both single-store and multi-vendor marketplace models. It offers comprehensive online functionalities including product and order management, real-time delivery tracking with map visualization, live chat, and Paystack payment integration. The platform focuses on a diverse product range, dynamic category management, extensive admin dashboards, and a robust application verification system for sellers and riders. The business vision is to provide a seamless and inclusive online shopping experience for modest fashion, tapping into a significant market potential for Islamic women's apparel.
+KiyuMart is an e-commerce platform for modest Islamic women's fashion, designed to operate as both a single-store and a multi-vendor marketplace. It provides comprehensive e-commerce functionalities including product and order management, real-time delivery tracking with map visualization, live chat, and integrated Paystack payments. The platform emphasizes a diverse product range, dynamic category and store management, extensive admin dashboards, and a robust application verification system for sellers and riders. The vision is to offer a seamless and inclusive online shopping experience, addressing the significant market potential within modest fashion.
 
 ## User Preferences
 
 Preferred communication style: Simple, everyday language.
 
-## Recent Changes
-
-### Product Management Bug Fixes (November 8, 2025)
-
-**Critical Product Creation/Update Issues Resolved:**
-
-**Problem #1: Product Creation Failures**
-- Root cause: Frontend-backend field name mismatch with database schema
-- Product creation form sent `categoryId`, `stockQuantity`, `videoUrl` fields
-- Database schema expects `category` (text), `stock` (integer), `video` (text)
-- Zod validation errors prevented successful product creation
-
-**Problem #2: Multi-Image Data Loss**
-- Product updates overwrote entire images array when editing
-- Changing primary image deleted all secondary product images
-- Tags and other fields caused image array to be reset
-
-**Problem #3: Media Library Crashes**
-- SellerMediaLibrary page crashed with `.map()` error
-- Backend API sometimes returned non-array responses
-- Missing array validation caused runtime errors
-
-**Solutions Implemented:**
-
-✅ **Schema Alignment (SellerProducts.tsx):**
-- Updated Product interface to match database exactly:
-  - `category: string` (category name, not ID)
-  - `stock: number` (not `stockQuantity`)
-  - `video: string | null` (not `videoUrl`)
-  - Removed `inStock` (derived from `stock > 0`)
-- Form submission sends schema-aligned field names
-- Form default values correctly read database fields
-
-✅ **Multi-Image Preservation (SellerProducts.tsx):**
-```typescript
-// Replace primary image but keep secondary images
-let images = product?.images || [];
-if (data.imageUrl && product && data.imageUrl !== product.images[0]) {
-  images = [data.imageUrl, ...product.images.slice(1)];
-}
-```
-- Update mutation always sends complete `images` array
-- Primary image changes preserve secondary images
-- No data loss during edits
-
-✅ **Media Library Safety (SellerMediaLibrary.tsx):**
-```typescript
-return Array.isArray(data) ? data : [];
-```
-- Added array validation to prevent crashes
-- Graceful fallback when API returns non-array
-
-**Technical Impact:**
-- Product creation now works without Zod validation errors
-- Multi-image products retain all images during updates
-- Media library handles edge cases safely
-- Complete data flow validated: Form → FormData → Backend → Database
-
-### Chat Page Infinite Loop Fix (November 8, 2025)
-
-**Problem Identified:**
-- "Maximum update depth exceeded" error in browser console
-- ChatPageConnected component had infinite re-render loop
-- Caused by unnecessary manual query refetch when selecting contacts
-
-**Root Cause:**
-```typescript
-onClick={() => {
-  setSelectedContact(contact);
-  refetchMessages(); // ❌ UNNECESSARY - causes double refetch
-}}
-```
-
-When clicking a contact:
-1. `setSelectedContact(contact)` updates state
-2. `refetchMessages()` manually triggers query refetch
-3. TanStack Query ALSO auto-refetches because `queryKey: ["/api/messages", selectedContact?.id]` changed
-4. Double-refetch triggered cascading state updates causing infinite loop
-
-**Solution Implemented:**
-
-✅ **Removed Unnecessary Manual Refetch:**
-```typescript
-onClick={() => {
-  setSelectedContact(contact);
-  // TanStack Query will auto-refetch when selectedContact?.id changes
-}}
-```
-
-✅ **Leveraged TanStack Query Auto-Refetch:**
-- Query automatically refetches when queryKey changes
-- `selectedContact?.id` is part of queryKey array
-- Changing contacts triggers automatic data reload
-- No manual refetch needed
-
-**Technical Impact:**
-- No more "Maximum update depth exceeded" errors
-- Chat page loads and switches contacts smoothly
-- Browser console is clean with no warnings
-- Proper reliance on TanStack Query's reactive system
-
-**Known Limitation (Not Causing Errors):**
-⚠️ Socket listener has stale closure for `selectedContact` reference
-- Real-time messages might not filter correctly by contact
-- Not causing infinite loops or errors
-- Future enhancement: Refactor socket listener to use refs
-
-**Files Modified:**
-- `client/src/pages/ChatPageConnected.tsx` - Removed manual refetch call
-
-### WebRTC Voice and Video Calling Implementation (November 8, 2025)
-
-**Full-Featured Calling System Implemented:**
-
-✅ **CallInterface Component (NEW):**
-- Full-screen call overlay with video display
-- Picture-in-picture local video (mirrored for natural appearance)
-- Audio-only mode with avatar display
-- Call state indicators: calling, incoming, connected, ended
-- Interactive controls: mute, video toggle, accept, reject, end call
-- Fullscreen toggle for video calls
-- Responsive design with gradient overlays
-- All UI elements properly test-id tagged
-
-✅ **WebRTC Signaling (Backend - server/routes.ts):**
-- Socket.IO events: `call-offer`, `call-answer`, `ice-candidate`, `call-rejected`, `call-ended`
-- Complete signaling flow for WebRTC peer connections
-- ICE candidate exchange for NAT traversal
-
-✅ **ChatPageConnected Integration:**
-- Full WebRTC implementation with RTCPeerConnection
-- Media stream management (local/remote audio and video)
-- Call state management with proper cleanup
-- Socket event listeners for signaling
-- Call controls: initiate, accept, reject, end calls
-- Mute/unmute microphone, enable/disable camera
-- Toast notifications for incoming calls
-
-**Critical Technical Details:**
-
-✅ **ICE Candidate Routing Fix:**
-- Uses `remotePeerIdRef` (ref, not state) for ICE candidate routing
-- Ensures ICE candidates always route correctly throughout call lifecycle
-- Prevents closure timing issues with React state updates
-- Ref set immediately before peer connection creation
-
-✅ **STUN Servers:**
-- Google's public STUN servers for NAT traversal
-- Works on most networks without additional infrastructure
-
-**Technical Flow:**
-1. Caller initiates call (audio or video)
-2. `remotePeerIdRef.current` set immediately with receiver's ID
-3. Media stream requested (camera/microphone permissions)
-4. RTCPeerConnection created with ICE handler using ref
-5. SDP offer created and sent via Socket.IO
-6. Receiver accepts → creates answer, sets `remotePeerIdRef.current`
-7. ICE candidates exchanged using ref for routing
-8. WebRTC connection established, media flows both ways
-
-**Benefits:**
-- Zero external dependencies (no Twilio/Agora costs)
-- Native WebRTC APIs
-- Full-featured (audio, video, controls)
-- Proper resource cleanup
-- Error handling and fallbacks
-- Connection state monitoring
-
-**Known Limitations:**
-- STUN-only configuration (may fail on restrictive corporate firewalls)
-- Future enhancement: Add TURN servers for 100% connectivity
-
-**Files Modified:**
-1. `client/src/components/CallInterface.tsx` - NEW component
-2. `server/routes.ts` - Added WebRTC signaling events
-3. `client/src/pages/ChatPageConnected.tsx` - Integrated calling functionality
-
-### Missing Chat Features (Documented, Not Implemented)
-
-⚠️ **Message Attachments:**
-- UI elements exist (paperclip icon, attachment button)
-- No backend storage or file upload handlers
-- No Cloudinary integration for chat media
-- **Impact:** Users cannot send images/files in messages
-
 ## System Architecture
 
 ### Frontend Architecture
 
-The frontend uses React 18 (Vite, TypeScript) with Wouter for routing and TanStack Query for server state. UI components are built with Shadcn UI (Radix UI primitives) and Tailwind CSS, following a mobile-first, responsive design with a green color scheme. Features include a persistent shopping cart, product browsing with filters, real-time order tracking via Socket.IO, multi-language support with automatic currency switching, QR code generation for orders, and role-based dashboards. The system supports dynamic components for multi-vendor functionality, an admin branding system, a reusable Media Upload System for Cloudinary, and comprehensive approval workflows for sellers and riders.
-
-**Key Design Decisions:**
-- **UI/UX:** Mobile-first, responsive design with a green color scheme. Role-based dashboards (super_admin, regular admin) with distinct access levels. Dynamic currency symbols and database-rendered footer pages. Enhanced form scrolling and mobile responsiveness.
-- **Critical TanStack Query Configuration:** `queryFn` uses ONLY the first element of `queryKey` as the URL endpoint; additional elements are for cache discrimination. Queries needing dynamic URLs require a custom `queryFn`.
-- **Seller Product Management:** Categories can be restricted by `storeTypes`, ensuring sellers only see relevant categories. File uploads (images, videos) from computer are supported via `MediaUploadInput`, integrating with Cloudinary.
-- **Routing:** Public seller store routes are `sellers/:id` to avoid conflicts with authenticated seller dashboard routes (`seller/*`).
-- **Real-Time Updates:** Cross-session Socket.IO notification system for real-time updates, e.g., automatic store query refetch and cache invalidation when a seller is approved.
+The frontend is built with React 18 (Vite, TypeScript), utilizing Wouter for routing and TanStack Query for server state management. UI components are developed using Shadcn UI (Radix UI primitives) and Tailwind CSS, adhering to a mobile-first, responsive design with a green color scheme. Key features include a persistent shopping cart, product browsing with advanced filters, real-time order tracking via Socket.IO, multi-language support with automatic currency switching, QR code generation for orders, and role-based dashboards (super_admin, regular admin). It supports dynamic components for multi-vendor functionality, an admin branding system, a reusable media upload system integrated with Cloudinary, and comprehensive approval workflows for sellers and riders. Product categories can be restricted by `storeTypes` for sellers, and public seller store routes are `sellers/:id` to distinguish from authenticated seller dashboard routes.
 
 ### Backend Architecture
 
-The backend is developed with Express.js and integrates a native HTTP server with Socket.IO for WebSocket communication. Authentication is JWT-based, utilizing bcrypt for password hashing and role-based access control. PostgreSQL (Neon serverless) is the primary database, managed by Drizzle ORM for type-safe operations and Drizzle Kit for migrations. Cloudinary handles media uploads. The API is RESTful, employing Zod for request validation and Multer for file uploads.
-
-**Production Security Features:**
-- Helmet for security headers.
-- Role-aware rate limiting.
-- Structured error logging.
-- HMAC signature verification for Paystack webhooks.
+The backend is an Express.js application integrating a native HTTP server with Socket.IO for real-time WebSocket communication. Authentication is JWT-based with bcrypt for password hashing and implements role-based access control. PostgreSQL (Neon serverless) serves as the primary database, managed by Drizzle ORM for type-safe operations and Drizzle Kit for migrations. Cloudinary handles all media uploads. The API is RESTful, employing Zod for request validation and Multer for file uploads. Production security features include Helmet for security headers, role-aware rate limiting, structured error logging, and HMAC signature verification for Paystack webhooks.
 
 **Payment Method Support:**
-- **Card Payments**: Visa, Mastercard via Paystack.
-- **Bank Transfers**: Direct bank transfers via Paystack.
-- **Mobile Money**: MTN Mobile Money, Vodafone/Telecel Cash, AirtelTigo Money for buyers. Seller payouts can be to bank accounts (via Paystack subaccounts) or mobile money (via manual transfers).
-- **Cryptocurrency** (Planned): Documentation exists for Bitcoin, USDT, and other crypto payments, with recommended gateways like NOWPayments and BitAfrika.
+- Card Payments (Visa, Mastercard) via Paystack.
+- Bank Transfers via Paystack.
+- Mobile Money (MTN, Vodafone/Telecel, AirtelTigo) for buyers, with seller payouts to bank accounts or mobile money.
+- Cryptocurrency support (e.g., Bitcoin, USDT) is planned, with NOWPayments and BitAfrika as recommended gateways.
 
 **Multi-Vendor Financial System:**
-- Commission tracking with configurable platform rates.
-- Seller payout management with multiple payment methods.
-- Platform earnings tracking and reporting.
-- Automatic revenue splitting.
+Includes commission tracking with configurable platform rates, seller payout management across various methods, platform earnings tracking and reporting, and automatic revenue splitting.
 
-The architecture includes an application verification system with Ghana Card verification for sellers and riders, and secure API endpoints for managing footer pages with CRUD operations and role-based access.
+The system also features an application verification system with Ghana Card verification for sellers and riders, and secure API endpoints for managing footer pages with CRUD operations and role-based access.
 
 ### Database Schema Design
 
-The schema includes tables for Users, Products, Orders, Reviews, Delivery Zones, Transactions, Product Variants, Cart, Stores, Chat Messages, Hero Banners, and Footer Pages. Key features supported are commission tracking, seller payouts, platform earnings, and application verification details such as `profileImage`, `ghanaCardFront`, `ghanaCardBack`, and `isApproved` flags. Performance is optimized with indexes on key fields.
+The database schema includes tables for Users, Products, Orders, Reviews, Delivery Zones, Transactions, Product Variants, Cart, Stores, Chat Messages, Hero Banners, and Footer Pages. It supports commission tracking, seller payouts, platform earnings, and application verification details such as `profileImage`, `ghanaCardFront`, `ghanaCardBack`, and `isApproved` flags. Performance is optimized with indexes on key fields.
 
 ## External Dependencies
 
