@@ -10,6 +10,12 @@ Preferred communication style: Simple, everyday language.
 
 ## Recent Changes
 
+**November 8, 2025 - Critical Navigation Fix: Product Creation**
+- **Fixed broken seller product creation flow**: Changed navigation from non-existent `/seller/add-product` to correct `/seller/products` route
+- **Affected buttons**: "Add New Product" (main action) and "Add Your First Product" (empty state) in SellerDashboardConnected
+- **Root cause**: Routing mismatch - sellers use dialog-based product creation in SellerProducts page, not a dedicated route
+- **Validation**: Confirmed no other broken navigation links exist, server running successfully
+
 **November 8, 2025 - Mobile-First App Redesign**
 - **Complete mobile UI overhaul**: Transformed entire app with dark theme, orange primary color (#ff6b35), matching design mockups
 - **New mobile components**: BottomNavigation (with cart badge), MobileHeader, CategoryChips, ProductGridMobile
