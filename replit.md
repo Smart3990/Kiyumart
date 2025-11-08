@@ -118,6 +118,73 @@ onClick={() => {
 **Files Modified:**
 - `client/src/pages/ChatPageConnected.tsx` - Removed manual refetch call
 
+### WebRTC Voice and Video Calling Implementation (November 8, 2025)
+
+**Full-Featured Calling System Implemented:**
+
+✅ **CallInterface Component (NEW):**
+- Full-screen call overlay with video display
+- Picture-in-picture local video (mirrored for natural appearance)
+- Audio-only mode with avatar display
+- Call state indicators: calling, incoming, connected, ended
+- Interactive controls: mute, video toggle, accept, reject, end call
+- Fullscreen toggle for video calls
+- Responsive design with gradient overlays
+- All UI elements properly test-id tagged
+
+✅ **WebRTC Signaling (Backend - server/routes.ts):**
+- Socket.IO events: `call-offer`, `call-answer`, `ice-candidate`, `call-rejected`, `call-ended`
+- Complete signaling flow for WebRTC peer connections
+- ICE candidate exchange for NAT traversal
+
+✅ **ChatPageConnected Integration:**
+- Full WebRTC implementation with RTCPeerConnection
+- Media stream management (local/remote audio and video)
+- Call state management with proper cleanup
+- Socket event listeners for signaling
+- Call controls: initiate, accept, reject, end calls
+- Mute/unmute microphone, enable/disable camera
+- Toast notifications for incoming calls
+
+**Critical Technical Details:**
+
+✅ **ICE Candidate Routing Fix:**
+- Uses `remotePeerIdRef` (ref, not state) for ICE candidate routing
+- Ensures ICE candidates always route correctly throughout call lifecycle
+- Prevents closure timing issues with React state updates
+- Ref set immediately before peer connection creation
+
+✅ **STUN Servers:**
+- Google's public STUN servers for NAT traversal
+- Works on most networks without additional infrastructure
+
+**Technical Flow:**
+1. Caller initiates call (audio or video)
+2. `remotePeerIdRef.current` set immediately with receiver's ID
+3. Media stream requested (camera/microphone permissions)
+4. RTCPeerConnection created with ICE handler using ref
+5. SDP offer created and sent via Socket.IO
+6. Receiver accepts → creates answer, sets `remotePeerIdRef.current`
+7. ICE candidates exchanged using ref for routing
+8. WebRTC connection established, media flows both ways
+
+**Benefits:**
+- Zero external dependencies (no Twilio/Agora costs)
+- Native WebRTC APIs
+- Full-featured (audio, video, controls)
+- Proper resource cleanup
+- Error handling and fallbacks
+- Connection state monitoring
+
+**Known Limitations:**
+- STUN-only configuration (may fail on restrictive corporate firewalls)
+- Future enhancement: Add TURN servers for 100% connectivity
+
+**Files Modified:**
+1. `client/src/components/CallInterface.tsx` - NEW component
+2. `server/routes.ts` - Added WebRTC signaling events
+3. `client/src/pages/ChatPageConnected.tsx` - Integrated calling functionality
+
 ### Missing Chat Features (Documented, Not Implemented)
 
 ⚠️ **Message Attachments:**
@@ -125,12 +192,6 @@ onClick={() => {
 - No backend storage or file upload handlers
 - No Cloudinary integration for chat media
 - **Impact:** Users cannot send images/files in messages
-
-⚠️ **Voice/Video Calls:**
-- Phone icon exists in chat interface
-- No WebRTC implementation
-- No signaling server setup
-- **Impact:** Call feature non-functional
 
 ## System Architecture
 
