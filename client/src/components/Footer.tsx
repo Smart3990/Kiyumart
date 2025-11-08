@@ -43,19 +43,27 @@ export default function Footer() {
   const [match, params] = useRoute("/seller/:id");
   const sellerId = match ? params?.id : null;
   
+  // Exclude seller dashboard routes from store fetching
+  const sellerDashboardRoutes = [
+    "orders", "products", "deliveries", "payment-setup", "messages",
+    "notifications", "analytics", "settings", "media-library", "coupons"
+  ];
+  const isSellerDashboardRoute = sellerId && sellerDashboardRoutes.includes(sellerId);
+  const validSellerId = sellerId && !isSellerDashboardRoute ? sellerId : null;
+  
   const { data: settings } = useQuery<PlatformSettings>({
     queryKey: ["/api/settings"],
   });
   
-  // Fetch seller's store information if viewing a seller store page
+  // Fetch seller's store information if viewing a seller store page (not dashboard)
   const { data: sellerStore } = useQuery<Store>({
-    queryKey: ["/api/stores/by-seller", sellerId],
+    queryKey: ["/api/stores/by-seller", validSellerId],
     queryFn: async () => {
-      const res = await fetch(`/api/stores/by-seller/${sellerId}`);
+      const res = await fetch(`/api/stores/by-seller/${validSellerId}`);
       if (!res.ok) throw new Error("Failed to fetch store");
       return res.json();
     },
-    enabled: !!sellerId,
+    enabled: !!validSellerId,
   });
   
   // Fetch products to get categories dynamically (filtered by primary store in single-store mode)
