@@ -28,6 +28,17 @@ The backend is developed with Express.js and integrates a native HTTP server wit
 - Structured error logging.
 - HMAC signature verification for Paystack webhooks.
 
+**Payment Method Support** (November 2025):
+- **Card Payments**: Visa, Mastercard via Paystack
+- **Bank Transfers**: Direct bank transfers via Paystack
+- **Mobile Money** (NEW): 
+  - Buyer payments: MTN Mobile Money, Vodafone/Telecel Cash, AirtelTigo Money
+  - Seller payouts: Bank accounts (via Paystack subaccounts) or mobile money (via manual transfers)
+  - All Ghana mobile money networks supported
+- **Cryptocurrency** (Planned): Documentation created for Bitcoin, USDT, and other crypto payments
+  - Recommended gateways: NOWPayments (global), BitAfrika (Ghana + mobile money integration)
+  - See `docs/cryptocurrency-payment-integration.md` for implementation guide
+
 **Multi-Vendor Financial System:**
 - Commission tracking with configurable platform rates.
 - Seller payout management with multiple payment methods.
