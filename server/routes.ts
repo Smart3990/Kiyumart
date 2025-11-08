@@ -3301,6 +3301,36 @@ export async function registerRoutes(app: Express): Promise<Server> {
     socket.on("stop_typing", ({ receiverId }) => {
       io.to(receiverId).emit("user_stop_typing", socket.id);
     });
+
+    // WebRTC Call Signaling Events
+    socket.on("call-offer", ({ receiverId, offer, callType, callerId, callerName }) => {
+      console.log(`Call offer from ${callerId} to ${receiverId} (${callType})`);
+      io.to(receiverId).emit("call-incoming", { 
+        callerId, 
+        callerName, 
+        offer, 
+        callType 
+      });
+    });
+
+    socket.on("call-answer", ({ callerId, answer }) => {
+      console.log(`Call answer sent to ${callerId}`);
+      io.to(callerId).emit("call-answered", { answer });
+    });
+
+    socket.on("ice-candidate", ({ targetId, candidate }) => {
+      io.to(targetId).emit("ice-candidate", { candidate });
+    });
+
+    socket.on("call-rejected", ({ callerId }) => {
+      console.log(`Call rejected, notifying ${callerId}`);
+      io.to(callerId).emit("call-rejected");
+    });
+
+    socket.on("call-ended", ({ targetId }) => {
+      console.log(`Call ended, notifying ${targetId}`);
+      io.to(targetId).emit("call-ended");
+    });
   });
 
   // ============ Customer Support Routes ============
