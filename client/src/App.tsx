@@ -85,6 +85,9 @@ import AdminProductEdit from "@/pages/AdminProductEdit";
 import AdminProductCreate from "@/pages/AdminProductCreate";
 import SuperAdminPermissions from "@/pages/SuperAdminPermissions";
 import DynamicPage from "@/pages/DynamicPage";
+import TrackOrder from "@/pages/TrackOrder";
+import EReceipt from "@/pages/EReceipt";
+import MobileNotifications from "@/pages/MobileNotifications";
 
 function Router() {
   // Apply branding colors from database settings
@@ -110,6 +113,8 @@ function Router() {
       <Route path="/settings" component={Settings} />
       <Route path="/change-password" component={ChangePassword} />
       <Route path="/wishlist" component={Wishlist} />
+      <Route path="/orders/:id/receipt" component={EReceipt} />
+      <Route path="/orders/:id" component={TrackOrder} />
       <Route path="/orders" component={Orders} />
       <Route path="/support" component={CustomerSupport} />
       <Route path="/become-seller" component={BecomeSellerPage} />

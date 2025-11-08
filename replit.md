@@ -10,6 +10,16 @@ Preferred communication style: Simple, everyday language.
 
 ## Recent Changes
 
+**November 8, 2025 - Mobile-First App Redesign**
+- **Complete mobile UI overhaul**: Transformed entire app with dark theme, orange primary color (#ff6b35), matching design mockups
+- **New mobile components**: BottomNavigation (with cart badge), MobileHeader, CategoryChips, ProductGridMobile
+- **Mobile-optimized pages**: HomeMobile, TrackOrder, EReceipt, MobileNotifications, MobileProductDetail
+- **Responsive routing**: useIsMobile hook detects screen size, automatically serves mobile/desktop versions
+- **PWA optimization**: Added theme-color, apple-mobile-web-app meta tags for native app feel
+- **Timeline stepper**: Order tracking with visual delivery progress (5 stages)
+- **QR code receipts**: E-receipts with scannable QR codes, payment details, export options
+- **Bottom navigation**: Fixed navigation bar with Home, Cart (badge), Orders, Profile
+
 **November 8, 2025 - Product Creation & Image Gallery Updates**
 - **Fixed critical product creation failure**: Switched from FormData to JSON payload using `apiRequest` with native arrays
 - **Image requirements updated**: Maximum 5 images (down from 10), minimum changed from 1 to 0 (optional)
