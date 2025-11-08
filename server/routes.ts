@@ -2756,6 +2756,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         email: req.user!.email,
         amount: Math.round(parseFloat(order.total) * 100),
         currency: order.currency,
+        channels: ["card", "bank_transfer", "mobile_money"], // Enable all payment channels
         callback_url: callbackUrl,
         metadata: {
           orderId: order.id,
@@ -4066,39 +4067,56 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       const { payoutType, payoutDetails } = req.body;
 
-      // Validate bank account payout (only supported method currently)
-      if (payoutType !== "bank_account") {
+      // Validate payout details based on type
+      if (payoutType === "bank_account") {
+        if (!payoutDetails.bankCode || !payoutDetails.accountNumber) {
+          return res.status(400).json({ 
+            error: "Bank code and account number are required for bank account payouts" 
+          });
+        }
+      } else if (payoutType === "mobile_money") {
+        if (!payoutDetails.provider || !payoutDetails.mobileNumber) {
+          return res.status(400).json({ 
+            error: "Provider and mobile number are required for mobile money payouts" 
+          });
+        }
+      } else {
         return res.status(400).json({ 
-          error: "Only bank account payouts are currently supported. Mobile money support coming soon." 
+          error: "Invalid payout type. Supported types: bank_account, mobile_money" 
         });
       }
 
-      if (!payoutDetails.bankCode || !payoutDetails.accountNumber) {
-        return res.status(400).json({ 
-          error: "Bank code and account number are required for bank account payouts" 
-        });
-      }
-
-      // Create Paystack subaccount
+      // Get platform settings for commission rate
       const settings = await storage.getPlatformSettings();
       const commissionRate = parseFloat(settings.defaultCommissionRate?.toString() || "10");
+      
+      let paystackIdentifier: string;
 
-      const seller = await storage.getUser(store.primarySellerId!);
-      const subaccountData = {
-        business_name: store.name,
-        bank_code: payoutDetails.bankCode || "",
-        account_number: payoutDetails.accountNumber || payoutDetails.mobileNumber || "",
-        percentage_charge: commissionRate,
-        description: `Seller: ${store.name}`,
-        primary_contact_email: req.user!.email,
-        primary_contact_name: seller?.name || req.user!.email,
-      };
+      // Bank accounts use Paystack subaccounts for automatic split payments
+      if (payoutType === "bank_account") {
+        const seller = await storage.getUser(store.primarySellerId!);
+        const subaccountData = {
+          business_name: store.name,
+          bank_code: payoutDetails.bankCode,
+          account_number: payoutDetails.accountNumber,
+          percentage_charge: commissionRate,
+          description: `Seller: ${store.name}`,
+          primary_contact_email: req.user!.email,
+          primary_contact_name: seller?.name || req.user!.email,
+        };
 
-      const paystackResponse = await paystackService.createSubaccount(subaccountData);
+        const paystackResponse = await paystackService.createSubaccount(subaccountData);
+        paystackIdentifier = paystackResponse.data.subaccount_code;
+      } else {
+        // Mobile money payouts work differently (no subaccounts)
+        // Store mobile money details for manual transfer processing
+        // Format: mobile_{provider}_{number} for tracking
+        paystackIdentifier = `mobile_${payoutDetails.provider}_${payoutDetails.mobileNumber}`;
+      }
 
-      // Update store with Paystack details
+      // Update store with payment configuration
       const updatedStore = await storage.updateStore(req.params.storeId, {
-        paystackSubaccountId: paystackResponse.data.subaccount_code,
+        paystackSubaccountId: paystackIdentifier,
         payoutType: payoutType,
         payoutDetails: payoutDetails,
         isPayoutVerified: true,
@@ -4106,7 +4124,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       res.json({
         success: true,
-        subaccount_code: paystackResponse.data.subaccount_code,
+        identifier: paystackIdentifier,
         store: updatedStore
       });
     } catch (error: any) {

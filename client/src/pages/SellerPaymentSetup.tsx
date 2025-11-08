@@ -12,15 +12,31 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Loader2, DollarSign, CheckCircle2, ArrowLeft } from "lucide-react";
+import { Loader2, DollarSign, CheckCircle2, ArrowLeft, Smartphone, Building2 } from "lucide-react";
 
 const paymentSetupSchema = z.object({
-  payoutType: z.enum(["bank_account"]),
-  bankCode: z.string().min(1, "Bank is required"),
-  accountNumber: z.string().min(1, "Account number is required"),
-  accountName: z.string().min(1, "Account name is required"),
-});
+  payoutType: z.enum(["bank_account", "mobile_money"]),
+  bankCode: z.string().optional(),
+  accountNumber: z.string().optional(),
+  accountName: z.string().optional(),
+  mobileProvider: z.string().optional(),
+  mobileNumber: z.string().optional(),
+}).refine(
+  (data) => {
+    if (data.payoutType === "bank_account") {
+      return !!data.bankCode && !!data.accountNumber && !!data.accountName;
+    }
+    if (data.payoutType === "mobile_money") {
+      return !!data.mobileProvider && !!data.mobileNumber;
+    }
+    return true;
+  },
+  {
+    message: "Please fill in all required fields for your selected payout method",
+  }
+);
 
 type PaymentSetupFormData = z.infer<typeof paymentSetupSchema>;
 
@@ -41,6 +57,7 @@ export default function SellerPaymentSetup() {
   const [, navigate] = useLocation();
   const { user, isAuthenticated, isLoading: authLoading } = useAuth();
   const { toast } = useToast();
+  const [payoutType, setPayoutType] = useState<"bank_account" | "mobile_money">("bank_account");
   const [verifying, setVerifying] = useState(false);
   const [verified, setVerified] = useState(false);
 
@@ -57,6 +74,7 @@ export default function SellerPaymentSetup() {
 
   const { data: banks = [] } = useQuery<Bank[]>({
     queryKey: ["/api/paystack/banks"],
+    enabled: payoutType === "bank_account",
   });
 
   const form = useForm<PaymentSetupFormData>({
@@ -66,6 +84,8 @@ export default function SellerPaymentSetup() {
       bankCode: "",
       accountNumber: "",
       accountName: "",
+      mobileProvider: "",
+      mobileNumber: "",
     },
   });
 
@@ -99,15 +119,24 @@ export default function SellerPaymentSetup() {
         throw new Error("Store not found");
       }
 
-      const payoutDetails = {
-        bankCode: data.bankCode,
-        accountNumber: data.accountNumber,
-        accountName: data.accountName,
-        bankName: banks.find(b => b.code === data.bankCode)?.name,
-      };
+      let payoutDetails: any = {};
+
+      if (data.payoutType === "bank_account") {
+        payoutDetails = {
+          bankCode: data.bankCode,
+          accountNumber: data.accountNumber,
+          accountName: data.accountName,
+          bankName: banks.find(b => b.code === data.bankCode)?.name,
+        };
+      } else {
+        payoutDetails = {
+          provider: data.mobileProvider,
+          mobileNumber: data.mobileNumber,
+        };
+      }
 
       const res = await apiRequest("POST", `/api/stores/${store.id}/setup-paystack`, {
-        payoutType: "bank_account",
+        payoutType: data.payoutType,
         payoutDetails,
       });
       return res.json();
@@ -148,7 +177,7 @@ export default function SellerPaymentSetup() {
   };
 
   const onSubmit = (data: PaymentSetupFormData) => {
-    if (!verified) {
+    if (data.payoutType === "bank_account" && !verified) {
       toast({
         title: "Account Not Verified",
         description: "Please verify your bank account before submitting",
@@ -239,73 +268,146 @@ export default function SellerPaymentSetup() {
 
           <Card>
             <CardHeader>
-              <CardTitle>Bank Account Details</CardTitle>
+              <CardTitle>Choose Payment Method</CardTitle>
               <CardDescription>
-                Enter your bank account information to receive payments
+                Select how you want to receive payments for your sales
               </CardDescription>
             </CardHeader>
             <CardContent>
               <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-                <div className="space-y-2">
-                  <Label htmlFor="bankCode">Select Bank</Label>
-                  <Select
+                <div className="space-y-3">
+                  <Label>Payment Method</Label>
+                  <RadioGroup
+                    value={payoutType}
                     onValueChange={(value) => {
-                      form.setValue("bankCode", value);
+                      setPayoutType(value as "bank_account" | "mobile_money");
+                      form.setValue("payoutType", value as "bank_account" | "mobile_money");
                       setVerified(false);
                     }}
+                    data-testid="radio-payout-type"
                   >
-                    <SelectTrigger data-testid="select-bank">
-                      <SelectValue placeholder="Choose your bank" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {banks.map((bank) => (
-                        <SelectItem key={bank.code} value={bank.code} data-testid={`bank-option-${bank.code}`}>
-                          {bank.name}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                    <div className="flex items-center space-x-2 p-4 border rounded-lg cursor-pointer hover:bg-accent">
+                      <RadioGroupItem value="bank_account" id="bank" data-testid="radio-bank-account" />
+                      <Label htmlFor="bank" className="flex items-center gap-2 font-normal cursor-pointer flex-1">
+                        <Building2 className="h-5 w-5 text-muted-foreground" />
+                        <div>
+                          <div className="font-medium">Bank Account</div>
+                          <div className="text-sm text-muted-foreground">Receive payments to your bank account</div>
+                        </div>
+                      </Label>
+                    </div>
+                    <div className="flex items-center space-x-2 p-4 border rounded-lg cursor-pointer hover:bg-accent">
+                      <RadioGroupItem value="mobile_money" id="mobile" data-testid="radio-mobile-money" />
+                      <Label htmlFor="mobile" className="flex items-center gap-2 font-normal cursor-pointer flex-1">
+                        <Smartphone className="h-5 w-5 text-muted-foreground" />
+                        <div>
+                          <div className="font-medium">Mobile Money</div>
+                          <div className="text-sm text-muted-foreground">MTN, Vodafone/Telecel, AirtelTigo</div>
+                        </div>
+                      </Label>
+                    </div>
+                  </RadioGroup>
                 </div>
 
-                <div className="space-y-2">
-                  <Label htmlFor="accountNumber">Account Number</Label>
-                  <div className="flex gap-2">
-                    <Input
-                      id="accountNumber"
-                      {...form.register("accountNumber")}
-                      placeholder="0123456789"
-                      data-testid="input-account-number"
-                      onChange={() => setVerified(false)}
-                    />
-                    <Button
-                      type="button"
-                      onClick={handleVerify}
-                      disabled={verifying || !form.getValues("accountNumber") || !form.getValues("bankCode")}
-                      data-testid="button-verify-account"
-                    >
-                      {verifying ? <Loader2 className="h-4 w-4 animate-spin" /> : "Verify"}
-                    </Button>
-                  </div>
-                </div>
+                {payoutType === "bank_account" ? (
+                  <>
+                    <div className="space-y-2">
+                      <Label htmlFor="bankCode">Select Bank</Label>
+                      <Select
+                        onValueChange={(value) => {
+                          form.setValue("bankCode", value);
+                          setVerified(false);
+                        }}
+                      >
+                        <SelectTrigger data-testid="select-bank">
+                          <SelectValue placeholder="Choose your bank" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {banks.map((bank) => (
+                            <SelectItem key={bank.code} value={bank.code} data-testid={`bank-option-${bank.code}`}>
+                              {bank.name}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
 
-                {verified && form.getValues("accountName") && (
-                  <div className="p-4 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-md">
-                    <div className="flex items-center gap-2">
-                      <CheckCircle2 className="h-5 w-5 text-green-600" />
-                      <div>
-                        <p className="font-medium text-green-900 dark:text-green-100">Account Verified</p>
-                        <p className="text-sm text-green-700 dark:text-green-300" data-testid="text-account-name">
-                          {form.getValues("accountName")}
-                        </p>
+                    <div className="space-y-2">
+                      <Label htmlFor="accountNumber">Account Number</Label>
+                      <div className="flex gap-2">
+                        <Input
+                          id="accountNumber"
+                          {...form.register("accountNumber")}
+                          placeholder="0123456789"
+                          data-testid="input-account-number"
+                          onChange={() => setVerified(false)}
+                        />
+                        <Button
+                          type="button"
+                          onClick={handleVerify}
+                          disabled={verifying || !form.getValues("accountNumber") || !form.getValues("bankCode")}
+                          data-testid="button-verify-account"
+                        >
+                          {verifying ? <Loader2 className="h-4 w-4 animate-spin" /> : "Verify"}
+                        </Button>
                       </div>
                     </div>
-                  </div>
+
+                    {verified && form.getValues("accountName") && (
+                      <div className="p-4 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-md">
+                        <div className="flex items-center gap-2">
+                          <CheckCircle2 className="h-5 w-5 text-green-600" />
+                          <div>
+                            <p className="font-medium text-green-900 dark:text-green-100">Account Verified</p>
+                            <p className="text-sm text-green-700 dark:text-green-300" data-testid="text-account-name">
+                              {form.getValues("accountName")}
+                            </p>
+                          </div>
+                        </div>
+                      </div>
+                    )}
+                  </>
+                ) : (
+                  <>
+                    <div className="space-y-2">
+                      <Label htmlFor="mobileProvider">Mobile Money Provider</Label>
+                      <Select onValueChange={(value) => form.setValue("mobileProvider", value)}>
+                        <SelectTrigger data-testid="select-provider">
+                          <SelectValue placeholder="Choose provider" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="mtn" data-testid="provider-mtn">
+                            MTN Mobile Money
+                          </SelectItem>
+                          <SelectItem value="vod" data-testid="provider-vodafone">
+                            Vodafone Cash / Telecel
+                          </SelectItem>
+                          <SelectItem value="atm" data-testid="provider-airteltigo">
+                            AirtelTigo Money
+                          </SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label htmlFor="mobileNumber">Mobile Number</Label>
+                      <Input
+                        id="mobileNumber"
+                        {...form.register("mobileNumber")}
+                        placeholder="0XXXXXXXXX"
+                        data-testid="input-mobile-number"
+                      />
+                      <p className="text-xs text-muted-foreground">
+                        Enter the mobile number registered for mobile money
+                      </p>
+                    </div>
+                  </>
                 )}
 
                 <div className="flex gap-3 pt-4">
                   <Button
                     type="submit"
-                    disabled={setupPaymentMutation.isPending || !verified}
+                    disabled={setupPaymentMutation.isPending || (payoutType === "bank_account" && !verified)}
                     data-testid="button-submit-payment-setup"
                     className="gap-2"
                   >
