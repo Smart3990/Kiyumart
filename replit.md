@@ -119,6 +119,87 @@ Preferred communication style: Simple, everyday language.
 - Cross-session updates require real-time communication (Socket.IO, SSE, or polling)
 - Always use shared socket connections to preserve authentication and prevent resource leaks
 
+### Product Management Bug Fixes (November 8, 2025)
+
+**Critical Product Creation/Update Issues Resolved:**
+
+**Problem #1: Product Creation Failures**
+- Root cause: Frontend-backend field name mismatch with database schema
+- Product creation form sent `categoryId`, `stockQuantity`, `videoUrl` fields
+- Database schema expects `category` (text), `stock` (integer), `video` (text)
+- Zod validation errors prevented successful product creation
+
+**Problem #2: Multi-Image Data Loss**
+- Product updates overwrote entire images array when editing
+- Changing primary image deleted all secondary product images
+- Tags and other fields caused image array to be reset
+
+**Problem #3: Media Library Crashes**
+- SellerMediaLibrary page crashed with `.map()` error
+- Backend API sometimes returned non-array responses
+- Missing array validation caused runtime errors
+
+**Solutions Implemented:**
+
+✅ **Schema Alignment (SellerProducts.tsx):**
+- Updated Product interface to match database exactly:
+  - `category: string` (category name, not ID)
+  - `stock: number` (not `stockQuantity`)
+  - `video: string | null` (not `videoUrl`)
+  - Removed `inStock` (derived from `stock > 0`)
+- Form submission sends schema-aligned field names
+- Form default values correctly read database fields
+
+✅ **Multi-Image Preservation (SellerProducts.tsx):**
+```typescript
+// Replace primary image but keep secondary images
+let images = product?.images || [];
+if (data.imageUrl && product && data.imageUrl !== product.images[0]) {
+  images = [data.imageUrl, ...product.images.slice(1)];
+}
+```
+- Update mutation always sends complete `images` array
+- Primary image changes preserve secondary images
+- No data loss during edits
+
+✅ **Media Library Safety (SellerMediaLibrary.tsx):**
+```typescript
+return Array.isArray(data) ? data : [];
+```
+- Added array validation to prevent crashes
+- Graceful fallback when API returns non-array
+
+**Technical Impact:**
+- Product creation now works without Zod validation errors
+- Multi-image products retain all images during updates
+- Media library handles edge cases safely
+- Complete data flow validated: Form → FormData → Backend → Database
+
+**Known Remaining Issues:**
+
+⚠️ **ChatPageConnected Infinite Loop:**
+- "Maximum update depth exceeded" error in browser console
+- Likely caused by useEffect dependencies triggering re-renders
+- Requires investigation of Socket.IO event listeners and state updates
+- **Status:** Not yet investigated
+
+⚠️ **Missing Chat Features (Documented, Not Implemented):**
+1. **Message Attachments:**
+   - UI elements exist (paperclip icon, attachment button)
+   - No backend storage or file upload handlers
+   - No Cloudinary integration for chat media
+   - **Impact:** Users cannot send images/files in messages
+
+2. **Voice/Video Calls:**
+   - Phone icon exists in chat interface
+   - No WebRTC implementation
+   - No signaling server setup
+   - **Impact:** Call feature non-functional
+
+**Files Modified:**
+- `client/src/pages/SellerProducts.tsx` - Schema alignment and image preservation
+- `client/src/pages/SellerMediaLibrary.tsx` - Array validation safety
+
 ## System Architecture
 
 ### Frontend Architecture
