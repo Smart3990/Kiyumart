@@ -8,6 +8,15 @@ KiyuMart is an e-commerce platform for modest Islamic women's fashion, designed 
 
 Preferred communication style: Simple, everyday language.
 
+## Recent Changes
+
+**November 8, 2025 - Product Creation & Image Gallery Updates**
+- **Fixed critical product creation failure**: Switched from FormData to JSON payload using `apiRequest` with native arrays
+- **Image requirements updated**: Maximum 5 images (down from 10), minimum changed from 1 to 0 (optional)
+- **Photography guidance added**: "Capture product from all angles - front, back, sides, and detailed shots" displayed in gallery
+- **Required fields added**: Product creation now includes `sellerId` (user.id) and `storeId` (store?.id or null) for multi-vendor support
+- **ProductGallery component enhancements**: Description prop, updated empty state with angle instructions, perfect image counter display
+
 ## System Architecture
 
 ### Frontend Architecture
