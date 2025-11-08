@@ -21,6 +21,7 @@ import {
   ShoppingCart,
   Shield,
   Home,
+  DollarSign,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useQuery } from "@tanstack/react-query";
@@ -86,7 +87,8 @@ const menuItems: Record<string, MenuItem[]> = {
     { icon: ShoppingBag, label: "Orders", id: "orders" },
     { icon: Tag, label: "Coupons", id: "coupons" },
     { icon: Truck, label: "Deliveries", id: "deliveries" },
-    { icon: ShoppingCart, label: "Shopping Cart", id: "my-cart", separator: true },
+    { icon: DollarSign, label: "Payment Setup", id: "payment-setup", separator: true },
+    { icon: ShoppingCart, label: "Shopping Cart", id: "my-cart" },
     { icon: ShoppingBag, label: "My Purchases", id: "my-purchases" },
     { icon: Heart, label: "My Wishlist", id: "my-wishlist" },
     { icon: Bell, label: "Notifications", id: "notifications", badge: "dynamic", separator: true },

@@ -2751,6 +2751,47 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const controller = new AbortController();
       const timeout = setTimeout(() => controller.abort(), 15000); // 15 second timeout
       
+      // Prepare payment payload
+      const paymentPayload: any = {
+        email: req.user!.email,
+        amount: Math.round(parseFloat(order.total) * 100),
+        currency: order.currency,
+        callback_url: callbackUrl,
+        metadata: {
+          orderId: order.id,
+          userId: req.user!.id,
+          orderNumber: order.orderNumber,
+        },
+      };
+
+      // Add split payment for multi-vendor if order has a store
+      if (order.storeId) {
+        try {
+          const store = await storage.getStore(order.storeId);
+          if (store && store.paystackSubaccountId && store.isPayoutVerified) {
+            // Get commission rate from platform settings
+            const commissionRate = parseFloat(settings.defaultCommissionRate?.toString() || "10");
+            
+            // Calculate seller's share (amount is in kobo/pesewas, so percentage calculation is the same)
+            const sellerSharePercentage = 100 - commissionRate;
+            
+            // Add split payment configuration
+            paymentPayload.subaccount = store.paystackSubaccountId;
+            paymentPayload.transaction_charge = commissionRate * 100; // Commission in kobo/pesewas
+            paymentPayload.bearer = "account"; // Platform bears Paystack fees
+            
+            // Add split info to metadata for tracking
+            paymentPayload.metadata.storeId = store.id;
+            paymentPayload.metadata.storeName = store.name;
+            paymentPayload.metadata.commissionRate = commissionRate;
+            paymentPayload.metadata.splitEnabled = true;
+          }
+        } catch (storeError) {
+          console.warn("Could not fetch store for split payment:", storeError);
+          // Continue with regular payment if store fetch fails
+        }
+      }
+      
       try {
         const response = await fetch("https://api.paystack.co/transaction/initialize", {
           method: "POST",
@@ -2758,17 +2799,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
             Authorization: `Bearer ${settings.paystackSecretKey}`,
             "Content-Type": "application/json",
           },
-          body: JSON.stringify({
-            email: req.user!.email,
-            amount: Math.round(parseFloat(order.total) * 100),
-            currency: order.currency,
-            callback_url: callbackUrl,
-            metadata: {
-              orderId: order.id,
-              userId: req.user!.id,
-              orderNumber: order.orderNumber,
-            },
-          }),
+          body: JSON.stringify(paymentPayload),
           signal: controller.signal,
         });
         

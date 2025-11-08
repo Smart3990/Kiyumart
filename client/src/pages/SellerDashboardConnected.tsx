@@ -138,6 +138,9 @@ export default function SellerDashboardConnected() {
       case "deliveries":
         navigate("/seller/deliveries");
         break;
+      case "payment-setup":
+        navigate("/seller/payment-setup");
+        break;
       case "messages":
         navigate("/seller/messages");
         break;
@@ -149,6 +152,11 @@ export default function SellerDashboardConnected() {
         break;
     }
   }, [activeItem, navigate]);
+
+  const { data: store } = useQuery<{ paystackSubaccountId?: string; isPayoutVerified?: boolean }>({
+    queryKey: ["/api/stores/my-store"],
+    enabled: isAuthenticated && user?.role === "seller",
+  });
 
   const { data: analytics, isLoading: analyticsLoading } = useQuery<Analytics>({
     queryKey: ["/api/analytics"],
@@ -366,6 +374,31 @@ export default function SellerDashboardConnected() {
 
         <main className="flex-1 overflow-y-auto p-6">
           <div className="max-w-7xl mx-auto space-y-6">
+            {!store?.paystackSubaccountId && !store?.isPayoutVerified && (
+              <div className="bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-lg p-4">
+                <div className="flex items-start gap-3">
+                  <AlertCircle className="h-5 w-5 text-amber-600 dark:text-amber-400 flex-shrink-0 mt-0.5" />
+                  <div className="flex-1">
+                    <h3 className="font-semibold text-amber-900 dark:text-amber-100 mb-1">
+                      Payment Setup Required
+                    </h3>
+                    <p className="text-sm text-amber-800 dark:text-amber-200 mb-3">
+                      Set up your bank account to receive payments from your sales. This is required to start receiving earnings.
+                    </p>
+                    <Button 
+                      size="sm"
+                      onClick={() => navigate("/seller/payment-setup")}
+                      data-testid="button-setup-payment"
+                      className="bg-amber-600 hover:bg-amber-700 text-white"
+                    >
+                      <DollarSign className="h-4 w-4 mr-1" />
+                      Set Up Payment Now
+                    </Button>
+                  </div>
+                </div>
+              </div>
+            )}
+            
             {activeItem === "dashboard" && (
               <>
                 {analyticsLoading ? (
