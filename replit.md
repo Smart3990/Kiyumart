@@ -8,6 +8,130 @@ KiyuMart is an e-commerce platform for modest Islamic women's fashion, supportin
 
 Preferred communication style: Simple, everyday language.
 
+## Recent Changes
+
+### Product Management Bug Fixes (November 8, 2025)
+
+**Critical Product Creation/Update Issues Resolved:**
+
+**Problem #1: Product Creation Failures**
+- Root cause: Frontend-backend field name mismatch with database schema
+- Product creation form sent `categoryId`, `stockQuantity`, `videoUrl` fields
+- Database schema expects `category` (text), `stock` (integer), `video` (text)
+- Zod validation errors prevented successful product creation
+
+**Problem #2: Multi-Image Data Loss**
+- Product updates overwrote entire images array when editing
+- Changing primary image deleted all secondary product images
+- Tags and other fields caused image array to be reset
+
+**Problem #3: Media Library Crashes**
+- SellerMediaLibrary page crashed with `.map()` error
+- Backend API sometimes returned non-array responses
+- Missing array validation caused runtime errors
+
+**Solutions Implemented:**
+
+✅ **Schema Alignment (SellerProducts.tsx):**
+- Updated Product interface to match database exactly:
+  - `category: string` (category name, not ID)
+  - `stock: number` (not `stockQuantity`)
+  - `video: string | null` (not `videoUrl`)
+  - Removed `inStock` (derived from `stock > 0`)
+- Form submission sends schema-aligned field names
+- Form default values correctly read database fields
+
+✅ **Multi-Image Preservation (SellerProducts.tsx):**
+```typescript
+// Replace primary image but keep secondary images
+let images = product?.images || [];
+if (data.imageUrl && product && data.imageUrl !== product.images[0]) {
+  images = [data.imageUrl, ...product.images.slice(1)];
+}
+```
+- Update mutation always sends complete `images` array
+- Primary image changes preserve secondary images
+- No data loss during edits
+
+✅ **Media Library Safety (SellerMediaLibrary.tsx):**
+```typescript
+return Array.isArray(data) ? data : [];
+```
+- Added array validation to prevent crashes
+- Graceful fallback when API returns non-array
+
+**Technical Impact:**
+- Product creation now works without Zod validation errors
+- Multi-image products retain all images during updates
+- Media library handles edge cases safely
+- Complete data flow validated: Form → FormData → Backend → Database
+
+### Chat Page Infinite Loop Fix (November 8, 2025)
+
+**Problem Identified:**
+- "Maximum update depth exceeded" error in browser console
+- ChatPageConnected component had infinite re-render loop
+- Caused by unnecessary manual query refetch when selecting contacts
+
+**Root Cause:**
+```typescript
+onClick={() => {
+  setSelectedContact(contact);
+  refetchMessages(); // ❌ UNNECESSARY - causes double refetch
+}}
+```
+
+When clicking a contact:
+1. `setSelectedContact(contact)` updates state
+2. `refetchMessages()` manually triggers query refetch
+3. TanStack Query ALSO auto-refetches because `queryKey: ["/api/messages", selectedContact?.id]` changed
+4. Double-refetch triggered cascading state updates causing infinite loop
+
+**Solution Implemented:**
+
+✅ **Removed Unnecessary Manual Refetch:**
+```typescript
+onClick={() => {
+  setSelectedContact(contact);
+  // TanStack Query will auto-refetch when selectedContact?.id changes
+}}
+```
+
+✅ **Leveraged TanStack Query Auto-Refetch:**
+- Query automatically refetches when queryKey changes
+- `selectedContact?.id` is part of queryKey array
+- Changing contacts triggers automatic data reload
+- No manual refetch needed
+
+**Technical Impact:**
+- No more "Maximum update depth exceeded" errors
+- Chat page loads and switches contacts smoothly
+- Browser console is clean with no warnings
+- Proper reliance on TanStack Query's reactive system
+
+**Known Limitation (Not Causing Errors):**
+⚠️ Socket listener has stale closure for `selectedContact` reference
+- Real-time messages might not filter correctly by contact
+- Not causing infinite loops or errors
+- Future enhancement: Refactor socket listener to use refs
+
+**Files Modified:**
+- `client/src/pages/ChatPageConnected.tsx` - Removed manual refetch call
+
+### Missing Chat Features (Documented, Not Implemented)
+
+⚠️ **Message Attachments:**
+- UI elements exist (paperclip icon, attachment button)
+- No backend storage or file upload handlers
+- No Cloudinary integration for chat media
+- **Impact:** Users cannot send images/files in messages
+
+⚠️ **Voice/Video Calls:**
+- Phone icon exists in chat interface
+- No WebRTC implementation
+- No signaling server setup
+- **Impact:** Call feature non-functional
+
 ## System Architecture
 
 ### Frontend Architecture
