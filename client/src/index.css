@@ -76,18 +76,35 @@
   --chart-4: 32 95% 52%;
   --chart-5: 340 75% 52%;
 
-  --font-sans: Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  /* Native App Typography */
+  --font-sans: -apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text", "Roboto", "Segoe UI", system-ui, sans-serif;
   --font-serif: Georgia, serif;
-  --font-mono: Menlo, Monaco, "Courier New", monospace;
-  --radius: .5rem; /* 8px */
-  --shadow-2xs: 0px 1px 2px 0px hsl(240 6% 10% / 0.05);
-  --shadow-xs: 0px 1px 3px 0px hsl(240 6% 10% / 0.08);
-  --shadow-sm: 0px 2px 4px -1px hsl(240 6% 10% / 0.06), 0px 1px 2px -1px hsl(240 6% 10% / 0.04);
-  --shadow: 0px 4px 6px -1px hsl(240 6% 10% / 0.08), 0px 2px 4px -2px hsl(240 6% 10% / 0.05);
-  --shadow-md: 0px 6px 12px -2px hsl(240 6% 10% / 0.10), 0px 3px 6px -3px hsl(240 6% 10% / 0.08);
-  --shadow-lg: 0px 10px 20px -4px hsl(240 6% 10% / 0.12), 0px 4px 8px -4px hsl(240 6% 10% / 0.08);
-  --shadow-xl: 0px 20px 30px -6px hsl(240 6% 10% / 0.15), 0px 8px 12px -6px hsl(240 6% 10% / 0.10);
-  --shadow-2xl: 0px 25px 50px -12px hsl(240 6% 10% / 0.25);
+  --font-mono: "SF Mono", Menlo, Monaco, "Courier New", monospace;
+  
+  /* Native Mobile Radius - iOS: 12-16px, Material: 8-12px */
+  --radius: .75rem; /* 12px - native app standard */
+  --radius-sm: .5rem; /* 8px */
+  --radius-lg: 1rem; /* 16px */
+  /* Native App Shadows - Minimal, subtle elevation */
+  --shadow-2xs: 0px 0px 0px 0px transparent; /* No shadow for ultra-flat */
+  --shadow-xs: 0px 1px 2px 0px hsl(240 6% 10% / 0.04); /* Minimal */
+  --shadow-sm: 0px 1px 3px 0px hsl(240 6% 10% / 0.06); /* Subtle */
+  --shadow: 0px 2px 4px 0px hsl(240 6% 10% / 0.08); /* Default card */
+  --shadow-md: 0px 4px 8px 0px hsl(240 6% 10% / 0.10); /* Elevated */
+  --shadow-lg: 0px 8px 16px 0px hsl(240 6% 10% / 0.12); /* Modal/Sheet */
+  --shadow-xl: 0px 12px 24px 0px hsl(240 6% 10% / 0.14); /* Floating button */
+  --shadow-2xl: 0px 16px 32px 0px hsl(240 6% 10% / 0.16); /* Maximum */
+  
+  /* Native Spacing Grid - 4px base (iOS/Material standard) */
+  --space-1: 0.25rem; /* 4px */
+  --space-2: 0.5rem; /* 8px */
+  --space-3: 0.75rem; /* 12px */
+  --space-4: 1rem; /* 16px - Primary mobile spacing */
+  --space-5: 1.25rem; /* 20px */
+  --space-6: 1.5rem; /* 24px */
+  --space-8: 2rem; /* 32px */
+  --space-12: 3rem; /* 48px */
+  --space-16: 4rem; /* 64px */
   --tracking-normal: 0em;
   --spacing: 0.25rem;
 
@@ -194,14 +211,15 @@
   --chart-4: 32 95% 62%;
   --chart-5: 340 75% 62%;
 
-  --shadow-2xs: 0px 1px 2px 0px hsl(0 0% 0% / 0.30);
-  --shadow-xs: 0px 1px 3px 0px hsl(0 0% 0% / 0.40);
-  --shadow-sm: 0px 2px 4px -1px hsl(0 0% 0% / 0.35), 0px 1px 2px -1px hsl(0 0% 0% / 0.25);
-  --shadow: 0px 4px 6px -1px hsl(0 0% 0% / 0.45), 0px 2px 4px -2px hsl(0 0% 0% / 0.35);
-  --shadow-md: 0px 6px 12px -2px hsl(0 0% 0% / 0.50), 0px 3px 6px -3px hsl(0 0% 0% / 0.40);
-  --shadow-lg: 0px 10px 20px -4px hsl(0 0% 0% / 0.55), 0px 4px 8px -4px hsl(0 0% 0% / 0.45);
-  --shadow-xl: 0px 20px 30px -6px hsl(0 0% 0% / 0.60), 0px 8px 12px -6px hsl(0 0% 0% / 0.50);
-  --shadow-2xl: 0px 25px 50px -12px hsl(0 0% 0% / 0.70);
+  /* Dark Mode Native Shadows - More prominent but still minimal */
+  --shadow-2xs: 0px 0px 0px 0px transparent;
+  --shadow-xs: 0px 1px 2px 0px hsl(0 0% 0% / 0.20);
+  --shadow-sm: 0px 1px 3px 0px hsl(0 0% 0% / 0.25);
+  --shadow: 0px 2px 4px 0px hsl(0 0% 0% / 0.30);
+  --shadow-md: 0px 4px 8px 0px hsl(0 0% 0% / 0.35);
+  --shadow-lg: 0px 8px 16px 0px hsl(0 0% 0% / 0.40);
+  --shadow-xl: 0px 12px 24px 0px hsl(0 0% 0% / 0.45);
+  --shadow-2xl: 0px 16px 32px 0px hsl(0 0% 0% / 0.50);
 
   /* Automatically computed borders - intensity can be controlled by the user by the --opaque-button-border-intensity setting */
 
@@ -394,4 +412,176 @@
   .category-grid-single-store {
     grid-template-columns: repeat(auto-fit, minmax(220px, min(33.333%, 320px)));
   }
+}
+/* ============================================
+   NATIVE MOBILE APP UTILITIES
+   ============================================ */
+
+/* Native List Item - iOS/Android style */
+.native-list-item {
+  @apply px-4 py-3 active:bg-accent/50 transition-colors border-b border-border/30;
+}
+
+/* Native Card - Minimal shadow, rounded */
+.native-card {
+  @apply rounded-xl bg-card border border-border/20 overflow-hidden;
+  box-shadow: var(--shadow-xs);
+}
+
+/* Native Button - Touch-optimized */
+.native-button {
+  @apply min-h-[44px] min-w-[44px] rounded-xl font-medium transition-all active:scale-95;
+}
+
+/* Native Input - Clean, minimal */
+.native-input {
+  @apply rounded-xl px-4 py-3 bg-background border border-input focus:border-primary focus:ring-2 focus:ring-primary/20;
+}
+
+/* Native Separator - Subtle divider */
+.native-separator {
+  @apply h-px bg-border/30 my-2;
+}
+
+/* Native Section Header - Like iOS grouped lists */
+.native-section-header {
+  @apply px-4 py-2 text-xs font-semibold text-muted-foreground uppercase tracking-wider bg-background/50;
+}
+
+/* Native Safe Area - iOS notch/dynamic island safe zones */
+.safe-top {
+  padding-top: max(env(safe-area-inset-top), 12px);
+}
+
+.safe-bottom {
+  padding-bottom: max(env(safe-area-inset-bottom), 12px);
+}
+
+/* Native Touch Feedback */
+.native-touch {
+  @apply active:bg-foreground/5 transition-colors;
+}
+
+/* Native Floating Action Button */
+.native-fab {
+  @apply fixed bottom-6 right-6 w-14 h-14 rounded-full bg-primary text-primary-foreground shadow-xl flex items-center justify-center active:scale-90 transition-transform;
+  box-shadow: var(--shadow-xl);
+}
+
+/* Native Bottom Sheet */
+.native-bottom-sheet {
+  @apply rounded-t-3xl bg-background;
+}
+
+/* Native Pull Indicator - for sheets/drawers */
+.native-pull-indicator {
+  @apply w-10 h-1 rounded-full bg-foreground/20 mx-auto my-2;
+}
+
+/* Mobile-First Responsive Padding */
+@media (max-width: 768px) {
+  .mobile-px {
+    @apply px-4;
+  }
+  
+  .mobile-py {
+    @apply py-3;
+  }
+  
+  .mobile-gap {
+    @apply gap-4;
+  }
+}
+
+/* Tablet Breakpoint (1024px) */
+@media (min-width: 1024px) {
+  .tablet-grid-2 {
+    @apply grid-cols-2;
+  }
+  
+  .tablet-grid-3 {
+    @apply grid-cols-3;
+  }
+}
+
+/* Native Skeleton Loader */
+.native-skeleton {
+  @apply animate-pulse bg-foreground/10 rounded-lg;
+}
+
+/* Native Badge/Pill */
+.native-badge {
+  @apply inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium;
+}
+
+/* Native Avatar */
+.native-avatar {
+  @apply rounded-full overflow-hidden bg-muted flex items-center justify-center;
+}
+
+/* Native Typography Scale - Mobile-optimized */
+@media (max-width: 768px) {
+  .native-title-large {
+    @apply text-2xl font-bold tracking-tight;
+  }
+  
+  .native-title {
+    @apply text-xl font-semibold;
+  }
+  
+  .native-headline {
+    @apply text-lg font-medium;
+  }
+  
+  .native-body {
+    @apply text-base;
+  }
+  
+  .native-caption {
+    @apply text-sm text-muted-foreground;
+  }
+  
+  .native-label {
+    @apply text-xs font-medium uppercase tracking-wide;
+  }
+}
+
+/* Native Transitions */
+.native-transition {
+  @apply transition-all duration-200 ease-out;
+}
+
+.native-transition-slow {
+  @apply transition-all duration-300 ease-in-out;
+}
+
+/* Native Backdrop */
+.native-backdrop {
+  @apply backdrop-blur-sm bg-black/20;
+}
+
+/* Native Sticky Header */
+.native-sticky-header {
+  @apply sticky top-0 z-10 bg-background/95 backdrop-blur-sm border-b border-border/30;
+}
+
+/* Edge-to-Edge Content */
+.edge-to-edge {
+  margin-left: calc(-1 * var(--space-4));
+  margin-right: calc(-1 * var(--space-4));
+  padding-left: var(--space-4);
+  padding-right: var(--space-4);
+}
+
+/* Native Press State */
+@media (hover: none) {
+  .native-press:active {
+    opacity: 0.7;
+    transform: scale(0.98);
+  }
+}
+
+/* Haptic Feedback Visual */
+.native-haptic:active {
+  @apply scale-95;
 }

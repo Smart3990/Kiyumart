@@ -3,6 +3,7 @@ import { Button } from "@/components/ui/button";
 import { useQuery } from "@tanstack/react-query";
 import { Link, useRoute } from "wouter";
 import { useAuth } from "@/lib/auth";
+import { useIsMobile } from "@/hooks/useIsMobile";
 import logoLight from "@assets/light_mode_1762169855262.png";
 import logoDark from "@assets/photo_2025-09-24_21-19-48-removebg-preview_1762169855290.png";
 
@@ -40,8 +41,14 @@ interface Store {
 }
 
 export default function Footer() {
+  const isMobile = useIsMobile();
   const [match, params] = useRoute("/sellers/:id");
   const sellerId = match ? params?.id : null;
+  
+  // Hide footer on mobile devices for native app feel
+  if (isMobile) {
+    return null;
+  }
   
   const { data: settings } = useQuery<PlatformSettings>({
     queryKey: ["/api/settings"],
