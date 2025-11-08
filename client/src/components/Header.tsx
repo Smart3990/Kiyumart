@@ -192,7 +192,7 @@ export default function Header({
                 <Bell className={`h-5 w-5 ${isActive("/notifications") ? "text-primary" : ""}`} />
                 {notificationCount > 0 && (
                   <Badge 
-                    className="absolute -top-1 -right-1 h-5 w-5 flex items-center justify-center p-0 text-xs bg-destructive text-destructive-foreground rounded-full"
+                    className="absolute -top-1 -right-1 min-w-[20px] h-5 flex items-center justify-center px-1.5 text-[10px] font-semibold bg-destructive text-destructive-foreground rounded-full border-2 border-background"
                     data-testid="badge-notification-count"
                   >
                     {notificationCount > 9 ? "9+" : notificationCount}

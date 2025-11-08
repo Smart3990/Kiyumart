@@ -19,6 +19,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import MediaUploadInput from "@/components/MediaUploadInput";
+import ProductGallery from "@/components/ProductGallery";
 
 interface Product {
   id: string;
@@ -56,7 +57,7 @@ const productSchema = z.object({
   category: z.string().min(1, "Category is required"),
   stockQuantity: z.string().regex(/^\d+$/, "Must be a valid number"),
   tags: z.string().optional(),
-  imageUrl: z.string().url("Invalid image URL").optional().or(z.literal("")),
+  images: z.array(z.string().url()).min(1, "At least one product image is required"),
   videoUrl: z.string().url("Invalid video URL").optional().or(z.literal("")),
   inStock: z.boolean().default(true),
 });
@@ -98,7 +99,7 @@ function ProductFormDialog({ product, mode }: { product?: Product; mode: "create
       category: product.category || "",
       stockQuantity: product.stock.toString(),
       tags: product.tags?.join(", ") || "",
-      imageUrl: product.images[0] || "",
+      images: product.images || [],
       videoUrl: product.video || "",
       inStock: true,
     } : {
@@ -109,7 +110,7 @@ function ProductFormDialog({ product, mode }: { product?: Product; mode: "create
       category: "",
       stockQuantity: "0",
       tags: "",
-      imageUrl: "",
+      images: [],
       videoUrl: "",
       inStock: true,
     },
@@ -130,9 +131,8 @@ function ProductFormDialog({ product, mode }: { product?: Product; mode: "create
         formData.append("tags", JSON.stringify(tagsArray));
       }
       
-      if (data.imageUrl) {
-        formData.append("images", JSON.stringify([data.imageUrl]));
-      }
+      // Images array is required (validation ensures at least 1)
+      formData.append("images", JSON.stringify(data.images));
       
       if (data.videoUrl) {
         formData.append("video", data.videoUrl);
@@ -171,13 +171,6 @@ function ProductFormDialog({ product, mode }: { product?: Product; mode: "create
 
   const updateProductMutation = useMutation({
     mutationFn: async (data: ProductFormData) => {
-      // Determine images array: preserve all existing images, update primary if changed
-      let images = product?.images || [];
-      if (data.imageUrl && product && data.imageUrl !== product.images[0]) {
-        // Replace primary image but keep secondary images
-        images = [data.imageUrl, ...product.images.slice(1)];
-      }
-
       const updateData: any = {
         name: data.name,
         description: data.description,
@@ -185,8 +178,8 @@ function ProductFormDialog({ product, mode }: { product?: Product; mode: "create
         compareAtPrice: data.compareAtPrice || null,
         category: data.category,
         stock: parseInt(data.stockQuantity),
-        images, // Always include full images array to prevent data loss
-        video: data.videoUrl || null, // Always include video (or null if empty)
+        images: data.images, // Use images array directly from form
+        video: data.videoUrl || null,
       };
 
       if (data.tags) {
@@ -377,18 +370,17 @@ function ProductFormDialog({ product, mode }: { product?: Product; mode: "create
 
             <FormField
               control={form.control}
-              name="imageUrl"
+              name="images"
               render={({ field }) => (
                 <FormItem>
-                  <MediaUploadInput
-                    id="product-image"
-                    label="Product Image *"
-                    value={field.value || ""}
-                    onChange={field.onChange}
-                    accept="image"
-                    placeholder="https://... or upload from computer"
-                    description="Upload an image or enter a Cloudinary image URL"
-                  />
+                  <FormControl>
+                    <ProductGallery
+                      images={field.value}
+                      onChange={field.onChange}
+                      maxImages={10}
+                      required
+                    />
+                  </FormControl>
                   <FormMessage />
                 </FormItem>
               )}
