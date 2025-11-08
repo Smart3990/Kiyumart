@@ -17,13 +17,16 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
 import { Badge } from "@/components/ui/badge";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from "@/components/ui/dialog";
-import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage, FormDescription } from "@/components/ui/form";
 import { Plus, Edit, Trash2, ArrowUp, ArrowDown, ArrowLeft, Loader2 } from "lucide-react";
 import type { Category } from "@shared/schema";
+import { STORE_TYPES } from "@shared/storeTypes";
 
 const categoryFormSchema = insertCategorySchema.extend({
   slug: z.string().min(1, "Slug is required").regex(/^[a-z0-9-]+$/, "Slug can only contain lowercase letters, numbers, and hyphens"),
+  storeTypes: z.array(z.string()).optional(),
 });
 
 type CategoryFormData = z.infer<typeof categoryFormSchema>;
@@ -54,6 +57,7 @@ export default function AdminCategoryManager() {
       description: "",
       displayOrder: 0,
       isActive: true,
+      storeTypes: [],
     },
   });
 
@@ -114,6 +118,7 @@ export default function AdminCategoryManager() {
       description: category.description || "",
       displayOrder: category.displayOrder || 0,
       isActive: category.isActive,
+      storeTypes: category.storeTypes || [],
     });
     setIsDialogOpen(true);
   };
@@ -141,6 +146,7 @@ export default function AdminCategoryManager() {
       description: "",
       displayOrder: categories.length,
       isActive: true,
+      storeTypes: [],
     });
     setIsDialogOpen(true);
   };
@@ -231,6 +237,22 @@ export default function AdminCategoryManager() {
                         
                         {category.description && (
                           <p className="text-muted-foreground mb-4">{category.description}</p>
+                        )}
+                        
+                        {category.storeTypes && category.storeTypes.length > 0 && (
+                          <div className="mb-4">
+                            <p className="text-sm text-muted-foreground mb-2">Available for store types:</p>
+                            <div className="flex flex-wrap gap-2">
+                              {category.storeTypes.map((type) => (
+                                <Badge key={type} variant="secondary">
+                                  {type.replace(/_/g, ' ')}
+                                </Badge>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+                        {(!category.storeTypes || category.storeTypes.length === 0) && (
+                          <p className="text-sm text-muted-foreground mb-4">Available for all store types</p>
                         )}
                         
                         <div className="flex gap-2">
@@ -352,6 +374,45 @@ export default function AdminCategoryManager() {
                             data-testid="input-description"
                           />
                         </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
+                  <FormField
+                    control={form.control}
+                    name="storeTypes"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Available for Store Types (Optional)</FormLabel>
+                        <FormDescription>
+                          Leave empty to show this category to all store types. Select specific types to restrict visibility.
+                        </FormDescription>
+                        <div className="grid grid-cols-2 gap-4 mt-3">
+                          {STORE_TYPES.map((storeType) => (
+                            <div key={storeType} className="flex items-center space-x-2">
+                              <Checkbox
+                                id={`store-type-${storeType}`}
+                                checked={field.value?.includes(storeType)}
+                                onCheckedChange={(checked) => {
+                                  const current = field.value || [];
+                                  if (checked) {
+                                    field.onChange([...current, storeType]);
+                                  } else {
+                                    field.onChange(current.filter((t) => t !== storeType));
+                                  }
+                                }}
+                                data-testid={`checkbox-store-type-${storeType}`}
+                              />
+                              <label
+                                htmlFor={`store-type-${storeType}`}
+                                className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 cursor-pointer"
+                              >
+                                {storeType.replace(/_/g, ' ')}
+                              </label>
+                            </div>
+                          ))}
+                        </div>
                         <FormMessage />
                       </FormItem>
                     )}
