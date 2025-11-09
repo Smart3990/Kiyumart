@@ -33,6 +33,45 @@ export default function MediaUploadInput({
   const [activeTab, setActiveTab] = useState<"url" | "upload">("url");
   const { toast } = useToast();
 
+  const validateImageDimensions = (file: File): Promise<{ width: number; height: number }> => {
+    return new Promise((resolve, reject) => {
+      const img = new Image();
+      const objectURL = URL.createObjectURL(file);
+
+      img.onload = function() {
+        const width = img.naturalWidth;
+        const height = img.naturalHeight;
+        URL.revokeObjectURL(objectURL);
+        resolve({ width, height });
+      };
+
+      img.onerror = function() {
+        URL.revokeObjectURL(objectURL);
+        reject("Failed to load image");
+      };
+
+      img.src = objectURL;
+    });
+  };
+
+  const validateVideoDuration = (file: File): Promise<number> => {
+    return new Promise((resolve, reject) => {
+      const video = document.createElement("video");
+      video.preload = "metadata";
+
+      video.onloadedmetadata = function() {
+        window.URL.revokeObjectURL(video.src);
+        resolve(video.duration);
+      };
+
+      video.onerror = function() {
+        reject("Failed to load video");
+      };
+
+      video.src = URL.createObjectURL(file);
+    });
+  };
+
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -68,6 +107,52 @@ export default function MediaUploadInput({
         variant: "destructive",
       });
       return;
+    }
+
+    // Validate 4K image dimensions (3840x2160 minimum)
+    if (isImage) {
+      try {
+        const { width, height } = await validateImageDimensions(file);
+        if (width < 3840 || height < 2160) {
+          toast({
+            title: "Image resolution too low",
+            description: `Image is ${width}×${height}px. Minimum required: 3840×2160px (4K)`,
+            variant: "destructive",
+          });
+          e.target.value = "";
+          return;
+        }
+      } catch (error) {
+        toast({
+          title: "Validation failed",
+          description: "Could not validate image dimensions",
+          variant: "destructive",
+        });
+        return;
+      }
+    }
+
+    // Validate video duration (<30 seconds)
+    if (isVideo) {
+      try {
+        const duration = await validateVideoDuration(file);
+        if (duration > 30) {
+          toast({
+            title: "Video too long",
+            description: `Video is ${Math.round(duration)}s. Maximum allowed: 30 seconds`,
+            variant: "destructive",
+          });
+          e.target.value = "";
+          return;
+        }
+      } catch (error) {
+        toast({
+          title: "Validation failed",
+          description: "Could not validate video duration",
+          variant: "destructive",
+        });
+        return;
+      }
     }
 
     setIsUploading(true);
