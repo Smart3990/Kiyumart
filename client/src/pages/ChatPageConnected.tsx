@@ -19,6 +19,8 @@ interface ChatMessage {
   message: string;
   messageType: string;
   readAt?: string | null;
+  deliveredAt?: string | null;
+  status?: 'sent' | 'delivered' | 'read';
   isRead: boolean;
   createdAt: string;
 }
@@ -64,13 +66,21 @@ export default function ChatPageConnected() {
   useEffect(() => {
     if (!user) return;
 
+    // Get JWT token from cookie for Socket.IO authentication
+    const token = document.cookie
+      .split('; ')
+      .find(row => row.startsWith('token='))
+      ?.split('=')[1];
+
     const socket = io({
-      auth: { userId: user.id }
+      auth: { 
+        token // JWT token for authentication middleware
+      }
     });
 
     socket.on("connect", () => {
-      console.log("Socket connected");
-      socket.emit("register", user.id);
+      console.log("Socket connected (authenticated via JWT)");
+      // No manual register needed - auth middleware auto-joins user room
     });
 
     socket.on("new_message", (message: ChatMessage) => {
@@ -89,6 +99,24 @@ export default function ChatPageConnected() {
           description: `${message.senderId}: ${message.message.substring(0, 50)}...`,
         });
       }
+    });
+
+    // WhatsApp-style message status updates (real-time)
+    socket.on("message_status_updated", ({ messageId, status, deliveredAt, readAt }) => {
+      setMessages((prevMessages) => 
+        prevMessages.map((msg) => 
+          msg.id === messageId 
+            ? { 
+                ...msg, 
+                status, 
+                deliveredAt: deliveredAt || msg.deliveredAt,
+                readAt: readAt || msg.readAt,
+                isRead: status === 'read' ? true : msg.isRead
+              }
+            : msg
+        )
+      );
+      console.log(`✅ Message ${messageId} status updated to: ${status}`);
     });
 
     // WebRTC Call Signaling Events
@@ -452,6 +480,9 @@ export default function ChatPageConnected() {
       minute: '2-digit' 
     }),
     isRead: !!msg.readAt,
+    deliveredAt: msg.deliveredAt,
+    readAt: msg.readAt,
+    status: msg.status,
   }));
 
   return (

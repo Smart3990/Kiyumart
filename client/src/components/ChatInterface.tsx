@@ -5,7 +5,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Send, Phone, MoreVertical, Paperclip } from "lucide-react";
 import { useState } from "react";
-import MessageReadIndicator from "./MessageReadIndicator";
+import { MessageStatusTicks } from "./MessageStatusTicks";
 
 interface Message {
   id: string;
@@ -13,6 +13,9 @@ interface Message {
   sender: "user" | "other";
   timestamp: string;
   isRead?: boolean;
+  deliveredAt?: string | null;
+  readAt?: string | null;
+  status?: 'sent' | 'delivered' | 'read';
 }
 
 interface ChatInterfaceProps {
@@ -97,10 +100,12 @@ export default function ChatInterface({
                     {message.timestamp}
                   </p>
                   {message.sender === "user" && (
-                    <MessageReadIndicator 
+                    <MessageStatusTicks 
                       isRead={message.isRead || false} 
-                      isSent={true}
-                      className="ml-1"
+                      readAt={message.readAt}
+                      deliveredAt={message.deliveredAt}
+                      status={message.status}
+                      variant="primary"
                     />
                   )}
                 </div>
