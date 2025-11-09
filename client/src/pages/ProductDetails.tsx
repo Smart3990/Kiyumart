@@ -349,17 +349,21 @@ export default function ProductDetails() {
                 </div>
               </Card>
 
-              {/* Thumbnails Grid - Images + Video Thumbnail */}
+              {/* Thumbnails Grid - Responsive mini images under main product image */}
               {(product.images.length > 1 || product.video) && (
-                <div className="grid grid-cols-6 gap-2">
+                <div className="grid grid-cols-5 md:grid-cols-6 gap-2 max-w-md">
                   {product.images.map((image, idx) => (
                     <Card
                       key={`img-${idx}`}
-                      className={`cursor-pointer overflow-hidden hover-elevate ${selectedImage === idx ? 'ring-2 ring-primary' : ''}`}
+                      className={`cursor-pointer overflow-hidden hover:scale-105 transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 ${selectedImage === idx ? 'ring-2 ring-primary' : ''}`}
                       onClick={() => setSelectedImage(idx)}
+                      onKeyDown={(e) => e.key === 'Enter' && setSelectedImage(idx)}
+                      tabIndex={0}
+                      role="button"
+                      aria-label={`View image ${idx + 1}`}
                       data-testid={`img-thumbnail-${idx}`}
                     >
-                      <div className="relative aspect-[4/5]">
+                      <div className="relative aspect-square">
                         <img
                           src={image}
                           alt={`${product.name} ${idx + 1}`}
@@ -369,17 +373,26 @@ export default function ProductDetails() {
                     </Card>
                   ))}
                   
-                  {/* Video Thumbnail - Appears in grid with images */}
+                  {/* Video Thumbnail - Responsive size to match images */}
                   {product.video && (
                     <Card
-                      className="cursor-pointer overflow-hidden hover-elevate relative"
+                      className="cursor-pointer overflow-hidden hover:scale-105 transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 relative"
                       onClick={() => {
                         const videoSection = document.getElementById('product-video-section');
                         videoSection?.scrollIntoView({ behavior: 'smooth' });
                       }}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter') {
+                          const videoSection = document.getElementById('product-video-section');
+                          videoSection?.scrollIntoView({ behavior: 'smooth' });
+                        }
+                      }}
+                      tabIndex={0}
+                      role="button"
+                      aria-label="View product video"
                       data-testid="thumbnail-video"
                     >
-                      <div className="relative aspect-[4/5] bg-black flex items-center justify-center">
+                      <div className="relative aspect-square bg-black flex items-center justify-center">
                         <video
                           className="w-full h-full object-cover"
                           muted
@@ -387,8 +400,8 @@ export default function ProductDetails() {
                           <source src={product.video} type="video/mp4" />
                         </video>
                         <div className="absolute inset-0 bg-black/40 flex items-center justify-center">
-                          <div className="w-8 h-8 bg-white/90 rounded-full flex items-center justify-center">
-                            <div className="w-0 h-0 border-l-[8px] border-l-black border-y-[5px] border-y-transparent ml-1"></div>
+                          <div className="w-6 h-6 md:w-8 md:h-8 bg-white/90 rounded-full flex items-center justify-center">
+                            <div className="w-0 h-0 border-l-[6px] md:border-l-[8px] border-l-black border-y-[4px] md:border-y-[5px] border-y-transparent ml-0.5"></div>
                           </div>
                         </div>
                       </div>

@@ -214,7 +214,7 @@ export default function HomeConnected() {
     }
   ];
 
-  const { data: dbCategories = [] } = useQuery<Array<{id: string; name: string; slug: string; image: string; isActive: boolean}>>({
+  const { data: dbCategories = [] } = useQuery<Array<{id: string; name: string; slug: string; image: string; isActive: boolean; storeTypes: string[] | null}>>({
     queryKey: ["/api/categories"],
     queryFn: async () => {
       const res = await fetch("/api/categories?isActive=true");
@@ -222,8 +222,30 @@ export default function HomeConnected() {
     },
   });
 
+  // Fetch primary store details in single-vendor mode
+  const { data: primaryStore } = useQuery<{storeType: string} | null>({
+    queryKey: ["/api/stores", platformSettings?.primaryStoreId],
+    queryFn: async () => {
+      if (!platformSettings?.primaryStoreId) return null;
+      const res = await fetch(`/api/stores/${platformSettings.primaryStoreId}`);
+      if (!res.ok) return null;
+      return res.json();
+    },
+    enabled: !platformSettings?.isMultiVendor && !!platformSettings?.primaryStoreId,
+  });
+
+  // Filter categories by store type in single-vendor mode
+  const filteredCategories = !platformSettings?.isMultiVendor 
+    ? dbCategories.filter(cat => {
+        // Default to "clothing" for Islamic fashion platform if no primary store configured
+        const storeType = primaryStore?.storeType || "clothing";
+        // Show global categories (null or empty storeTypes) OR categories for the store's type
+        return !cat.storeTypes || cat.storeTypes.length === 0 || cat.storeTypes.includes(storeType);
+      })
+    : dbCategories;
+
   // Use database categories only
-  const categories = dbCategories.map(cat => ({
+  const categories = filteredCategories.map(cat => ({
     id: cat.slug,
     name: cat.name,
     image: cat.image,
@@ -330,21 +352,31 @@ export default function HomeConnected() {
 
       <main className="flex-1">
         <section className="max-w-7xl mx-auto px-4 py-12">
-          <h2 className="text-3xl font-bold mb-8">{t("shopByCategory")}</h2>
+          <div className="flex items-center justify-between mb-8">
+            <h2 className="text-3xl font-bold">{t("shopByCategory")}</h2>
+            {categories.length > 0 && (
+              <p className="text-sm text-muted-foreground">
+                Scroll to see more →
+              </p>
+            )}
+          </div>
           {categories.length === 0 ? (
             <div className="text-center py-12 text-muted-foreground">
               <p className="text-lg">No categories available at the moment.</p>
               <p className="text-sm mt-2">Please check back later.</p>
             </div>
           ) : (
-            <div className="category-grid-single-store">
-              {categories.map((category) => (
-                <CategoryCard
-                  key={category.id}
-                  {...category}
-                  onClick={(id) => navigate(`/category/${id}`)}
-                />
-              ))}
+            <div className="relative">
+              <div className="flex gap-4 md:gap-6 overflow-x-auto pb-4 snap-x snap-mandatory [&::-webkit-scrollbar]:h-2 [&::-webkit-scrollbar-track]:bg-muted [&::-webkit-scrollbar-thumb]:bg-muted-foreground/30 [&::-webkit-scrollbar-thumb]:rounded-full hover:[&::-webkit-scrollbar-thumb]:bg-muted-foreground/50">
+                {categories.map((category) => (
+                  <div key={category.id} className="flex-shrink-0 w-[min(280px,80vw)] md:w-72 snap-start">
+                    <CategoryCard
+                      {...category}
+                      onClick={(id) => navigate(`/category/${id}`)}
+                    />
+                  </div>
+                ))}
+              </div>
             </div>
           )}
         </section>
