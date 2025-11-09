@@ -1,14 +1,15 @@
 import { useLocation, useParams } from "wouter";
 import { useQuery } from "@tanstack/react-query";
-import { ChevronLeft, ChevronDown } from "lucide-react";
+import { ArrowLeft, ChevronDown } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { useLanguage } from "@/contexts/LanguageContext";
 import QRCode from "react-qr-code";
-import BottomNavigation from "@/components/BottomNavigation";
 import { useState } from "react";
+import Header from "@/components/Header";
+import Footer from "@/components/Footer";
 
 export default function EReceipt() {
   const { id } = useParams();
@@ -56,23 +57,24 @@ export default function EReceipt() {
   const total = order.total || subtotal - discount + processingFee;
 
   return (
-    <div className="min-h-screen bg-background pb-20">
-      {/* Header */}
-      <header className="sticky top-0 z-40 bg-card/95 backdrop-blur-lg border-b border-border">
-        <div className="flex items-center gap-3 px-4 py-3">
+    <div className="min-h-screen bg-background flex flex-col">
+      <Header />
+      
+      <main className="flex-1 container mx-auto px-4 py-8 max-w-3xl">
+        <div className="mb-6">
           <Button
             variant="ghost"
-            size="icon"
             onClick={() => navigate(`/orders/${id}`)}
+            className="mb-4"
             data-testid="button-back"
           >
-            <ChevronLeft className="h-5 w-5" />
+            <ArrowLeft className="h-4 w-4 mr-2" />
+            Back to Order
           </Button>
-          <h1 className="text-lg font-bold">E-Receipt</h1>
+          <h1 className="text-3xl font-bold">E-Receipt</h1>
         </div>
-      </header>
 
-      <main className="p-4 space-y-4">
+        <div className="space-y-6">
         {/* Receipt QR Code */}
         <Card className="p-6 space-y-4">
           <div className="text-center">
@@ -238,9 +240,10 @@ export default function EReceipt() {
             </div>
           )}
         </Card>
+        </div>
       </main>
-
-      <BottomNavigation />
+      
+      <Footer />
     </div>
   );
 }

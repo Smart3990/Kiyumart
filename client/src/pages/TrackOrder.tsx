@@ -1,12 +1,13 @@
 import { useLocation, useParams } from "wouter";
 import { useQuery } from "@tanstack/react-query";
-import { ChevronLeft, Package, Truck, CheckCircle, MapPin } from "lucide-react";
+import { ArrowLeft, Package, Truck, CheckCircle, MapPin } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 import { useLanguage } from "@/contexts/LanguageContext";
-import BottomNavigation from "@/components/BottomNavigation";
+import Header from "@/components/Header";
+import Footer from "@/components/Footer";
 
 const statusSteps = [
   { id: "pending", label: "Pending", icon: Package },
@@ -58,23 +59,24 @@ export default function TrackOrder() {
   );
 
   return (
-    <div className="min-h-screen bg-background pb-20">
-      {/* Header */}
-      <header className="sticky top-0 z-40 bg-card/95 backdrop-blur-lg border-b border-border">
-        <div className="flex items-center gap-3 px-4 py-3">
+    <div className="min-h-screen bg-background flex flex-col">
+      <Header />
+      
+      <main className="flex-1 container mx-auto px-4 py-8 max-w-5xl">
+        <div className="mb-6">
           <Button
             variant="ghost"
-            size="icon"
             onClick={() => navigate("/orders")}
+            className="mb-4"
             data-testid="button-back"
           >
-            <ChevronLeft className="h-5 w-5" />
+            <ArrowLeft className="h-4 w-4 mr-2" />
+            Back to Orders
           </Button>
-          <h1 className="text-lg font-bold">Track Order</h1>
+          <h1 className="text-3xl font-bold">Track Order</h1>
         </div>
-      </header>
 
-      <main className="p-4 space-y-4">
+        <div className="space-y-6">
         {/* Order Info Card */}
         <Card className="p-4 space-y-3">
           <div className="flex items-start justify-between">
@@ -185,9 +187,10 @@ export default function TrackOrder() {
             </p>
           </Card>
         )}
+        </div>
       </main>
-
-      <BottomNavigation />
+      
+      <Footer />
     </div>
   );
 }

@@ -13,8 +13,6 @@ import { Heart, ShoppingCart, Star, ArrowLeft, Minus, Plus, X } from "lucide-rea
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import ThemeToggle from "@/components/ThemeToggle";
-import MobileProductDetail from "./MobileProductDetail";
-import { useIsMobile } from "@/hooks/useIsMobile";
 
 interface Product {
   id: string;
@@ -60,7 +58,6 @@ interface ProductVariant {
 }
 
 export default function ProductDetails() {
-  const isMobile = useIsMobile();
   const [, params] = useRoute("/product/:id");
   const [, navigate] = useLocation();
   const { isAuthenticated } = useAuth();
@@ -73,11 +70,6 @@ export default function ProductDetails() {
   const [isImageExpanded, setIsImageExpanded] = useState(false);
 
   const productId = params?.id || "";
-
-  // Use mobile version on small screens
-  if (isMobile) {
-    return <MobileProductDetail />;
-  }
 
   const { data: product, isLoading } = useQuery<Product>({
     queryKey: ["/api/products", productId],

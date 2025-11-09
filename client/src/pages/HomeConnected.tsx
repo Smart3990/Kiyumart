@@ -15,8 +15,6 @@ import CartSidebar from "@/components/CartSidebar";
 import ThemeToggle from "@/components/ThemeToggle";
 import AdBanner from "@/components/AdBanner";
 import MultiVendorHome from "./MultiVendorHome";
-import HomeMobile from "./HomeMobile";
-import { useIsMobile } from "@/hooks/useIsMobile";
 import type { PlatformSettings } from "@shared/schema";
 
 import heroImage from "@assets/generated_images/Diverse_Islamic_fashion_banner_eb13714d.png";
@@ -52,18 +50,12 @@ interface WishlistItem {
 }
 
 export default function HomeConnected() {
-  const isMobile = useIsMobile();
   const [, navigate] = useLocation();
   const { isAuthenticated, isLoading: authLoading } = useAuth();
   const { toast } = useToast();
   const { currency, currencySymbol, t } = useLanguage();
   const [isCartOpen, setIsCartOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
-
-  // Use mobile version on small screens
-  if (isMobile) {
-    return <HomeMobile />;
-  }
 
   const { data: platformSettings, isLoading: settingsLoading } = useQuery<PlatformSettings>({
     queryKey: ["/api/platform-settings"],

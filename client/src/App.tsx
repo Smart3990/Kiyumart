@@ -87,7 +87,6 @@ import SuperAdminPermissions from "@/pages/SuperAdminPermissions";
 import DynamicPage from "@/pages/DynamicPage";
 import TrackOrder from "@/pages/TrackOrder";
 import EReceipt from "@/pages/EReceipt";
-import MobileNotifications from "@/pages/MobileNotifications";
 
 function Router() {
   // Apply branding colors from database settings
