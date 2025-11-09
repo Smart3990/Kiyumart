@@ -10,6 +10,19 @@ Preferred communication style: Simple, everyday language.
 
 ## Recent Changes
 
+**November 9, 2025 - UI/UX OVERHAUL: Product Gallery, Hero Banner, Category Carousel (Architect Approved)**
+- **✅ ProductDetails Mini Images Redesign**: Changed from fixed 64×64px to responsive grid (cols-5 md:cols-6 with aspect-square), fits perfectly under main image
+- **✅ Keyboard Accessibility**: Added tabIndex, onKeyDown handlers, aria-labels, focus-visible ring states for thumbnails
+- **✅ HeroBanner Carousel Navigation**: Re-added ChevronLeft/ChevronRight arrows, implemented 5-second auto-advance timer
+- **✅ Smart Scroll-Down Button**: Now targets actual sections using querySelector('main, section') instead of fixed viewport height
+- **✅ Multiple Action Buttons**: Added "Shop Now", "Explore Collection", "View Deals" buttons to hero banner
+- **✅ Category Carousel Responsive**: Changed from fixed w-72 to w-[min(280px,80vw)] md:w-72 for mobile-first design
+- **✅ Visible Scrollbar**: Replaced scrollbar-hide with styled webkit-scrollbar (height-2, rounded, muted colors)
+- **✅ Scroll Indicator**: Added "Scroll to see more →" text for discoverability
+- **✅ Dynamic Store Filtering**: Fetches primaryStore via useQuery, derives storeType dynamically (fallback: "clothing")
+- **✅ Zero Regressions**: All architect feedback addressed, responsive across mobile/tablet/desktop
+- **Files modified**: ProductDetails.tsx, HeroBanner.tsx, HomeConnected.tsx, index.css (scrollbar utilities)
+
 **November 9, 2025 - COMPLETE: WhatsApp-Style Chat Status Ticks (Production Ready)**
 - **✅ Backend Security:** JWT-based Socket.IO authentication middleware prevents message status spoofing
 - **✅ Socket.IO Auth:** Middleware extracts JWT from cookies/auth object, binds userId to socket.data, auto-joins user room
