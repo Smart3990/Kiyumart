@@ -17,6 +17,7 @@ export const mediaCategoryEnum = pgEnum("media_category", ["banner", "category",
 export const storeTypeEnum = pgEnum("store_type", ["clothing", "electronics", "food_beverages", "beauty_cosmetics", "home_garden", "sports_fitness", "books_media", "toys_games", "automotive", "health_wellness"]);
 export const applicationStatusEnum = pgEnum("application_status", ["pending", "approved", "rejected"]);
 export const payoutTypeEnum = pgEnum("payout_type", ["bank_account", "mobile_money"]);
+export const messageStatusEnum = pgEnum("message_status", ["sent", "delivered", "read"]);
 
 export const users = pgTable("users", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
@@ -299,10 +300,17 @@ export const chatMessages = pgTable("chat_messages", {
   receiverId: varchar("receiver_id").notNull().references(() => users.id),
   message: text("message").notNull(),
   messageType: text("message_type").default("text"),
+  status: messageStatusEnum("status").default("sent"), // WhatsApp-style: sent → delivered → read
+  deliveredAt: timestamp("delivered_at"), // Timestamp when message delivered to recipient
   isRead: boolean("is_read").default(false),
   readAt: timestamp("read_at"),
   createdAt: timestamp("created_at").defaultNow(),
-});
+}, (table) => ({
+  // Index for finding messages by sender and status (batch delivery queries)
+  senderStatusIdx: index("chat_messages_sender_status_idx").on(table.senderId, table.status),
+  // Index for finding undelivered messages (WHERE delivered_at IS NULL)
+  deliveredAtIdx: index("chat_messages_delivered_at_idx").on(table.deliveredAt),
+}));
 
 export const supportConversations = pgTable("support_conversations", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
