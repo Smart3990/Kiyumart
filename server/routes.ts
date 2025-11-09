@@ -3115,6 +3115,68 @@ export async function registerRoutes(app: Express): Promise<Server> {
       console.log(`Call ended, notifying ${targetId}`);
       io.to(targetId).emit("call-ended");
     });
+
+    // WhatsApp-style message status handlers
+    socket.on("message_delivered", async ({ messageId, senderId }) => {
+      try {
+        const { db } = await import("../db/index");
+        const { chatMessages } = await import("@shared/schema");
+        const { eq, and, sql: drizzleSql } = await import("drizzle-orm");
+
+        // Mark message as delivered (idempotent - only if not already delivered/read)
+        await db
+          .update(chatMessages)
+          .set({ 
+            status: drizzleSql`'delivered'::message_status`,
+            deliveredAt: new Date() 
+          })
+          .where(
+            and(
+              eq(chatMessages.id, messageId),
+              drizzleSql`status = 'sent'::message_status` // Only update if currently 'sent'
+            )
+          );
+
+        // Notify sender of delivery
+        io.to(senderId).emit("message_status_updated", {
+          messageId,
+          status: "delivered",
+          deliveredAt: new Date().toISOString()
+        });
+      } catch (error) {
+        console.error("Error marking message as delivered:", error);
+      }
+    });
+
+    socket.on("message_read", async ({ messageId, senderId }) => {
+      try {
+        const { db } = await import("../db/index");
+        const { chatMessages } = await import("@shared/schema");
+        const { eq, and, sql: drizzleSql } = await import("drizzle-orm");
+
+        // Mark message as read (idempotent - set delivered if null, always set read)
+        const now = new Date();
+        await db
+          .update(chatMessages)
+          .set({ 
+            status: drizzleSql`'read'::message_status`,
+            isRead: true,
+            readAt: now,
+            deliveredAt: drizzleSql`COALESCE(delivered_at, ${now})` // Set deliveredAt if null
+          })
+          .where(eq(chatMessages.id, messageId));
+
+        // Notify sender of read status
+        io.to(senderId).emit("message_status_updated", {
+          messageId,
+          status: "read",
+          readAt: now.toISOString(),
+          deliveredAt: now.toISOString()
+        });
+      } catch (error) {
+        console.error("Error marking message as read:", error);
+      }
+    });
   });
 
   // ============ Customer Support Routes ============
