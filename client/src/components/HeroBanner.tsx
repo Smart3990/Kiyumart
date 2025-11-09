@@ -1,6 +1,7 @@
 import { Button } from "@/components/ui/button";
 import { ChevronDown, ChevronLeft, ChevronRight } from "lucide-react";
 import { useState, useEffect } from "react";
+import { useLocation } from "wouter";
 
 interface BannerSlide {
   image: string;
@@ -15,6 +16,7 @@ interface HeroBannerProps {
 
 export default function HeroBanner({ slides }: HeroBannerProps) {
   const [currentSlide, setCurrentSlide] = useState(0);
+  const [, setLocation] = useLocation();
 
   const currentBanner = slides[currentSlide];
 
@@ -68,6 +70,7 @@ export default function HeroBanner({ slides }: HeroBannerProps) {
               size="lg" 
               variant="default"
               className="backdrop-blur-md bg-primary hover:bg-primary/90"
+              onClick={() => setLocation('/products')}
               data-testid="button-hero-shop-now"
             >
               Shop Now
@@ -76,6 +79,7 @@ export default function HeroBanner({ slides }: HeroBannerProps) {
               size="lg" 
               variant="outline"
               className="backdrop-blur-md bg-white/10 border-white/30 text-white hover:bg-white/20"
+              onClick={() => setLocation('/products')}
               data-testid="button-hero-explore"
             >
               Explore Collection
@@ -84,6 +88,10 @@ export default function HeroBanner({ slides }: HeroBannerProps) {
               size="lg" 
               variant="ghost"
               className="backdrop-blur-md text-white hover:bg-white/20"
+              onClick={() => {
+                const mainContent = document.querySelector('main');
+                mainContent?.scrollIntoView({ behavior: 'smooth' });
+              }}
               data-testid="button-hero-view-deals"
             >
               View Deals
