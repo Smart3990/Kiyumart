@@ -20,6 +20,7 @@ import { z } from "zod";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import MediaUploadInput from "@/components/MediaUploadInput";
 import ProductGallery from "@/components/ProductGallery";
+import { CategorySelect } from "@/components/CategorySelect";
 
 interface Product {
   id: string;
@@ -29,19 +30,14 @@ interface Product {
   compareAtPrice: string | null;
   images: string[];
   video: string | null;
-  category: string;
+  category: string | null;
+  categoryId: string | null;
   sellerId: string;
   storeId: string | null;
   stock: number;
   tags: string[] | null;
   isActive: boolean;
   createdAt: string;
-}
-
-interface Category {
-  id: string;
-  name: string;
-  storeTypes: string[] | null;
 }
 
 interface Store {
@@ -54,7 +50,7 @@ const productSchema = z.object({
   description: z.string().min(10, "Description must be at least 10 characters"),
   price: z.string().regex(/^\d+(\.\d{1,2})?$/, "Invalid price format"),
   compareAtPrice: z.string().regex(/^\d+(\.\d{1,2})?$/, "Invalid price format").optional().or(z.literal("")),
-  category: z.string().min(1, "Category is required"),
+  categoryId: z.string().optional(),
   stockQuantity: z.string().regex(/^\d+$/, "Must be a valid number"),
   tags: z.string().optional(),
   images: z.array(z.string().url()).min(5, "Exactly 5 product images are required").max(5, "Maximum 5 images allowed"),
@@ -75,20 +71,6 @@ function ProductFormDialog({ product, mode }: { product?: Product; mode: "create
     enabled: !!user?.id,
   });
 
-  const { data: categories = [] } = useQuery<Category[]>({
-    queryKey: ["/api/categories"],
-  });
-
-  // Filter categories based on seller's store type
-  const filteredCategories = store?.storeType
-    ? categories.filter((cat) => {
-        if (!cat.storeTypes || cat.storeTypes.length === 0) {
-          return true; // Show categories with no store type restriction
-        }
-        return cat.storeTypes.includes(store.storeType);
-      })
-    : categories;
-
   const form = useForm<ProductFormData>({
     resolver: zodResolver(productSchema),
     defaultValues: product ? {
@@ -96,7 +78,7 @@ function ProductFormDialog({ product, mode }: { product?: Product; mode: "create
       description: product.description,
       price: product.price,
       compareAtPrice: product.compareAtPrice || "",
-      category: product.category || "",
+      categoryId: product.categoryId || undefined,
       stockQuantity: product.stock.toString(),
       tags: product.tags?.join(", ") || "",
       images: product.images || [],
@@ -107,7 +89,7 @@ function ProductFormDialog({ product, mode }: { product?: Product; mode: "create
       description: "",
       price: "",
       compareAtPrice: "",
-      category: "",
+      categoryId: undefined,
       stockQuantity: "0",
       tags: "",
       images: [],
@@ -127,7 +109,7 @@ function ProductFormDialog({ product, mode }: { product?: Product; mode: "create
         description: data.description,
         price: data.price,
         compareAtPrice: data.compareAtPrice || null,
-        category: data.category,
+        categoryId: data.categoryId,
         stock: parseInt(data.stockQuantity),
         images: data.images || [], // Optional images array (0-5)
         video: data.videoUrl || null,
@@ -167,7 +149,7 @@ function ProductFormDialog({ product, mode }: { product?: Product; mode: "create
         description: data.description,
         price: data.price,
         compareAtPrice: data.compareAtPrice || null,
-        category: data.category,
+        categoryId: data.categoryId,
         stock: parseInt(data.stockQuantity),
         images: data.images, // Use images array directly from form
         video: data.videoUrl || null,
@@ -301,29 +283,17 @@ function ProductFormDialog({ product, mode }: { product?: Product; mode: "create
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <FormField
                 control={form.control}
-                name="category"
+                name="categoryId"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Category *</FormLabel>
-                    <Select onValueChange={field.onChange} value={field.value}>
-                      <FormControl>
-                        <SelectTrigger data-testid="select-category">
-                          <SelectValue placeholder="Select category" />
-                        </SelectTrigger>
-                      </FormControl>
-                      <SelectContent>
-                        {filteredCategories.map((category) => (
-                          <SelectItem key={category.id} value={category.name}>
-                            {category.name}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                    <FormDescription>
-                      {filteredCategories.length === 0 && "No categories available for your store type"}
-                      {store?.storeType && filteredCategories.length > 0 && 
-                        `Categories for ${store.storeType.replace('_', ' ')} stores`}
-                    </FormDescription>
+                    <CategorySelect
+                      value={field.value}
+                      onValueChange={field.onChange}
+                      storeType={store?.storeType}
+                      label="Category"
+                      required={false}
+                      testId="select-category"
+                    />
                     <FormMessage />
                   </FormItem>
                 )}

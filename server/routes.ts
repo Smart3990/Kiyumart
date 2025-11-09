@@ -5,7 +5,7 @@ import bcrypt from "bcryptjs";
 import { storage } from "./storage";
 import { db } from "../db";
 import { users, cart, wishlist, chatMessages, notifications, orders, products, stores } from "@shared/schema";
-import { eq, or } from "drizzle-orm";
+import { eq, or, isNotNull } from "drizzle-orm";
 import { 
   hashPassword, 
   comparePassword, 

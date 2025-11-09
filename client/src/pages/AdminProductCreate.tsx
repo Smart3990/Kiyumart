@@ -10,24 +10,18 @@ import { useAuth } from "@/lib/auth";
 import { useToast } from "@/hooks/use-toast";
 import DashboardLayout from "@/components/DashboardLayout";
 import MediaUploadInput from "@/components/MediaUploadInput";
+import { CategorySelect } from "@/components/CategorySelect";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { ArrowLeft, Loader2, Plus, X } from "lucide-react";
-
-interface Category {
-  id: string;
-  name: string;
-  slug: string;
-}
 
 const productFormSchema = insertProductSchema.extend({
   name: z.string().min(1, "Product name is required"),
   description: z.string().min(1, "Description is required"),
-  category: z.string().min(1, "Category is required"),
+  categoryId: z.string().optional(),
   price: z.string().min(1, "Price is required"),
   costPrice: z.string().optional(),
   stock: z.number().min(0, "Stock must be 0 or greater"),
@@ -50,16 +44,12 @@ export default function AdminProductCreate() {
     }
   }, [isAuthenticated, authLoading, user, navigate]);
 
-  const { data: categories = [] } = useQuery<Category[]>({
-    queryKey: ["/api/categories"],
-  });
-
   const form = useForm<ProductFormData>({
     resolver: zodResolver(productFormSchema),
     defaultValues: {
       name: "",
       description: "",
-      category: "",
+      categoryId: undefined,
       price: "",
       costPrice: "",
       stock: 0,
@@ -193,29 +183,14 @@ export default function AdminProductCreate() {
                   )}
                 </div>
 
-                <div>
-                  <Label htmlFor="category">
-                    Category <span className="text-destructive">*</span>
-                  </Label>
-                  <Select
-                    value={form.watch("category")}
-                    onValueChange={(value) => form.setValue("category", value)}
-                  >
-                    <SelectTrigger data-testid="select-category">
-                      <SelectValue placeholder="Select a category" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {categories.map((cat) => (
-                        <SelectItem key={cat.id} value={cat.name}>
-                          {cat.name}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                  {form.formState.errors.category && (
-                    <p className="text-sm text-destructive mt-1">{form.formState.errors.category.message}</p>
-                  )}
-                </div>
+                <CategorySelect
+                  value={form.watch("categoryId")}
+                  onValueChange={(value) => form.setValue("categoryId", value)}
+                  label="Category"
+                  required={false}
+                  error={form.formState.errors.categoryId?.message}
+                  testId="select-category"
+                />
               </CardContent>
             </Card>
 
