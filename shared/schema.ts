@@ -188,7 +188,8 @@ export const products = pgTable("products", {
   storeId: varchar("store_id").references(() => stores.id), // Optional - for multi-vendor mode
   name: text("name").notNull(),
   description: text("description").notNull(),
-  category: text("category").notNull(),
+  categoryId: varchar("category_id").references(() => categories.id), // Relational category (nullable during migration)
+  category: text("category"), // Deprecated - kept temporarily for migration
   costPrice: decimal("cost_price", { precision: 10, scale: 2 }),
   price: decimal("price", { precision: 10, scale: 2 }).notNull(),
   discount: integer("discount").default(0),
@@ -206,7 +207,7 @@ export const products = pgTable("products", {
 }, (table) => ({
   sellerIdx: index("products_seller_id_idx").on(table.sellerId),
   storeIdx: index("products_store_id_idx").on(table.storeId),
-  categoryIdx: index("products_category_idx").on(table.category),
+  categoryIdIdx: index("products_category_id_idx").on(table.categoryId),
   isActiveIdx: index("products_is_active_idx").on(table.isActive),
 }));
 
@@ -649,7 +650,7 @@ export const insertPasswordResetTokenSchema = createInsertSchema(passwordResetTo
 export const insertProductSchema = createInsertSchema(products).pick({
   name: true,
   description: true,
-  category: true,
+  categoryId: true,
   costPrice: true,
   price: true,
   discount: true,

@@ -3588,6 +3588,160 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Category Migration Endpoint (Admin only) - Backfill categoryId from legacy category text
+  app.post("/api/admin/migrate-categories", requireAuth, requireRole("admin"), async (req: AuthRequest, res) => {
+    try {
+      const { dryRun = true } = req.body;
+      
+      // Default categories with unique names and proper storeType enum values
+      const defaultCategories: Array<{ name: string; description: string; storeTypes: string[]; image: string }> = [
+        { name: "Abayas", description: "Traditional modest outerwear", storeTypes: ["clothing"], image: "https://images.unsplash.com/photo-1601924994987-69e26d50dc26?w=400" },
+        { name: "Hijabs", description: "Head coverings and scarves", storeTypes: ["clothing"], image: "https://images.unsplash.com/photo-1583292650898-7d22cd27ca6f?w=400" },
+        { name: "Modest Dresses", description: "Modest dresses and gowns", storeTypes: ["clothing"], image: "https://images.unsplash.com/photo-1595777457583-95e059d581b8?w=400" },
+        { name: "Fashion Accessories", description: "Clothing and fashion accessories", storeTypes: ["clothing"], image: "https://images.unsplash.com/photo-1523381210434-271e8be1f52b?w=400" },
+        
+        { name: "Smartphones", description: "Mobile phones and smartphones", storeTypes: ["electronics"], image: "https://images.unsplash.com/photo-1511707171634-5f897ff02aa9?w=400" },
+        { name: "Laptops & Computers", description: "Notebooks and desktop computers", storeTypes: ["electronics"], image: "https://images.unsplash.com/photo-1496181133206-80ce9b88a853?w=400" },
+        { name: "Tablets", description: "Tablet devices and accessories", storeTypes: ["electronics"], image: "https://images.unsplash.com/photo-1561154464-82e9adf32764?w=400" },
+        { name: "Electronic Accessories", description: "Chargers, cases, and tech accessories", storeTypes: ["electronics"], image: "https://images.unsplash.com/photo-1572569511254-d8f925fe2cbb?w=400" },
+        
+        { name: "Skincare", description: "Face and body skincare products", storeTypes: ["beauty_cosmetics"], image: "https://images.unsplash.com/photo-1556228578-dd1cbb5ab546?w=400" },
+        { name: "Makeup & Cosmetics", description: "Beauty and makeup products", storeTypes: ["beauty_cosmetics"], image: "https://images.unsplash.com/photo-1522338242992-e1a54906a8da?w=400" },
+        { name: "Haircare", description: "Hair products and treatments", storeTypes: ["beauty_cosmetics"], image: "https://images.unsplash.com/photo-1527799820374-dcf8d9d4a388?w=400" },
+        { name: "Fragrances", description: "Perfumes and scents", storeTypes: ["beauty_cosmetics"], image: "https://images.unsplash.com/photo-1541643600914-78b084683601?w=400" },
+        
+        { name: "Furniture", description: "Home and office furniture", storeTypes: ["home_garden"], image: "https://images.unsplash.com/photo-1555041469-a586c61ea9bc?w=400" },
+        { name: "Home Decor", description: "Decorative items and accessories", storeTypes: ["home_garden"], image: "https://images.unsplash.com/photo-1513506003901-1e6a229e2d15?w=400" },
+        { name: "Garden & Outdoor", description: "Garden tools and outdoor supplies", storeTypes: ["home_garden"], image: "https://images.unsplash.com/photo-1416879595882-3373a0480b5b?w=400" },
+        { name: "Kitchen Essentials", description: "Cookware and kitchen accessories", storeTypes: ["home_garden"], image: "https://images.unsplash.com/photo-1556911220-bff31c812dba?w=400" },
+        
+        { name: "Books", description: "Physical and digital books", storeTypes: ["books_media"], image: "https://images.unsplash.com/photo-1495446815901-a7297e633e8d?w=400" },
+        { name: "Magazines", description: "Periodicals and magazines", storeTypes: ["books_media"], image: "https://images.unsplash.com/photo-1604431696980-07b2b9e5a8d1?w=400" },
+        { name: "Audio & Music", description: "Audiobooks, music, and audio media", storeTypes: ["books_media"], image: "https://images.unsplash.com/photo-1505740420928-5e560c06d30e?w=400" },
+        { name: "Digital Media", description: "Digital downloads and e-content", storeTypes: ["books_media"], image: "https://images.unsplash.com/photo-1550745165-9bc0b252726f?w=400" },
+        
+        { name: "Sports Equipment", description: "Athletic and sports equipment", storeTypes: ["sports_fitness"], image: "https://images.unsplash.com/photo-1517649763962-0c623066013b?w=400" },
+        { name: "Athletic Apparel", description: "Sportswear and athletic clothing", storeTypes: ["sports_fitness"], image: "https://images.unsplash.com/photo-1556906781-9a412961c28c?w=400" },
+        { name: "Fitness Supplements", description: "Nutritional and fitness supplements", storeTypes: ["sports_fitness"], image: "https://images.unsplash.com/photo-1593095948071-474c5cc2989d?w=400" },
+        { name: "Sports Accessories", description: "Sports gear and accessories", storeTypes: ["sports_fitness"], image: "https://images.unsplash.com/photo-1461896836934-ffe607ba8211?w=400" },
+        
+        { name: "Packaged Foods", description: "Packaged and processed foods", storeTypes: ["food_beverages"], image: "https://images.unsplash.com/photo-1534483509719-3feaee7c30da?w=400" },
+        { name: "Beverages", description: "Drinks and liquid refreshments", storeTypes: ["food_beverages"], image: "https://images.unsplash.com/photo-1437418747212-8d9709afab22?w=400" },
+        { name: "Snacks", description: "Snack foods and treats", storeTypes: ["food_beverages"], image: "https://images.unsplash.com/photo-1599490659213-e2b9527bd087?w=400" },
+        { name: "Specialty Foods", description: "Gourmet and specialty food items", storeTypes: ["food_beverages"], image: "https://images.unsplash.com/photo-1481487196290-c152efe083f5?w=400" },
+        
+        { name: "Educational Toys", description: "Learning and educational toys", storeTypes: ["toys_games"], image: "https://images.unsplash.com/photo-1515854666411-0d0c8164f2e2?w=400" },
+        { name: "Action Figures & Dolls", description: "Action figures, dolls, and collectibles", storeTypes: ["toys_games"], image: "https://images.unsplash.com/photo-1581776686443-cf643b86e3f2?w=400" },
+        { name: "Board & Card Games", description: "Board games, card games, and puzzles", storeTypes: ["toys_games"], image: "https://images.unsplash.com/photo-1632501641765-e568d28b0015?w=400" },
+        { name: "Outdoor Toys", description: "Outdoor play equipment and toys", storeTypes: ["toys_games"], image: "https://images.unsplash.com/photo-1588681664899-f142ff2dc9b1?w=400" },
+        
+        { name: "Auto Parts", description: "Automotive parts and components", storeTypes: ["automotive"], image: "https://images.unsplash.com/photo-1486262715619-67b85e0b08d3?w=400" },
+        { name: "Car Accessories", description: "Vehicle accessories and add-ons", storeTypes: ["automotive"], image: "https://images.unsplash.com/photo-1449965408869-eaa3f722e40d?w=400" },
+        { name: "Automotive Tools", description: "Tools for car maintenance and repair", storeTypes: ["automotive"], image: "https://images.unsplash.com/photo-1530124566582-a618bc2615dc?w=400" },
+        { name: "Car Care Products", description: "Cleaning and maintenance products", storeTypes: ["automotive"], image: "https://images.unsplash.com/photo-1607860108855-64acf2078ed9?w=400" },
+        
+        { name: "Health Supplements", description: "Vitamins and health supplements", storeTypes: ["health_wellness"], image: "https://images.unsplash.com/photo-1526628953301-3e589a6a8b74?w=400" },
+        { name: "Medical Supplies", description: "Medical equipment and supplies", storeTypes: ["health_wellness"], image: "https://images.unsplash.com/photo-1585435557343-3b092031a831?w=400" },
+        { name: "Wellness Products", description: "Holistic health and wellness items", storeTypes: ["health_wellness"], image: "https://images.unsplash.com/photo-1544367567-0f2fcb009e0b?w=400" },
+        { name: "Fitness & Exercise", description: "Home fitness and exercise products", storeTypes: ["health_wellness"], image: "https://images.unsplash.com/photo-1517836357463-d25dfeac3438?w=400" },
+      ];
+
+      const migrationReport = {
+        createdCategories: [] as any[],
+        matchedProducts: [] as any[],
+        unmatchedProducts: [] as any[],
+        errors: [] as string[],
+      };
+
+      // Step 1: Create default categories with all required fields
+      for (const categoryData of defaultCategories) {
+        const slug = categoryData.name.toLowerCase().replace(/\s+/g, "-").replace(/&/g, "and");
+        
+        // Check if category already exists
+        const existing = await storage.getCategoryBySlug(slug);
+        
+        if (!existing) {
+          if (!dryRun) {
+            try {
+              const created = await storage.createCategory({
+                name: categoryData.name,
+                slug,
+                description: categoryData.description,
+                image: categoryData.image,
+                storeTypes: categoryData.storeTypes,
+                isActive: true,
+              });
+              migrationReport.createdCategories.push(created);
+            } catch (error: any) {
+              migrationReport.errors.push(`Failed to create category "${categoryData.name}": ${error.message}`);
+            }
+          } else {
+            migrationReport.createdCategories.push({ 
+              name: categoryData.name, 
+              slug, 
+              storeTypes: categoryData.storeTypes 
+            });
+          }
+        }
+      }
+
+      // Step 2: Get all products with legacy category text
+      const allProducts = await db.select().from(products).where(isNotNull(products.category));
+
+      // Step 3: Get all categories for matching
+      const allCategories = await storage.getCategories({ isActive: true });
+
+      // Step 4: Match products to categories (case-insensitive)
+      for (const product of allProducts) {
+        if (!product.category) continue;
+
+        // Try to find matching category by name (case-insensitive)
+        const matchedCategory = allCategories.find(
+          cat => cat.name.toLowerCase() === product.category!.toLowerCase()
+        );
+
+        if (matchedCategory) {
+          if (!dryRun) {
+            await db.update(products)
+              .set({ categoryId: matchedCategory.id })
+              .where(eq(products.id, product.id));
+          }
+          migrationReport.matchedProducts.push({
+            productId: product.id,
+            productName: product.name,
+            legacyCategory: product.category,
+            matchedCategoryId: matchedCategory.id,
+            matchedCategoryName: matchedCategory.name,
+          });
+        } else {
+          migrationReport.unmatchedProducts.push({
+            productId: product.id,
+            productName: product.name,
+            legacyCategory: product.category,
+            sellerId: product.sellerId,
+          });
+        }
+      }
+
+      res.json({
+        success: true,
+        dryRun,
+        message: dryRun 
+          ? "Dry run complete - no changes made. Set dryRun=false to execute migration." 
+          : "Migration complete!",
+        report: migrationReport,
+        stats: {
+          categoriesCreated: migrationReport.createdCategories.length,
+          productsMatched: migrationReport.matchedProducts.length,
+          productsUnmatched: migrationReport.unmatchedProducts.length,
+          errors: migrationReport.errors.length,
+        },
+      });
+    } catch (error: any) {
+      res.status(500).json({ error: error.message });
+    }
+  });
+
   // ============ Media Library Routes ============
   app.post("/api/media-library", requireAuth, async (req: AuthRequest, res) => {
     try {
