@@ -137,7 +137,7 @@ export const platformSettings = pgTable("platform_settings", {
 // Stores table for multi-vendor support (backward compatible - optional)
 export const stores = pgTable("stores", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
-  primarySellerId: varchar("primary_seller_id").references(() => users.id),
+  primarySellerId: varchar("primary_seller_id").references(() => users.id).unique(), // Unique constraint: one store per seller
   name: text("name").notNull(),
   description: text("description"),
   logo: text("logo"),

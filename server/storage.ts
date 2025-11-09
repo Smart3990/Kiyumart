@@ -965,6 +965,72 @@ export class DbStorage implements IStorage {
     return newStore;
   }
 
+  // Centralized idempotent store creation/retrieval for sellers
+  // Returns: Store object on success, throws error with specific message on failure
+  async ensureStoreForSeller(sellerId: string, options?: { requireApproval?: boolean }): Promise<Store> {
+    const requireApproval = options?.requireApproval ?? false;
+    
+    // First, check if store already exists
+    const existingStore = await this.getStoreByPrimarySeller(sellerId);
+    if (existingStore) {
+      console.log(`[ensureStoreForSeller] Store ${existingStore.id} already exists for seller ${sellerId}`);
+      return existingStore;
+    }
+
+    // Get seller details
+    const seller = await this.getUser(sellerId);
+    if (!seller) {
+      throw new Error(`Seller account not found`);
+    }
+
+    // Check seller role
+    if (seller.role !== "seller") {
+      throw new Error(`User is not a seller (role: ${seller.role})`);
+    }
+
+    // Optionally check if seller is approved (used by product creation, my-store endpoints)
+    if (requireApproval && !seller.isApproved) {
+      throw new Error(`Seller account is not approved yet. Please wait for admin approval.`);
+    }
+
+    // Validate required fields for store creation
+    if (!seller.storeType) {
+      throw new Error(`Missing required store type. Please ensure the seller has selected a store type during registration.`);
+    }
+
+    // Create store with seller's profile data
+    const storeData = {
+      primarySellerId: sellerId,
+      name: seller.storeName || `${seller.name}'s Store`,
+      description: seller.storeDescription || `Welcome to ${seller.name}'s store`,
+      logo: seller.storeBanner || undefined,
+      banner: seller.storeBanner || undefined,
+      storeType: seller.storeType,
+      storeTypeMetadata: seller.storeTypeMetadata,
+      isActive: true,
+      isApproved: true
+    };
+
+    console.log(`[ensureStoreForSeller] Creating new store for seller ${sellerId}:`, {
+      name: storeData.name,
+      storeType: storeData.storeType,
+      hasLogo: !!storeData.logo,
+      sellerApproved: seller.isApproved
+    });
+
+    try {
+      const newStore = await this.createStore(storeData);
+      console.log(`[ensureStoreForSeller] Successfully created store ${newStore.id} for seller ${sellerId}`);
+      return newStore;
+    } catch (error: any) {
+      console.error(`[ensureStoreForSeller] Database error creating store for seller ${sellerId}:`, {
+        error: error.message,
+        stack: error.stack
+      });
+      throw new Error(`Failed to create store: ${error.message}`);
+    }
+  }
+
   async getStore(id: string): Promise<Store | undefined> {
     const result = await db.select().from(stores).where(eq(stores.id, id)).limit(1);
     return result[0];

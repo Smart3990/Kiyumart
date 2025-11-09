@@ -10,6 +10,21 @@ Preferred communication style: Simple, everyday language.
 
 ## Recent Changes
 
+**November 9, 2025 - CRITICAL BUG FIX: Seller Store Creation & Product Creation**
+- **Fixed seller store creation**: Created centralized `ensureStoreForSeller` helper in storage.ts for idempotent store provisioning
+- **Fixed product creation failures**: Products now auto-create missing stores for approved sellers with proper error handling
+- **Updated approval flow**: Admin approval now atomically creates store BEFORE setting isApproved=true (prevents orphaned approvals)
+- **Added database constraint**: `stores.primarySellerId` now has UNIQUE constraint to prevent duplicate stores per seller
+- **Improved error messages**: All store-related errors now provide specific, actionable guidance (missing approval, storeType, etc.)
+- **Three endpoints refactored**: `/api/users/:id/approve`, `POST /api/products`, `GET /api/stores/my-store` now use centralized helper
+- **Key architectural change**: Store creation is no longer duplicated across multiple endpoints - single source of truth
+- **Result**: Sellers reliably get stores after approval, products always have storeId, zero duplicate stores possible
+
+**November 9, 2025 - Navigation & Branding Fixes**
+- **Fixed live delivery tracking**: Corrected orderId extraction from Wouter location query params
+- **Fixed branding auto-update**: Switched from imported queryClient to useQueryClient() hook for proper React Query provider instance
+- **Added explicit refetch**: Branding changes now immediately update UI via refetchQueries in mutation success handler
+
 **November 9, 2025 - COMPREHENSIVE THEME SYSTEM OVERHAUL**
 - **FIXED BROKEN FONTS**: Added missing CSS variables (--font-sans, --font-serif, --font-mono) that were referenced in Tailwind config but never defined
 - **FONTS NOW USE**: Inter & Poppins (sans-serif), Playfair Display & Lora (serif), JetBrains Mono & Fira Code (monospace)

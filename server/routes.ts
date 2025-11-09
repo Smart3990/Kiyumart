@@ -410,47 +410,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(404).json({ error: "User not found" });
       }
       
-      // Create store BEFORE approving seller to ensure atomicity
+      // For sellers: Create store BEFORE approving to ensure atomicity
       if (user.role === "seller") {
-        const existingStore = await storage.getStoreByPrimarySeller(user.id);
-        if (!existingStore) {
-          const storeData = {
-            primarySellerId: user.id,
-            name: user.storeName || user.name + "'s Store",
-            description: user.storeDescription || "",
-            logo: user.storeBanner || "",
-            storeType: user.storeType,
-            storeTypeMetadata: user.storeTypeMetadata,
-            isActive: true,
-            isApproved: true
-          };
-          
-          console.log(`Creating store for seller ${user.id} before approval:`, {
-            name: storeData.name,
-            storeType: storeData.storeType
+        try {
+          // Use centralized helper (requireApproval=false allows creation before approval)
+          await storage.ensureStoreForSeller(user.id, { requireApproval: false });
+          console.log(`[Approval] Store ensured for seller ${user.id} before approval`);
+        } catch (storeError: any) {
+          console.error(`[Approval] CRITICAL: Failed to ensure store for seller ${user.id}:`, storeError.message);
+          // Store creation failed - DO NOT approve user, return error so admin can retry
+          return res.status(400).json({ 
+            error: `Cannot approve seller: ${storeError.message}`,
+            details: "Please ensure the seller has provided all required information (especially store type) before approval."
           });
-          
-          try {
-            const newStore = await storage.createStore(storeData);
-            console.log(`Successfully created store ${newStore.id} for seller ${user.id}`);
-          } catch (storeError: any) {
-            console.error(`CRITICAL: Failed to create store for seller ${user.id}:`, {
-              error: storeError.message,
-              stack: storeError.stack,
-              userData: {
-                storeName: user.storeName,
-                storeType: user.storeType,
-                hasMetadata: !!user.storeTypeMetadata
-              }
-            });
-            // Store creation failed - DO NOT approve user, return error so admin can retry
-            return res.status(500).json({ 
-              error: "Store creation failed. User not approved. Please retry or contact support.",
-              details: storeError.message 
-            });
-          }
-        } else {
-          console.log(`Store already exists for seller ${user.id}: ${existingStore.id}`);
         }
       }
       
@@ -924,12 +896,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Auto-link products to seller's store if seller is creating the product
       let storeId = req.body.storeId;
       if (req.user!.role === "seller") {
-        const sellerStore = await storage.getStoreByPrimarySeller(req.user!.id);
-        if (sellerStore) {
+        try {
+          // Ensure seller has a store (requires approval and storeType)
+          const sellerStore = await storage.ensureStoreForSeller(req.user!.id, { requireApproval: true });
           storeId = sellerStore.id;
-        } else {
+          console.log(`[Product Creation] Using store ${storeId} for seller ${req.user!.id}`);
+        } catch (storeError: any) {
+          console.error(`[Product Creation] Failed to ensure store for seller ${req.user!.id}:`, storeError.message);
           return res.status(400).json({ 
-            error: "Store not found. Please contact support to set up your store." 
+            error: `Cannot create product: ${storeError.message}`,
+            details: storeError.message.includes("not approved") 
+              ? "Your seller account must be approved by an admin before you can create products."
+              : storeError.message.includes("store type")
+              ? "Please update your profile with a store type before creating products."
+              : "Please contact support for assistance."
           });
         }
       }
@@ -3646,43 +3626,35 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/stores/my-store", requireAuth, requireRole("seller"), async (req: AuthRequest, res) => {
     try {
       console.log(`[/api/stores/my-store] Request from seller ${req.user!.id}`);
-      let store = await storage.getStoreByPrimarySeller(req.user!.id);
       
-      // If no store found, check if seller is approved and auto-create
-      if (!store) {
-        console.log(`[/api/stores/my-store] No store found for seller ${req.user!.id}, checking if approved...`);
-        const seller = await storage.getUser(req.user!.id);
+      try {
+        // Use centralized helper (requireApproval=true ensures only approved sellers get stores)
+        const store = await storage.ensureStoreForSeller(req.user!.id, { requireApproval: true });
+        console.log(`[/api/stores/my-store] Returning store ${store.id} for seller ${req.user!.id}`);
+        res.json(store);
+      } catch (storeError: any) {
+        console.log(`[/api/stores/my-store] Failed to ensure store for seller ${req.user!.id}:`, storeError.message);
         
-        if (seller && seller.isApproved) {
-          console.log(`[/api/stores/my-store] Auto-creating missing store for approved seller ${req.user!.id}`);
-          const storeData = {
-            primarySellerId: req.user!.id,
-            name: seller.storeName || seller.name + "'s Store",
-            description: seller.storeDescription || "",
-            logo: seller.storeBanner || "",
-            storeType: seller.storeType,
-            storeTypeMetadata: seller.storeTypeMetadata,
-            isActive: true,
-            isApproved: true
-          };
-          store = await storage.createStore(storeData);
-          console.log(`[/api/stores/my-store] Successfully auto-created store ${store.id} for seller ${req.user!.id}`);
+        // Return appropriate error based on issue
+        if (storeError.message.includes("not approved")) {
+          return res.status(403).json({ 
+            error: "Your seller account is pending approval. Please wait for an admin to review your application.",
+            code: "PENDING_APPROVAL"
+          });
+        } else if (storeError.message.includes("store type")) {
+          return res.status(400).json({ 
+            error: "Store setup incomplete. Please update your profile with a store type.",
+            code: "MISSING_STORE_TYPE"
+          });
         } else {
-          console.log(`[/api/stores/my-store] Seller ${req.user!.id} is not approved (isApproved: ${seller?.isApproved}), cannot auto-create store`);
+          return res.status(500).json({ 
+            error: `Failed to set up store: ${storeError.message}`,
+            code: "STORE_CREATION_FAILED"
+          });
         }
-      } else {
-        console.log(`[/api/stores/my-store] Found existing store ${store.id} for seller ${req.user!.id}`);
       }
-      
-      if (!store) {
-        console.log(`[/api/stores/my-store] Returning 404 for seller ${req.user!.id} - no store available`);
-        return res.status(404).json({ error: "Store not found" });
-      }
-      
-      console.log(`[/api/stores/my-store] Returning store ${store.id} for seller ${req.user!.id}`);
-      res.json(store);
     } catch (error: any) {
-      console.error(`[/api/stores/my-store] Error fetching seller store for ${req.user!.id}:`, error);
+      console.error(`[/api/stores/my-store] Unexpected error for seller ${req.user!.id}:`, error);
       res.status(500).json({ error: error.message });
     }
   });
