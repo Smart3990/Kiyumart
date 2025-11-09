@@ -37,10 +37,26 @@ interface Seller {
   email: string;
 }
 
+const storeTypeOptions = [
+  { value: "clothing", label: "Clothing & Fashion" },
+  { value: "electronics", label: "Electronics" },
+  { value: "food_beverages", label: "Food & Beverages" },
+  { value: "beauty_cosmetics", label: "Beauty & Cosmetics" },
+  { value: "home_garden", label: "Home & Garden" },
+  { value: "sports_fitness", label: "Sports & Fitness" },
+  { value: "books_media", label: "Books & Media" },
+  { value: "toys_games", label: "Toys & Games" },
+  { value: "automotive", label: "Automotive" },
+  { value: "health_wellness", label: "Health & Wellness" },
+] as const;
+
 const storeSchema = z.object({
   name: z.string().min(3, "Store name must be at least 3 characters"),
   description: z.string().min(10, "Description must be at least 10 characters"),
   logo: z.string().optional(),
+  storeType: z.enum(["clothing", "electronics", "food_beverages", "beauty_cosmetics", "home_garden", "sports_fitness", "books_media", "toys_games", "automotive", "health_wellness"], {
+    required_error: "Please select a store type",
+  }),
   primarySellerId: z.string().min(1, "Please select a seller"),
 });
 
@@ -56,6 +72,7 @@ function CreateStoreDialog({ sellers }: { sellers: Seller[] }) {
       name: "",
       description: "",
       logo: "",
+      storeType: undefined,
       primarySellerId: "",
     },
   });
@@ -66,6 +83,7 @@ function CreateStoreDialog({ sellers }: { sellers: Seller[] }) {
         name: data.name,
         description: data.description,
         logo: data.logo || "",
+        storeType: data.storeType,
         primarySellerId: data.primarySellerId,
         isActive: true,
         isApproved: true,
@@ -153,6 +171,31 @@ function CreateStoreDialog({ sellers }: { sellers: Seller[] }) {
                   <FormControl>
                     <Input placeholder="https://example.com/logo.png" {...field} data-testid="input-store-logo" />
                   </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            <FormField
+              control={form.control}
+              name="storeType"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Store Type</FormLabel>
+                  <Select onValueChange={field.onChange} value={field.value}>
+                    <FormControl>
+                      <SelectTrigger data-testid="select-store-type">
+                        <SelectValue placeholder="Select store type" />
+                      </SelectTrigger>
+                    </FormControl>
+                    <SelectContent>
+                      {storeTypeOptions.map((type) => (
+                        <SelectItem key={type.value} value={type.value}>
+                          {type.label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
                   <FormMessage />
                 </FormItem>
               )}
