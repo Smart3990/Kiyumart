@@ -34,14 +34,14 @@ async function seedAdminAccounts() {
   const adminAccounts = [
     {
       email: process.env.SUPER_ADMIN_EMAIL || "superadmin@kiyumart.com",
-      password: process.env.SUPER_ADMIN_PASSWORD || (isDevelopment ? "SuperAdmin123!" : ""),
+      password: process.env.SUPER_ADMIN_PASSWORD || (isDevelopment ? "superadmin123" : ""),
       name: "Super Administrator",
       role: "super_admin" as const,
       phone: "+233000000001",
     },
     {
       email: process.env.ADMIN_EMAIL || "admin@kiyumart.com",
-      password: process.env.ADMIN_PASSWORD || (isDevelopment ? "Admin123!" : ""),
+      password: process.env.ADMIN_PASSWORD || (isDevelopment ? "admin123" : ""),
       name: "Administrator",
       role: "admin" as const,
       phone: "+233000000002",
@@ -87,8 +87,8 @@ async function seedAdminAccounts() {
   }
   if (isDevelopment) {
     console.log("\n📝 Development credentials:");
-    console.log("Super Admin: superadmin@kiyumart.com / SuperAdmin123!");
-    console.log("Admin: admin@kiyumart.com / Admin123!");
+    console.log("Super Admin: superadmin@kiyumart.com / superadmin123");
+    console.log("Admin: admin@kiyumart.com / admin123");
     console.log("\n⚠️  Using default development passwords. Set environment variables for production!");
   }
   console.log("===============================\n");
