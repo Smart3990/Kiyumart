@@ -31,8 +31,8 @@ const productFormSchema = insertProductSchema.extend({
   price: z.string().min(1, "Price is required"),
   costPrice: z.string().optional(),
   stock: z.number().min(0, "Stock must be 0 or greater"),
-  images: z.array(z.string()).min(1, "At least one image is required"),
-  video: z.string().optional(),
+  images: z.array(z.string().url()).min(5, "Exactly 5 product images are required").max(5, "Maximum 5 images allowed"),
+  video: z.string().url("Product video is required").min(1, "Product video is required"),
 });
 
 type ProductFormData = z.infer<typeof productFormSchema>;
@@ -73,7 +73,7 @@ export default function AdminProductCreate() {
       return apiRequest("POST", "/api/products", {
         ...data,
         images: imageUrls,
-        video: videoUrl || undefined,
+        video: videoUrl,
       });
     },
     onSuccess: () => {
@@ -95,10 +95,19 @@ export default function AdminProductCreate() {
   });
 
   const onSubmit = (data: ProductFormData) => {
-    if (imageUrls.length === 0) {
+    if (imageUrls.length < 5) {
       toast({
         title: "Error",
-        description: "At least one product image is required",
+        description: "Exactly 5 product images are required",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (!videoUrl || videoUrl.trim() === "") {
+      toast({
+        title: "Error",
+        description: "Product video is required",
         variant: "destructive",
       });
       return;
@@ -107,7 +116,7 @@ export default function AdminProductCreate() {
     createProductMutation.mutate({
       ...data,
       images: imageUrls,
-      video: videoUrl || undefined,
+      video: videoUrl,
     });
   };
 

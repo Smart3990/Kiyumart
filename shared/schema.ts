@@ -660,6 +660,9 @@ export const insertProductSchema = createInsertSchema(products).pick({
   tags: true,
   dynamicFields: true,
   storeId: true,
+}).extend({
+  images: z.array(z.string().url()).min(5, "Exactly 5 product images are required").max(5, "Maximum 5 images allowed"),
+  video: z.string().url("Product video is required").min(1, "Product video is required"),
 });
 
 export const insertDeliveryZoneSchema = createInsertSchema(deliveryZones).pick({

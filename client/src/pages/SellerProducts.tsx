@@ -57,8 +57,8 @@ const productSchema = z.object({
   category: z.string().min(1, "Category is required"),
   stockQuantity: z.string().regex(/^\d+$/, "Must be a valid number"),
   tags: z.string().optional(),
-  images: z.array(z.string().url()).max(5, "Maximum 5 images allowed").optional().default([]),
-  videoUrl: z.string().url("Invalid video URL").optional().or(z.literal("")),
+  images: z.array(z.string().url()).min(5, "Exactly 5 product images are required").max(5, "Maximum 5 images allowed"),
+  videoUrl: z.string().url("Product video is required").min(1, "Product video is required"),
   inStock: z.boolean().default(true),
 });
 
