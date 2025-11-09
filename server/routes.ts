@@ -18,6 +18,7 @@ import {
 import { uploadToCloudinary, uploadWithMetadata } from "./cloudinary";
 import { getExchangeRates, convertCurrency, SUPPORTED_CURRENCIES } from "./currency";
 import multer from "multer";
+import sharp from "sharp";
 import { insertUserSchema, insertProductSchema, insertDeliveryZoneSchema, insertOrderSchema, insertWishlistSchema, insertReviewSchema, insertBannerCollectionSchema, insertMarketplaceBannerSchema, insertFooterPageSchema } from "@shared/schema";
 import { getStoreTypeSchema, type StoreType, STORE_TYPES } from "@shared/storeTypes";
 
@@ -362,8 +363,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ error: "File too large. Maximum size is 10MB" });
       }
 
+      // Validate 4K image dimensions (minimum 3840x2160)
+      const metadata = await sharp(req.file.buffer).metadata();
+      const width = metadata.width || 0;
+      const height = metadata.height || 0;
+      
+      if (width < 3840 || height < 2160) {
+        return res.status(400).json({ 
+          error: `Image resolution too low: ${width}×${height}px. Minimum required: 3840×2160px (4K)` 
+        });
+      }
+
       const imageUrl = await uploadToCloudinary(req.file.buffer, "kiyumart/uploads");
-      res.json({ url: imageUrl });
+      res.json({ url: imageUrl, width, height });
     } catch (error: any) {
       console.error("Image upload error:", error);
       res.status(500).json({ error: error.message || "Failed to upload image" });
@@ -389,10 +401,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       const result = await uploadWithMetadata(req.file.buffer, "kiyumart/videos");
       
-      // Check video duration if metadata is available
-      if (result.duration && result.duration > 30) {
+      // Check video duration if metadata is available (must be under 30 seconds)
+      if (result.duration && result.duration >= 30) {
         return res.status(400).json({ 
-          error: `Video is too long (${Math.round(result.duration)}s). Maximum duration is 30 seconds` 
+          error: `Video is too long (${result.duration.toFixed(1)}s). Must be under 30 seconds` 
         });
       }
 

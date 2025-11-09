@@ -132,14 +132,14 @@ export default function MediaUploadInput({
       }
     }
 
-    // Validate video duration (<30 seconds)
+    // Validate video duration (under 30 seconds)
     if (isVideo) {
       try {
         const duration = await validateVideoDuration(file);
-        if (duration > 30) {
+        if (duration >= 30) {
           toast({
             title: "Video too long",
-            description: `Video is ${Math.round(duration)}s. Maximum allowed: 30 seconds`,
+            description: `Video is ${duration.toFixed(1)}s. Must be under 30 seconds`,
             variant: "destructive",
           });
           e.target.value = "";
