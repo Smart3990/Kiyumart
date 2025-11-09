@@ -1732,24 +1732,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
         results.sellers.push(created);
       }
 
-      // Create products for each seller
-      const productTemplates = [
-        { name: "Elegant Black Abaya", category: "Abayas", price: "150.00", costPrice: "80.00", image: "https://images.unsplash.com/photo-1601924994987-69e26d50dc26?w=500", stock: 25, discount: 15, isFeatured: true },
-        { name: "Premium Silk Hijab - Navy", category: "Hijabs", price: "35.00", costPrice: "15.00", image: "https://images.unsplash.com/photo-1583292650898-7d22cd27ca6f?w=500", stock: 50, discount: 10, isFeatured: true },
-        { name: "Floral Maxi Dress", category: "Dresses", price: "120.00", costPrice: "65.00", image: "https://images.unsplash.com/photo-1595777457583-95e059d581b8?w=500", stock: 18, discount: 20, isFeatured: true },
-        { name: "Beige Everyday Abaya", category: "Abayas", price: "95.00", costPrice: "50.00", image: "https://images.unsplash.com/photo-1550639524-72e1a2f61eb7?w=500", stock: 30, discount: 0, isFeatured: false },
-        { name: "Chiffon Hijab Set", category: "Hijabs", price: "45.00", costPrice: "20.00", image: "https://images.unsplash.com/photo-1591085686350-798c0f9faa7f?w=500", stock: 40, discount: 5, isFeatured: true },
-      ];
+      // Create compliant products using media library
+      const { createCompliantProductData, getAllProductBundles } = await import("./seedMediaLibrary");
+      const clothingBundles = getAllProductBundles("clothing");
 
       for (const seller of results.sellers) {
-        for (const template of productTemplates) {
-          const product = await storage.createProduct({
-            ...template,
-            description: `Beautiful ${template.name.toLowerCase()} from ${seller.storeName}`,
-            images: [template.image],
-            sellerId: seller.id,
-            isActive: true
-          } as any);
+        for (let i = 0; i < Math.min(clothingBundles.length, 2); i++) {
+          const productData = createCompliantProductData(seller.id, "clothing", i);
+          const product = await storage.createProduct(productData as any);
           results.products.push(product);
         }
       }
@@ -1810,6 +1800,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Islamic Fashion Products Seed (Development/Testing only)
   app.post("/api/seed/islamic-fashion", async (req, res) => {
     try {
+      const { createCompliantProductData, getAllProductBundles } = await import("./seedMediaLibrary");
+      
       // Get or create a seller for the store
       let seller;
       try {
@@ -1821,11 +1813,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
           password: await bcrypt.hash("store123", 10),
           name: "KiyuMart Store",
           role: "seller" as const,
-          storeName: "KiyuMart - Islamic Fashion"
+          storeName: "KiyuMart - Islamic Fashion",
+          storeType: "clothing"
         });
-        // Approve the seller
+        // Approve the seller after creation
         if (seller) {
-          await storage.updateUser(seller.id, { isActive: true });
+          await storage.updateUser(seller.id, { isApproved: true, isActive: true });
         }
       }
 
@@ -1836,73 +1829,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const products = [];
       const reviews = [];
 
-      // Product 1: Navy Blue Embroidered Modest Dress
-      const product1 = await storage.createProduct({
-        sellerId: seller.id,
-        name: "Navy Blue Embroidered Modest Dress",
-        description: "Beautiful navy blue modest dress with intricate embroidery. Features full-length sleeves and an elegant A-line cut. Perfect for both formal and casual occasions.",
-        category: "evening",
-        price: "229.99",
-        costPrice: "320.00",
-        discount: 28,
-        stock: 0,
-        images: [
-          "/attached_assets/generated_images/Elegant_black_abaya_with_gold_embroidery_cc860cad.png",
-          "/attached_assets/generated_images/Burgundy_velvet_abaya_with_pearls_c19f2d40.png"
-        ],
-        video: "https://www.w3schools.com/html/mov_bbb.mp4"
-      });
-      products.push(product1);
-
-      // Product 2: Pink Lace Abaya Dress
-      const product2 = await storage.createProduct({
-        sellerId: seller.id,
-        name: "Pink Lace Abaya Dress",
-        description: "Elegant pink abaya with beautiful lace details along the hem. Modest and stylish design perfect for special occasions.",
-        category: "abayas",
-        price: "279.99",
-        costPrice: "380.00",
-        discount: 26,
-        stock: 15,
-        images: [
-          "/attached_assets/generated_images/Pink_lace_abaya_dress_53759991.png",
-          "/attached_assets/generated_images/Cream_abaya_with_beige_embroidery_92e12aec.png"
-        ]
-      });
-      products.push(product2);
-
-      // Product 3: Emerald Green Satin Evening Dress
-      const product3 = await storage.createProduct({
-        sellerId: seller.id,
-        name: "Emerald Green Satin Evening Dress",
-        description: "Luxurious emerald green satin dress with elegant draping. Perfect for weddings and formal events.",
-        category: "evening",
-        price: "299.99",
-        costPrice: "400.00",
-        discount: 25,
-        stock: 12,
-        images: [
-          "/attached_assets/generated_images/Burgundy_velvet_abaya_with_pearls_c19f2d40.png",
-          "/attached_assets/generated_images/Elegant_black_abaya_with_gold_embroidery_cc860cad.png"
-        ]
-      });
-      products.push(product3);
-
-      // Product 4: Designer Modest Handbag
-      const product4 = await storage.createProduct({
-        sellerId: seller.id,
-        name: "Designer Modest Handbag",
-        description: "Premium leather handbag in elegant brown color. Spacious interior with multiple compartments.",
-        category: "hijabs",
-        price: "129.99",
-        costPrice: "180.00",
-        discount: 28,
-        stock: 20,
-        images: [
-          "/attached_assets/generated_images/Hijabs_and_accessories_category_09f9b1a2.png"
-        ]
-      });
-      products.push(product4);
+      // Create products using compliant bundles from media library
+      const clothingBundles = getAllProductBundles("clothing");
+      for (let i = 0; i < Math.min(clothingBundles.length, 3); i++) {
+        const productData = createCompliantProductData(seller.id, "clothing", i);
+        const product = await storage.createProduct(productData as any);
+        products.push(product);
+      }
 
       // Create customer accounts for reviews
       const customers = [];
@@ -1933,15 +1866,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       // Add real customer reviews
-      if (customers.length >= 4) {
+      if (customers.length >= 4 && products.length >= 3) {
         const reviewsData = [
-          { productId: product1.id, userId: customers[0]!.id, rating: 5, comment: "Beautiful dress, runs true to size. The embroidery makes it feel very special." },
-          { productId: product1.id, userId: customers[1]!.id, rating: 4, comment: "Absolutely gorgeous dress! The navy blue color is rich and the fit is flattering. Highly recommend!" },
-          { productId: product1.id, userId: customers[2]!.id, rating: 5, comment: "The quality exceeded my expectations. Perfect for formal occasions and very comfortable to wear all day." },
-          { productId: product2.id, userId: customers[0]!.id, rating: 5, comment: "Love the lace details! Very elegant and modest. Got so many compliments." },
-          { productId: product2.id, userId: customers[3]!.id, rating: 4, comment: "Beautiful abaya, the pink color is lovely. Great quality fabric." },
-          { productId: product3.id, userId: customers[1]!.id, rating: 5, comment: "Stunning dress! The emerald green color is absolutely beautiful. Worth every penny." },
-          { productId: product4.id, userId: customers[2]!.id, rating: 5, comment: "Perfect handbag! Good size and the quality is excellent. Very happy with my purchase." }
+          { productId: products[0]!.id, userId: customers[0]!.id, rating: 5, comment: "Beautiful dress, runs true to size. The embroidery makes it feel very special." },
+          { productId: products[0]!.id, userId: customers[1]!.id, rating: 4, comment: "Absolutely gorgeous dress! The navy blue color is rich and the fit is flattering. Highly recommend!" },
+          { productId: products[0]!.id, userId: customers[2]!.id, rating: 5, comment: "The quality exceeded my expectations. Perfect for formal occasions and very comfortable to wear all day." },
+          { productId: products[1]!.id, userId: customers[0]!.id, rating: 5, comment: "Love the lace details! Very elegant and modest. Got so many compliments." },
+          { productId: products[1]!.id, userId: customers[3]!.id, rating: 4, comment: "Beautiful abaya, the pink color is lovely. Great quality fabric." },
+          { productId: products[2]!.id, userId: customers[1]!.id, rating: 5, comment: "Stunning dress! The emerald green color is absolutely beautiful. Worth every penny." },
         ];
 
         for (const review of reviewsData) {
@@ -2036,143 +1968,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post("/api/seed/sample-data", requireAuth, requireRole("seller"), async (req: AuthRequest, res) => {
     try {
       const sellerId = req.user!.id;
+      const { createCompliantProductData, getAllProductBundles } = await import("./seedMediaLibrary");
       
-      const sampleProducts = [
-        {
-          name: "Elegant Black Abaya",
-          description: "Beautiful flowing black abaya with delicate embroidery",
-          price: "150.00",
-          costPrice: "80.00",
-          category: "Abayas",
-          images: ["https://images.unsplash.com/photo-1601924994987-69e26d50dc26?w=500"],
-          stock: 25,
-          discount: 15,
-          isFeatured: true,
-          isActive: true,
-          sellerId
-        },
-        {
-          name: "Premium Silk Hijab - Navy",
-          description: "Soft premium silk hijab in elegant navy color",
-          price: "35.00",
-          costPrice: "15.00",
-          category: "Hijabs",
-          images: ["https://images.unsplash.com/photo-1583292650898-7d22cd27ca6f?w=500"],
-          stock: 50,
-          discount: 10,
-          isFeatured: true,
-          isActive: true,
-          sellerId
-        },
-        {
-          name: "Floral Maxi Dress",
-          description: "Modest floral maxi dress perfect for any occasion",
-          price: "120.00",
-          costPrice: "65.00",
-          category: "Dresses",
-          images: ["https://images.unsplash.com/photo-1595777457583-95e059d581b8?w=500"],
-          stock: 18,
-          discount: 20,
-          isFeatured: true,
-          isActive: true,
-          sellerId
-        },
-        {
-          name: "Beige Everyday Abaya",
-          description: "Comfortable beige abaya for everyday wear",
-          price: "95.00",
-          costPrice: "50.00",
-          category: "Abayas",
-          images: ["https://images.unsplash.com/photo-1550639524-72e1a2f61eb7?w=500"],
-          stock: 30,
-          discount: 0,
-          isFeatured: false,
-          isActive: true,
-          sellerId
-        },
-        {
-          name: "Chiffon Hijab Set - Pastels",
-          description: "Set of 3 pastel colored chiffon hijabs",
-          price: "45.00",
-          costPrice: "20.00",
-          category: "Hijabs",
-          images: ["https://images.unsplash.com/photo-1591085686350-798c0f9faa7f?w=500"],
-          stock: 40,
-          discount: 5,
-          isFeatured: true,
-          isActive: true,
-          sellerId
-        },
-        {
-          name: "Embroidered Evening Abaya",
-          description: "Luxurious evening abaya with gold embroidery",
-          price: "220.00",
-          costPrice: "120.00",
-          category: "Abayas",
-          images: ["https://images.unsplash.com/photo-1609840114035-3c981a782dfe?w=500"],
-          stock: 12,
-          discount: 25,
-          isFeatured: true,
-          isActive: true,
-          sellerId
-        },
-        {
-          name: "Cotton Jersey Hijab - Black",
-          description: "Comfortable cotton jersey hijab in classic black",
-          price: "25.00",
-          costPrice: "12.00",
-          category: "Hijabs",
-          images: ["https://images.unsplash.com/photo-1611652022419-a9419f74343a?w=500"],
-          stock: 60,
-          discount: 0,
-          isFeatured: false,
-          isActive: true,
-          sellerId
-        },
-        {
-          name: "Modest Summer Dress",
-          description: "Light and airy summer dress with long sleeves",
-          price: "85.00",
-          costPrice: "45.00",
-          category: "Dresses",
-          images: ["https://images.unsplash.com/photo-1572804013309-59a88b7e92f1?w=500"],
-          stock: 22,
-          discount: 15,
-          isFeatured: false,
-          isActive: true,
-          sellerId
-        },
-        {
-          name: "Butterfly Abaya - Burgundy",
-          description: "Flowing butterfly abaya in rich burgundy",
-          price: "135.00",
-          costPrice: "70.00",
-          category: "Abayas",
-          images: ["https://images.unsplash.com/photo-1602810319250-a1fa9b04b76c?w=500"],
-          stock: 20,
-          discount: 10,
-          isFeatured: true,
-          isActive: true,
-          sellerId
-        },
-        {
-          name: "Premium Georgette Hijab",
-          description: "Elegant georgette hijab with beautiful drape",
-          price: "40.00",
-          costPrice: "18.00",
-          category: "Hijabs",
-          images: ["https://images.unsplash.com/photo-1618932260643-eee4a2f652a6?w=500"],
-          stock: 35,
-          discount: 0,
-          isFeatured: true,
-          isActive: true,
-          sellerId
-        }
-      ];
-
+      // Create compliant products with 5 images + 1 video each
+      const clothingBundles = getAllProductBundles("clothing");
       const createdProducts = [];
-      for (const product of sampleProducts) {
-        const created = await storage.createProduct(product as any);
+      
+      for (let i = 0; i < Math.min(clothingBundles.length, 3); i++) {
+        const productData = createCompliantProductData(sellerId, "clothing", i);
+        const created = await storage.createProduct(productData as any);
         createdProducts.push(created);
       }
 
