@@ -1,10 +1,10 @@
 import { useState, useEffect } from "react";
 import { useLocation } from "wouter";
-import { useQuery, useMutation } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { queryClient, apiRequest } from "@/lib/queryClient";
+import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import DashboardLayout from "@/components/DashboardLayout";
 import { useAuth } from "@/lib/auth";
@@ -71,6 +71,7 @@ interface PlatformSettings extends SettingsFormData {
 export default function AdminSettings() {
   const [, navigate] = useLocation();
   const { toast } = useToast();
+  const queryClient = useQueryClient();
   const [activeTab, setActiveTab] = useState("general");
   const { user, isAuthenticated, isLoading: authLoading } = useAuth();
 
@@ -135,12 +136,14 @@ export default function AdminSettings() {
       const res = await apiRequest("PATCH", "/api/settings", data);
       return res.json();
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/settings"] });
+    onSuccess: async () => {
+      // Invalidate and immediately refetch settings to update branding
+      await queryClient.invalidateQueries({ queryKey: ["/api/settings"] });
+      await queryClient.refetchQueries({ queryKey: ["/api/settings"] });
       queryClient.invalidateQueries({ queryKey: ["/api/platform-settings"] });
       toast({
         title: "Settings updated",
-        description: "Platform settings have been saved successfully.",
+        description: "Platform settings have been saved successfully. Branding colors updated!",
       });
     },
     onError: (error: Error) => {

@@ -38,13 +38,14 @@ interface RiderLocation {
 }
 
 export default function LiveTracking() {
-  const [, navigate] = useLocation();
+  const [location, navigate] = useLocation();
   const { user, isAuthenticated, isLoading: authLoading } = useAuth();
   const [riderLocation, setRiderLocation] = useState<RiderLocation | null>(null);
   const socketRef = useRef<Socket | null>(null);
   
-  // Get orderId from URL query params
-  const orderId = new URLSearchParams(window.location.search).get("orderId");
+  // Get orderId from query params (safe extraction)
+  const searchParams = new URLSearchParams(location.split('?')[1] || '');
+  const orderId = searchParams.get("orderId");
 
   // Redirect if not authenticated
   useEffect(() => {
