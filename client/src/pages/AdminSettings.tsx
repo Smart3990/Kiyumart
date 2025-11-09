@@ -226,7 +226,7 @@ export default function AdminSettings() {
                     Configure your platform's basic information
                   </CardDescription>
                 </CardHeader>
-                <CardContent className="space-y-4">
+                <CardContent className="space-y-3">
                   <div className="space-y-2">
                     <Label htmlFor="platformName">Platform Name</Label>
                     <Input
@@ -242,8 +242,8 @@ export default function AdminSettings() {
                     )}
                   </div>
 
-                  <div className="flex items-center justify-between p-4 border rounded-lg">
-                    <div className="space-y-1">
+                  <div className="flex items-center justify-between p-3 border rounded-lg">
+                    <div className="space-y-0.5">
                       <Label htmlFor="isMultiVendor">Multi-Vendor Mode</Label>
                       <p className="text-sm text-muted-foreground">
                         Enable multiple sellers to list products on your platform
@@ -257,8 +257,8 @@ export default function AdminSettings() {
                     />
                   </div>
 
-                  <div className="flex items-center justify-between p-4 border rounded-lg">
-                    <div className="space-y-1">
+                  <div className="flex items-center justify-between p-3 border rounded-lg">
+                    <div className="space-y-0.5">
                       <Label htmlFor="allowSellerRegistration">Allow Seller Registration</Label>
                       <p className="text-sm text-muted-foreground">
                         Show "Become a Seller" button on toolbar to allow new seller applications
@@ -272,8 +272,8 @@ export default function AdminSettings() {
                     />
                   </div>
 
-                  <div className="flex items-center justify-between p-4 border rounded-lg">
-                    <div className="space-y-1">
+                  <div className="flex items-center justify-between p-3 border rounded-lg">
+                    <div className="space-y-0.5">
                       <Label htmlFor="allowRiderRegistration">Allow Delivery Partner Registration</Label>
                       <p className="text-sm text-muted-foreground">
                         Show "Become a Delivery Partner" button on toolbar to allow new delivery partner applications
