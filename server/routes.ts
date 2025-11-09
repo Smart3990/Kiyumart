@@ -10,6 +10,7 @@ import {
   hashPassword, 
   comparePassword, 
   generateToken, 
+  verifyToken,
   requireAuth, 
   requireRole,
   type AuthRequest 
@@ -28,6 +29,54 @@ export async function registerRoutes(app: Express): Promise<Server> {
     cors: {
       origin: "*",
       methods: ["GET", "POST"]
+    }
+  });
+
+  // ============ Socket.IO Authentication Middleware ============
+  io.use((socket, next) => {
+    try {
+      // Extract token from httpOnly cookie or auth object
+      let token: string | undefined;
+      
+      // Try to parse token from cookie header
+      const cookieHeader = socket.handshake.headers.cookie;
+      if (cookieHeader) {
+        const cookies = cookieHeader.split(';').reduce((acc, cookie) => {
+          const [key, value] = cookie.trim().split('=');
+          acc[key] = value;
+          return acc;
+        }, {} as Record<string, string>);
+        token = cookies['token'];
+      }
+      
+      // Fallback to auth object (for mobile/SSR clients)
+      if (!token && socket.handshake.auth?.token) {
+        token = socket.handshake.auth.token;
+      }
+      
+      if (!token) {
+        return next(new Error("Authentication required"));
+      }
+      
+      // Verify JWT token
+      const decoded = verifyToken(token);
+      if (!decoded) {
+        return next(new Error("Invalid or expired token"));
+      }
+      
+      // Bind authenticated user to socket
+      socket.data.userId = decoded.id;
+      socket.data.userEmail = decoded.email;
+      socket.data.userRole = decoded.role;
+      
+      // Auto-join user's personal room for targeted messages
+      socket.join(decoded.id);
+      
+      console.log(`✅ Socket authenticated: ${decoded.email} (${decoded.id})`);
+      next();
+    } catch (error) {
+      console.error("Socket.IO authentication error:", error);
+      next(new Error("Authentication failed"));
     }
   });
 
@@ -3059,23 +3108,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
   }
 
   io.on("connection", (socket) => {
-    console.log("User connected:", socket.id);
-
-    socket.on("register", (userId: string) => {
-      userSockets.set(userId, socket.id);
-      socket.join(userId);
-      io.emit("user_online", userId);
-    });
+    const userId = socket.data.userId; // From authentication middleware
+    const userEmail = socket.data.userEmail;
+    
+    console.log(`✅ User connected: ${userEmail} (${userId})`);
+    
+    // Track user socket for online status
+    userSockets.set(userId, socket.id);
+    io.emit("user_online", userId);
 
     socket.on("disconnect", () => {
-      const entries = Array.from(userSockets.entries());
-      for (const [userId, socketId] of entries) {
-        if (socketId === socket.id) {
-          userSockets.delete(userId);
-          io.emit("user_offline", userId);
-          break;
-        }
-      }
+      console.log(`❌ User disconnected: ${userEmail} (${userId})`);
+      userSockets.delete(userId);
+      io.emit("user_offline", userId);
     });
 
     socket.on("typing", ({ receiverId }) => {
@@ -3116,14 +3161,26 @@ export async function registerRoutes(app: Express): Promise<Server> {
       io.to(targetId).emit("call-ended");
     });
 
-    // WhatsApp-style message status handlers
-    socket.on("message_delivered", async ({ messageId, senderId }) => {
+    // WhatsApp-style message status handlers (SECURED with ownership validation)
+    socket.on("message_delivered", async ({ messageId }) => {
       try {
+        const receiverId = socket.data.userId; // Authenticated user from middleware
         const { db } = await import("../db/index");
         const { chatMessages } = await import("@shared/schema");
         const { eq, and, sql: drizzleSql } = await import("drizzle-orm");
 
-        // Mark message as delivered (idempotent - only if not already delivered/read)
+        // Fetch message to validate receiver ownership
+        const message = await db.query.chatMessages.findFirst({
+          where: eq(chatMessages.id, messageId)
+        });
+
+        // Validate: Message must exist AND authenticated user must be the receiver
+        if (!message || message.receiverId !== receiverId) {
+          console.debug(`❌ Invalid message_delivered: messageId=${messageId}, userId=${receiverId}`);
+          return; // Silently ignore to avoid leaking message existence
+        }
+
+        // Mark message as delivered (idempotent - only if currently 'sent')
         await db
           .update(chatMessages)
           .set({ 
@@ -3133,26 +3190,41 @@ export async function registerRoutes(app: Express): Promise<Server> {
           .where(
             and(
               eq(chatMessages.id, messageId),
-              drizzleSql`status = 'sent'::message_status` // Only update if currently 'sent'
+              drizzleSql`status = 'sent'::message_status`
             )
           );
 
-        // Notify sender of delivery
-        io.to(senderId).emit("message_status_updated", {
+        // Notify sender of delivery status using senderId from message record
+        io.to(message.senderId).emit("message_status_updated", {
           messageId,
           status: "delivered",
           deliveredAt: new Date().toISOString()
         });
+
+        console.debug(`✅ Message delivered: ${messageId} from ${message.senderId} to ${receiverId}`);
       } catch (error) {
         console.error("Error marking message as delivered:", error);
+        socket.emit("error", { message: "Failed to update message status" });
       }
     });
 
-    socket.on("message_read", async ({ messageId, senderId }) => {
+    socket.on("message_read", async ({ messageId }) => {
       try {
+        const receiverId = socket.data.userId; // Authenticated user from middleware
         const { db } = await import("../db/index");
         const { chatMessages } = await import("@shared/schema");
         const { eq, and, sql: drizzleSql } = await import("drizzle-orm");
+
+        // Fetch message to validate receiver ownership
+        const message = await db.query.chatMessages.findFirst({
+          where: eq(chatMessages.id, messageId)
+        });
+
+        // Validate: Message must exist AND authenticated user must be the receiver
+        if (!message || message.receiverId !== receiverId) {
+          console.debug(`❌ Invalid message_read: messageId=${messageId}, userId=${receiverId}`);
+          return; // Silently ignore to avoid leaking message existence
+        }
 
         // Mark message as read (idempotent - set delivered if null, always set read)
         const now = new Date();
@@ -3162,19 +3234,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
             status: drizzleSql`'read'::message_status`,
             isRead: true,
             readAt: now,
-            deliveredAt: drizzleSql`COALESCE(delivered_at, ${now})` // Set deliveredAt if null
+            deliveredAt: drizzleSql`COALESCE(delivered_at, ${now})`
           })
           .where(eq(chatMessages.id, messageId));
 
-        // Notify sender of read status
-        io.to(senderId).emit("message_status_updated", {
+        // Notify sender of read status using senderId from message record
+        io.to(message.senderId).emit("message_status_updated", {
           messageId,
           status: "read",
           readAt: now.toISOString(),
           deliveredAt: now.toISOString()
         });
+
+        console.debug(`✅ Message read: ${messageId} from ${message.senderId} to ${receiverId}`);
       } catch (error) {
         console.error("Error marking message as read:", error);
+        socket.emit("error", { message: "Failed to update message status" });
       }
     });
   });
