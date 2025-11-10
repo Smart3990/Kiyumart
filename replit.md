@@ -14,6 +14,7 @@ KiyuMart is an e-commerce platform for modest Islamic women's fashion, functioni
 4. **Auto-Assign Riders**: Round-robin delivery assignment algorithm with load balancing (<10 active orders per rider), seeded 7 test orders across 5 riders
 5. **Video Validation**: Corrected to strict <30 seconds (not ≤30s) per product requirements
 6. **4K Image Enhancement**: Hybrid auto-upscaling system using Cloudinary transformations - automatically enhances images below 4K (3840×2160) with quality validation fallback
+7. **Admin Dashboard Fixes**: Resolved 7 critical navigation and data access issues, fixed notification queryFn bug preventing invalid URLs
 
 ### Technical Improvements
 
@@ -21,6 +22,10 @@ KiyuMart is an e-commerce platform for modest Islamic women's fashion, functioni
 - **Error Handling**: Improved upload endpoints to properly distinguish validation errors (400) from system errors (500)
 - **Image Quality**: Cloudinary integration now includes smart 4K enhancement with crop: "fill", quality: "auto:best", and eager validation
 - **LSP Diagnostics**: Zero TypeScript errors - all compilation issues resolved
+- **Dashboard Navigation**: Fixed Live Delivery and Permissions button routing in AdminDashboardConnected
+- **Role-Based Access**: Broadened Orders and Recent Orders data access from super_admin-only to include admin role
+- **Query Bug Fix**: Added explicit queryFn to all notification pages (Admin, Rider, Seller) to prevent React Query's default fetcher from concatenating multi-element queryKeys with "|" which created invalid URLs like "/api/notifications|admin"
+- **Notification System**: Enhanced with automatic notification creation for order status updates to buyers
 
 ## User Preferences
 
