@@ -50,22 +50,36 @@ function hexToHSL(hex: string): string {
 
 export function useBranding() {
   const { data: settings } = useQuery<PlatformSettings>({
-    queryKey: ["/api/settings"],
+    queryKey: ["/api/platform-settings"],
+    refetchOnMount: true,
+    refetchOnWindowFocus: true,
   });
   
   useEffect(() => {
-    if (settings?.primaryColor) {
+    if (!settings) return;
+    
+    const root = document.documentElement;
+    
+    // Apply all branding colors to CSS variables
+    if (settings.primaryColor) {
       const hslColor = hexToHSL(settings.primaryColor);
-      const root = document.documentElement;
-      
-      // Apply primary color to all related CSS variables
       root.style.setProperty('--primary', hslColor);
       root.style.setProperty('--ring', hslColor);
       root.style.setProperty('--sidebar-primary', hslColor);
       root.style.setProperty('--sidebar-ring', hslColor);
       root.style.setProperty('--chart-1', hslColor);
     }
-  }, [settings?.primaryColor]);
+    
+    // Apply secondary and accent colors if available
+    if (settings.secondaryColor) {
+      root.style.setProperty('--secondary', hexToHSL(settings.secondaryColor));
+    }
+    
+    if (settings.accentColor) {
+      root.style.setProperty('--accent', hexToHSL(settings.accentColor));
+      root.style.setProperty('--destructive', hexToHSL(settings.accentColor));
+    }
+  }, [settings]);
   
   return settings;
 }

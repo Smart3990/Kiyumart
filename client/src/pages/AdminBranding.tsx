@@ -48,7 +48,7 @@ export default function AdminBranding() {
   }, [isAuthenticated, authLoading, user, navigate]);
 
   const { data: settings, isLoading } = useQuery<PlatformSettings>({
-    queryKey: ["/api/settings"],
+    queryKey: ["/api/settings", user?.id],
     enabled: isAuthenticated && (user?.role === "admin" || user?.role === "super_admin"),
   });
 
@@ -72,12 +72,17 @@ export default function AdminBranding() {
       return await apiRequest("PATCH", "/api/settings", data);
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/settings"] });
+      // Invalidate with exact pattern to match the query key
+      queryClient.invalidateQueries({ queryKey: ["/api/settings", user?.id] });
       queryClient.invalidateQueries({ queryKey: ["/api/platform-settings"] });
+      // Also invalidate without user?.id for backwards compatibility
+      queryClient.invalidateQueries({ queryKey: ["/api/settings"] });
       toast({
         title: "Success",
         description: "Branding colors updated successfully",
       });
+      // Force immediate refetch of platform settings for useBranding hook
+      queryClient.refetchQueries({ queryKey: ["/api/platform-settings"] });
     },
     onError: (error: any) => {
       toast({
