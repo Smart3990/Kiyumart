@@ -15,7 +15,7 @@ import {
   requireRole,
   type AuthRequest 
 } from "./auth";
-import { uploadToCloudinary, uploadWithMetadata } from "./cloudinary";
+import { uploadToCloudinary, uploadWithMetadata, uploadWith4KEnhancement } from "./cloudinary";
 import { getExchangeRates, convertCurrency, SUPPORTED_CURRENCIES } from "./currency";
 import multer from "multer";
 import sharp from "sharp";
@@ -363,21 +363,32 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ error: "File too large. Maximum size is 10MB" });
       }
 
-      // Validate 4K image dimensions (minimum 3840x2160)
       const metadata = await sharp(req.file.buffer).metadata();
       const width = metadata.width || 0;
       const height = metadata.height || 0;
       
-      if (width < 3840 || height < 2160) {
-        return res.status(400).json({ 
-          error: `Image resolution too low: ${width}×${height}px. Minimum required: 3840×2160px (4K)` 
-        });
-      }
-
-      const imageUrl = await uploadToCloudinary(req.file.buffer, "kiyumart/uploads");
-      res.json({ url: imageUrl, width, height });
+      const result = await uploadWith4KEnhancement(
+        req.file.buffer, 
+        "kiyumart/uploads", 
+        width, 
+        height
+      );
+      
+      res.json({ 
+        url: result.url, 
+        width: result.width, 
+        height: result.height,
+        enhanced: result.enhanced 
+      });
     } catch (error: any) {
       console.error("Image upload error:", error);
+      
+      if (error.message?.includes("4K enhancement failed") || 
+          error.message?.includes("quality insufficient") ||
+          error.message?.includes("resolution")) {
+        return res.status(400).json({ error: error.message });
+      }
+      
       res.status(500).json({ error: error.message || "Failed to upload image" });
     }
   });
@@ -919,8 +930,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       if (files.images) {
         for (const image of files.images) {
-          const url = await uploadToCloudinary(image.buffer, "kiyumart/products");
-          imageUrls.push(url);
+          const metadata = await sharp(image.buffer).metadata();
+          const width = metadata.width || 0;
+          const height = metadata.height || 0;
+          
+          const result = await uploadWith4KEnhancement(
+            image.buffer,
+            "kiyumart/products",
+            width,
+            height
+          );
+          imageUrls.push(result.url);
         }
       }
 
