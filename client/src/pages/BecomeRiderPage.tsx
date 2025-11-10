@@ -16,21 +16,53 @@ import { Loader2, Bike, ArrowLeft, AlertCircle } from "lucide-react";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 
-const becomeRiderSchema = z.object({
-  name: z.string().min(2, "Name must be at least 2 characters"),
-  email: z.string().email("Invalid email address"),
-  phone: z.string().min(10, "Phone number must be at least 10 characters"),
-  password: z.string().min(8, "Password must be at least 8 characters"),
-  profileImage: z.string().min(1, "Profile image is required"),
-  ghanaCardFront: z.string().min(1, "Ghana Card front image is required"),
-  ghanaCardBack: z.string().min(1, "Ghana Card back image is required"),
-  nationalIdCard: z.string().min(10, "Ghana Card number is required"),
-  businessAddress: z.string().min(5, "Address/Location is required"),
-  vehicleType: z.enum(["car", "motorcycle", "bicycle"], { required_error: "Vehicle type is required" }),
-  vehicleNumber: z.string().optional(),
-  licenseNumber: z.string().optional(),
-  vehicleColor: z.string().optional(),
-});
+const becomeRiderSchema = z.discriminatedUnion("vehicleType", [
+  z.object({
+    name: z.string().min(2, "Name must be at least 2 characters"),
+    email: z.string().email("Invalid email address"),
+    phone: z.string().min(10, "Phone number must be at least 10 characters"),
+    password: z.string().min(8, "Password must be at least 8 characters"),
+    profileImage: z.string().min(1, "Profile image is required"),
+    ghanaCardFront: z.string().min(1, "Ghana Card front image is required"),
+    ghanaCardBack: z.string().min(1, "Ghana Card back image is required"),
+    nationalIdCard: z.string().min(10, "Ghana Card number is required"),
+    businessAddress: z.string().min(5, "Address/Location is required"),
+    vehicleType: z.literal("car"),
+    vehicleNumber: z.string().min(1, "Plate number is required for cars"),
+    licenseNumber: z.string().min(1, "Driver's license is required for cars"),
+    vehicleColor: z.string().min(1, "Vehicle color is required for cars"),
+  }),
+  z.object({
+    name: z.string().min(2, "Name must be at least 2 characters"),
+    email: z.string().email("Invalid email address"),
+    phone: z.string().min(10, "Phone number must be at least 10 characters"),
+    password: z.string().min(8, "Password must be at least 8 characters"),
+    profileImage: z.string().min(1, "Profile image is required"),
+    ghanaCardFront: z.string().min(1, "Ghana Card front image is required"),
+    ghanaCardBack: z.string().min(1, "Ghana Card back image is required"),
+    nationalIdCard: z.string().min(10, "Ghana Card number is required"),
+    businessAddress: z.string().min(5, "Address/Location is required"),
+    vehicleType: z.literal("motorcycle"),
+    vehicleNumber: z.string().min(1, "Plate number is required for motorcycles"),
+    licenseNumber: z.string().min(1, "Driver's license is required for motorcycles"),
+    vehicleColor: z.string().optional(),
+  }),
+  z.object({
+    name: z.string().min(2, "Name must be at least 2 characters"),
+    email: z.string().email("Invalid email address"),
+    phone: z.string().min(10, "Phone number must be at least 10 characters"),
+    password: z.string().min(8, "Password must be at least 8 characters"),
+    profileImage: z.string().min(1, "Profile image is required"),
+    ghanaCardFront: z.string().min(1, "Ghana Card front image is required"),
+    ghanaCardBack: z.string().min(1, "Ghana Card back image is required"),
+    nationalIdCard: z.string().min(10, "Ghana Card number is required"),
+    businessAddress: z.string().min(5, "Address/Location is required"),
+    vehicleType: z.literal("bicycle"),
+    vehicleNumber: z.string().optional(),
+    licenseNumber: z.string().optional(),
+    vehicleColor: z.string().optional(),
+  }),
+]);
 
 type BecomeRiderFormData = z.infer<typeof becomeRiderSchema>;
 

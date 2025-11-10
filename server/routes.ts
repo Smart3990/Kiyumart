@@ -2304,6 +2304,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  app.get("/api/riders/available", requireAuth, requireRole("admin", "seller", "super_admin"), async (req, res) => {
+    try {
+      const availableRiders = await storage.getAvailableRidersWithOrderCounts();
+      res.json(availableRiders);
+    } catch (error: any) {
+      res.status(400).json({ error: error.message });
+    }
+  });
+
   // ============ Delivery Tracking Routes ============
   app.post("/api/delivery-tracking", requireAuth, requireRole("rider"), async (req: AuthRequest, res) => {
     try {
@@ -3719,6 +3728,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(404).json({ error: "Store not found" });
       }
       res.json(store);
+    } catch (error: any) {
+      res.status(400).json({ error: error.message });
+    }
+  });
+
+  app.get("/api/stores/:storeId/categories", async (req, res) => {
+    try {
+      const categories = await storage.getCategoriesByStore(req.params.storeId);
+      res.json(categories);
     } catch (error: any) {
       res.status(400).json({ error: error.message });
     }

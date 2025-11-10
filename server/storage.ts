@@ -122,6 +122,7 @@ export interface IStorage {
   getCategory(id: string): Promise<any | undefined>;
   getCategoryBySlug(slug: string): Promise<any | undefined>;
   getCategories(filters?: { isActive?: boolean }): Promise<any[]>;
+  getCategoriesByStore(storeId: string): Promise<any[]>;
   updateCategory(id: string, data: any): Promise<any | undefined>;
   deleteCategory(id: string): Promise<boolean>;
   
@@ -1148,6 +1149,33 @@ export class DbStorage implements IStorage {
   async deleteCategory(id: string): Promise<boolean> {
     const result = await db.delete(categories).where(eq(categories.id, id));
     return result.rowCount !== null && result.rowCount > 0;
+  }
+
+  async getCategoriesByStore(storeId: string): Promise<Category[]> {
+    const categoriesWithProducts = await db
+      .selectDistinct({
+        id: categories.id,
+        name: categories.name,
+        slug: categories.slug,
+        description: categories.description,
+        image: categories.image,
+        storeTypes: categories.storeTypes,
+        isActive: categories.isActive,
+        displayOrder: categories.displayOrder,
+        createdAt: categories.createdAt,
+        updatedAt: categories.updatedAt,
+      })
+      .from(products)
+      .innerJoin(categories, eq(products.categoryId, categories.id))
+      .where(
+        and(
+          eq(products.storeId, storeId),
+          eq(categories.isActive, true)
+        )
+      )
+      .orderBy(categories.displayOrder, categories.name);
+
+    return categoriesWithProducts;
   }
 
   // Media Library operations

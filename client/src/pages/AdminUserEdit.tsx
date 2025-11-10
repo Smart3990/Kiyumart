@@ -48,6 +48,11 @@ export default function AdminUserEdit() {
 
   const { data: userData, isLoading: userLoading } = useQuery<User>({
     queryKey: ["/api/users", userId],
+    queryFn: async () => {
+      const res = await fetch(`/api/users/${userId}`, { credentials: "include" });
+      if (!res.ok) throw new Error("Failed to fetch user");
+      return res.json();
+    },
     enabled: !!userId && isAuthenticated && (user?.role === "admin" || user?.role === "super_admin"),
   });
 

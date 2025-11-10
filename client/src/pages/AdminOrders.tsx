@@ -31,6 +31,15 @@ interface Order {
   deliveryPhone?: string;
 }
 
+interface AvailableRider {
+  rider: {
+    id: string;
+    name: string;
+    email: string;
+  };
+  activeOrderCount: number;
+}
+
 function ViewOrderDialog({ orderId }: { orderId: string }) {
   const [open, setOpen] = useState(false);
   const { toast } = useToast();
@@ -41,6 +50,16 @@ function ViewOrderDialog({ orderId }: { orderId: string }) {
     queryFn: async () => {
       const res = await fetch(`/api/orders/${orderId}`);
       if (!res.ok) throw new Error("Failed to fetch order details");
+      return res.json();
+    },
+    enabled: open,
+  });
+
+  const { data: availableRiders = [], isLoading: ridersLoading } = useQuery<AvailableRider[]>({
+    queryKey: ["/api/riders/available"],
+    queryFn: async () => {
+      const res = await fetch("/api/riders/available", { credentials: "include" });
+      if (!res.ok) throw new Error("Failed to fetch available riders");
       return res.json();
     },
     enabled: open,
@@ -62,6 +81,28 @@ function ViewOrderDialog({ orderId }: { orderId: string }) {
       toast({
         title: "Error",
         description: error.message || "Failed to update order status",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const assignRiderMutation = useMutation({
+    mutationFn: async (riderId: string) => {
+      return apiRequest("PATCH", `/api/orders/${orderId}/assign-rider`, { riderId });
+    },
+    onSuccess: () => {
+      toast({
+        title: "Success",
+        description: "Rider assigned successfully",
+      });
+      queryClient.invalidateQueries({ queryKey: ["/api/orders"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/orders", orderId] });
+      queryClient.invalidateQueries({ queryKey: ["/api/riders/available"] });
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to assign rider",
         variant: "destructive",
       });
     },
@@ -130,6 +171,33 @@ function ViewOrderDialog({ orderId }: { orderId: string }) {
                 <p className="font-semibold text-primary">{formatPrice(parseFloat(orderDetails.total))}</p>
               </div>
             </div>
+
+            {orderDetails.deliveryMethod === "delivery" && (
+              <div className="border-t pt-4">
+                <p className="text-sm font-medium text-muted-foreground mb-2">Assign Rider</p>
+                <Select
+                  defaultValue={orderDetails.riderId || ""}
+                  onValueChange={(value) => assignRiderMutation.mutate(value)}
+                  disabled={assignRiderMutation.isPending || ridersLoading}
+                >
+                  <SelectTrigger data-testid="select-rider">
+                    <SelectValue placeholder={ridersLoading ? "Loading riders..." : orderDetails.riderId ? "Rider assigned" : "Select a rider"} />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {availableRiders.length === 0 && !ridersLoading && (
+                      <div className="px-2 py-3 text-sm text-muted-foreground text-center">
+                        No available riders
+                      </div>
+                    )}
+                    {availableRiders.map((item) => (
+                      <SelectItem key={item.rider.id} value={item.rider.id}>
+                        {item.rider.name} ({item.activeOrderCount} active orders)
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
 
             {orderDetails.deliveryAddress && (
               <div>
