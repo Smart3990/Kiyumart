@@ -69,6 +69,14 @@ export default function AdminMessages() {
 
   const { data: messages = [], isLoading: messagesLoading } = useQuery<Message[]>({
     queryKey: ["/api/messages", selectedUserId],
+    queryFn: async () => {
+      if (!selectedUserId) return [];
+      const res = await apiRequest("GET", `/api/messages/${selectedUserId}`);
+      if (!res.ok) {
+        throw new Error("Failed to load messages");
+      }
+      return res.json();
+    },
     enabled: !!selectedUserId,
   });
 
