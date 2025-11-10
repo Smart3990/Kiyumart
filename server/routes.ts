@@ -881,7 +881,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           plateNumber: plateNumber || "",
           license: license || "",
           color: color || ""
-        };
+        } as { type: string; plateNumber?: string; license?: string; color?: string };
       }
 
       const hashedPassword = await bcrypt.hash(password, 10);
@@ -1681,7 +1681,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           password: await bcrypt.hash("rider123", 10),
           name: "Test Rider",
           role: "rider",
-          vehicleInfo: { type: "motorcycle", number: "TEST-001", license: "LIC-001" },
+          vehicleInfo: { type: "motorcycle", plateNumber: "TEST-001", license: "LIC-001" } as { type: string; plateNumber?: string; license?: string; color?: string },
           nationalIdCard: "TEST-ID-001",
           isActive: true,
           isApproved: true,
@@ -2161,6 +2161,37 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       const validatedOrder = insertOrderSchema.parse(orderInput);
       const order = await storage.createOrder(validatedOrder, validatedItems);
+      
+      // Automatic rider assignment with round-robin load balancing
+      try {
+        const availableRiders = await storage.getAvailableRidersWithOrderCounts();
+        
+        if (availableRiders.length > 0) {
+          const selectedRider = availableRiders[0];
+          
+          const updatedOrder = await storage.assignRider(order.id, selectedRider.rider.id);
+          
+          await storage.createNotification({
+            userId: selectedRider.rider.id,
+            type: 'order',
+            title: 'New Order Assigned',
+            message: `Order ${order.orderNumber} has been automatically assigned to you`,
+            metadata: { orderId: order.id, orderNumber: order.orderNumber } as any
+          });
+          
+          io.to(selectedRider.rider.id).emit('new_order_assigned', {
+            orderId: order.id,
+            orderNumber: order.orderNumber,
+            message: `New order ${order.orderNumber} assigned to you`
+          });
+          
+          console.log(`✅ Auto-assigned order ${order.orderNumber} to rider ${selectedRider.rider.name} (${selectedRider.activeOrderCount} active orders)`);
+        } else {
+          console.log(`⚠️ No available riders for order ${order.orderNumber}`);
+        }
+      } catch (riderAssignmentError: any) {
+        console.error('Rider auto-assignment failed:', riderAssignmentError);
+      }
       
       // NOTE: Order notification will be sent after successful payment verification
       // See /api/payments/verify/:reference endpoint
@@ -3171,6 +3202,55 @@ export async function registerRoutes(app: Express): Promise<Server> {
     socket.on("call-ended", ({ targetId }) => {
       console.log(`Call ended, notifying ${targetId}`);
       io.to(targetId).emit("call-ended");
+    });
+
+    // Admin WebRTC Call Signaling Events (underscore-based for admin calling feature)
+    socket.on("call_initiate", async ({ targetUserId }) => {
+      try {
+        const callerId = socket.data.userId;
+        const callerRole = socket.data.userRole;
+        
+        const caller = await storage.getUser(callerId);
+        if (!caller) {
+          socket.emit("error", { message: "Caller not found" });
+          return;
+        }
+
+        console.log(`📞 Call initiated from ${caller.name} (${callerId}) to ${targetUserId}`);
+        
+        io.to(targetUserId).emit("call_initiate", {
+          callerId,
+          callerName: caller.name,
+          callerRole
+        });
+      } catch (error) {
+        console.error("Error initiating call:", error);
+        socket.emit("error", { message: "Failed to initiate call" });
+      }
+    });
+
+    socket.on("call_offer", ({ offer, targetUserId }) => {
+      console.log(`📞 Call offer from ${socket.data.userId} to ${targetUserId}`);
+      io.to(targetUserId).emit("call_offer", {
+        offer,
+        callerId: socket.data.userId
+      });
+    });
+
+    socket.on("call_answer", ({ answer, targetUserId }) => {
+      console.log(`📞 Call answer from ${socket.data.userId} to ${targetUserId}`);
+      io.to(targetUserId).emit("call_answer", { answer });
+    });
+
+    socket.on("ice_candidate", ({ candidate, targetUserId }) => {
+      io.to(targetUserId).emit("ice_candidate", { candidate });
+    });
+
+    socket.on("call_end", ({ targetUserId }) => {
+      console.log(`📞 Call ended by ${socket.data.userId}, notifying ${targetUserId}`);
+      if (targetUserId) {
+        io.to(targetUserId).emit("call_end");
+      }
     });
 
     // WhatsApp-style message status handlers (SECURED with ownership validation)

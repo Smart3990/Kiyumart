@@ -11,9 +11,10 @@ import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
-import { Loader2, Search, User, Edit, Ban, MessageSquare, Trash2, ArrowLeft, CheckCircle, XCircle, UserCog } from "lucide-react";
+import { Loader2, Search, User, Edit, Ban, MessageSquare, Trash2, ArrowLeft, CheckCircle, XCircle, UserCog, Phone } from "lucide-react";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from "@/components/ui/dialog";
 import { apiRequest, queryClient } from "@/lib/queryClient";
+import { VideoCallModal } from "@/components/VideoCallModal";
 
 interface UserData {
   id: string;
@@ -37,6 +38,8 @@ export default function AdminUsers() {
   
   const [confirmBanUser, setConfirmBanUser] = useState<{ id: string; name: string; isActive: boolean } | null>(null);
   const [confirmDeleteUser, setConfirmDeleteUser] = useState<{ id: string; name: string } | null>(null);
+  const [callModalOpen, setCallModalOpen] = useState(false);
+  const [userToCall, setUserToCall] = useState<{ id: string; name: string } | null>(null);
 
   useEffect(() => {
     if (!authLoading && (!isAuthenticated || (user?.role !== "admin" && user?.role !== "super_admin"))) {
@@ -289,6 +292,18 @@ export default function AdminUsers() {
           <Button 
             variant="ghost" 
             size="icon"
+            onClick={() => {
+              setUserToCall({ id: userData.id, name: userData.name || userData.username });
+              setCallModalOpen(true);
+            }}
+            data-testid={`button-call-${userData.id}`}
+            title="Call user"
+          >
+            <Phone className="h-4 w-4 text-green-600" />
+          </Button>
+          <Button 
+            variant="ghost" 
+            size="icon"
             onClick={() => navigate(`/admin/users/${userData.id}/edit`)}
             data-testid={`button-edit-${userData.id}`}
             title="Edit user"
@@ -501,6 +516,17 @@ export default function AdminUsers() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* Video Call Modal */}
+      {userToCall && (
+        <VideoCallModal
+          open={callModalOpen}
+          onOpenChange={setCallModalOpen}
+          targetUserId={userToCall.id}
+          targetUserName={userToCall.name}
+          isInitiator={true}
+        />
+      )}
     </DashboardLayout>
   );
 }

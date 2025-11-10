@@ -128,7 +128,7 @@ async function seed() {
         name: `Rider ${i + 1}`,
         role: "rider",
         phone: `+233${2500000000 + i}`,
-        vehicleInfo: { type: i % 2 === 0 ? "motorcycle" : "bicycle", plateNumber: `GH-${1000 + i}` },
+        vehicleInfo: { type: i % 2 === 0 ? "motorcycle" : "bicycle", plateNumber: `GH-${1000 + i}` } as { type: string; plateNumber?: string; license?: string; color?: string },
         isApproved: true,
         profileImage: `https://res.cloudinary.com/demo/image/upload/sample.jpg`
       }).returning();
@@ -980,8 +980,9 @@ async function seed() {
       }
     ];
 
+    const insertedProducts: typeof products.$inferSelect[] = [];
     for (const prod of clothingProducts) {
-      await db.insert(products).values({
+      const [inserted] = await db.insert(products).values({
         name: prod.name,
         description: prod.description,
         price: prod.price,
@@ -992,7 +993,8 @@ async function seed() {
         categoryId: prod.categoryId,
         stock: prod.stock,
         isActive: true
-      });
+      }).returning();
+      insertedProducts.push(inserted);
     }
 
     console.log(`✅ Created ${clothingProducts.length} products with 4K images`);
@@ -1035,6 +1037,59 @@ async function seed() {
       }
     ]);
 
+    console.log("📦 Seeding test orders with rider assignments...");
+    const testOrders = [];
+    for (let i = 0; i < 7; i++) {
+      const buyer = buyers[i % buyers.length];
+      const seller = clothingSeller;
+      const product = insertedProducts[i % insertedProducts.length];
+      const zone = zoneRecords[i % zoneRecords.length];
+      const rider = riders[i % riders.length];
+      
+      const subtotal = parseFloat(product.price) * 2;
+      const deliveryFee = parseFloat(zone.fee);
+      const processingFee = (subtotal + deliveryFee) * 0.0195;
+      const total = subtotal + deliveryFee + processingFee;
+      
+      const statuses = ['processing', 'processing', 'delivering', 'delivering', 'delivered', 'processing', 'delivering'];
+      const status = statuses[i];
+      
+      const orderNumber = `ORD-${Date.now() + i}`;
+      const qrCode = `${orderNumber}-${buyer.id}`;
+      
+      const [order] = await db.insert(orders).values({
+        orderNumber,
+        qrCode,
+        buyerId: buyer.id,
+        sellerId: seller.id,
+        riderId: rider.id,
+        subtotal: subtotal.toFixed(2),
+        deliveryFee: deliveryFee.toFixed(2),
+        processingFee: processingFee.toFixed(2),
+        total: total.toFixed(2),
+        status,
+        deliveryMethod: 'rider',
+        deliveryZoneId: zone.id,
+        deliveryAddress: `${buyer.name}'s Address, ${zone.name}, Ghana`,
+        deliveryPhone: buyer.phone || '+233200000000',
+        paymentStatus: 'completed',
+        paymentReference: `PAY-${Date.now() + i}`,
+        deliveredAt: status === 'delivered' ? new Date() : null
+      } as any).returning();
+      
+      await db.insert(orderItems).values({
+        orderId: order.id,
+        productId: product.id,
+        quantity: 2,
+        price: product.price,
+        total: subtotal.toFixed(2)
+      });
+      
+      testOrders.push(order);
+    }
+
+    console.log(`✅ Created ${testOrders.length} test orders distributed across ${riders.length} riders`);
+
     console.log("\n✨ Seed completed successfully!");
     console.log("\n📊 Summary:");
     console.log(`   👤 Users: ${1 + 2 + sellers.length + riders.length + buyers.length}`);
@@ -1046,6 +1101,7 @@ async function seed() {
     console.log(`   🏪 Stores: ${storesData.length}`);
     console.log(`   📑 Categories: ${allCategories.length} (5 per store type)`);
     console.log(`   🛍️  Products: ${clothingProducts.length}`);
+    console.log(`   📦 Test Orders: ${testOrders.length} (distributed across riders)`);
     console.log(`   🎨 Hero Banners: 2`);
     console.log(`   📄 Footer Pages: 2`);
     console.log(`   🚚 Delivery Zones: ${zones.length}`);

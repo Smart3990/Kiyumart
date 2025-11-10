@@ -43,6 +43,7 @@ export interface IStorage {
   updateOrderStatus(id: string, status: string): Promise<Order | undefined>;
   updateOrder(orderId: string, data: Partial<Order>): Promise<Order | undefined>;
   assignRider(orderId: string, riderId: string): Promise<Order | undefined>;
+  getAvailableRidersWithOrderCounts(): Promise<Array<{ rider: User; activeOrderCount: number }>>;
   
   // Delivery Zone operations
   createDeliveryZone(zone: InsertDeliveryZone): Promise<DeliveryZone>;
@@ -335,6 +336,41 @@ export class DbStorage implements IStorage {
       updatedAt: new Date()
     }).where(eq(orders.id, orderId)).returning();
     return result[0];
+  }
+
+  async getAvailableRidersWithOrderCounts(): Promise<Array<{ rider: User; activeOrderCount: number }>> {
+    const allRiders = await db.select().from(users)
+      .where(
+        and(
+          eq(users.role, 'rider'),
+          eq(users.isApproved, true),
+          eq(users.isActive, true)
+        )
+      );
+
+    const ridersWithCounts = await Promise.all(
+      allRiders.map(async (rider) => {
+        const activeOrders = await db.select()
+          .from(orders)
+          .where(
+            and(
+              eq(orders.riderId, rider.id),
+              or(
+                eq(orders.status, 'processing'),
+                eq(orders.status, 'delivering')
+              )
+            )
+          );
+        
+        return {
+          rider,
+          activeOrderCount: activeOrders.length
+        };
+      })
+    );
+
+    return ridersWithCounts.filter(r => r.activeOrderCount < 10)
+      .sort((a, b) => a.activeOrderCount - b.activeOrderCount);
   }
 
   // Delivery Zone operations
