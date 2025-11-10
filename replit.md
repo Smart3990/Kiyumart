@@ -4,6 +4,18 @@
 
 KiyuMart is an e-commerce platform for modest Islamic women's fashion, functioning as both a single-store and multi-vendor marketplace. It provides comprehensive e-commerce features including product and order management, real-time delivery tracking, live chat, and Paystack payments. The platform supports a diverse product range, dynamic category and store management, extensive admin dashboards, and a robust application verification system for sellers and riders. The project aims to deliver a seamless and inclusive online shopping experience within the modest fashion market.
 
+## Recent Changes (November 10, 2025)
+
+1. **Hero Banner CTAs**: Wired action buttons ("Shop Now", "Explore Collection", "View Deals") to navigate to product pages with proper filtering
+2. **Product Expansion**: Seeded 50+ Islamic women's fashion products across 5 categories (Hijabs, Abayas, Modest Dresses, Islamic Accessories, Modest Footwear) with stock imagery
+3. **FREE WebRTC Calling**: Implemented peer-to-peer video/voice calling for admins using browser APIs + Socket.IO signaling (no paid services)
+4. **Auto-Assign Riders**: Round-robin delivery assignment algorithm with load balancing (<10 active orders per rider), seeded 7 test orders across 5 riders
+5. **Video Validation**: Corrected to strict <30 seconds (not ≤30s) per product requirements
+
+### Known Issues
+
+- TypeScript LSP warning for `vehicleInfo` JSONB type inference (non-blocking, app runs correctly)
+
 ## User Preferences
 
 Preferred communication style: Simple, everyday language.
