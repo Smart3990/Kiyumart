@@ -51,6 +51,10 @@ export default function AdminDashboardConnected() {
     const path = location;
     if (path === "/admin" || path === "/admin/") {
       setActiveItem("dashboard");
+    } else if (path.includes("/admin/delivery-tracking")) {
+      setActiveItem("delivery-tracking");
+    } else if (path.includes("/admin/permissions")) {
+      setActiveItem("permissions");
     } else if (path.includes("/admin/store")) {
       setActiveItem("store");
     } else if (path.includes("/admin/branding")) {
@@ -95,6 +99,8 @@ export default function AdminDashboardConnected() {
   const handleItemClick = (id: string) => {
     navigate(
       id === "dashboard" ? "/admin" :
+      id === "delivery-tracking" ? "/admin/delivery-tracking" :
+      id === "permissions" ? "/admin/permissions" :
       id === "store" ? "/admin/store" :
       id === "branding" ? "/admin/branding" :
       id === "categories" ? "/admin/categories" :
@@ -119,12 +125,12 @@ export default function AdminDashboardConnected() {
 
   const { data: analytics, isLoading: analyticsLoading } = useQuery<Analytics>({
     queryKey: ["/api/analytics"],
-    enabled: isAuthenticated && user?.role === "super_admin",
+    enabled: isAuthenticated && (user?.role === "admin" || user?.role === "super_admin"),
   });
 
   const { data: orders = [], isLoading: ordersLoading } = useQuery<Order[]>({
     queryKey: ["/api/orders"],
-    enabled: isAuthenticated && user?.role === "super_admin",
+    enabled: isAuthenticated && (user?.role === "admin" || user?.role === "super_admin"),
   });
 
   const { data: buyers = [] } = useQuery<User[]>({
@@ -135,7 +141,7 @@ export default function AdminDashboardConnected() {
       const data = await res.json();
       return Array.isArray(data) ? data : [];
     },
-    enabled: isAuthenticated && user?.role === "super_admin",
+    enabled: isAuthenticated && (user?.role === "admin" || user?.role === "super_admin"),
   });
 
   if (authLoading || !isAuthenticated || (user?.role !== "super_admin" && user?.role !== "admin")) {

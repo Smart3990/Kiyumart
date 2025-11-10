@@ -2224,14 +2224,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.get("/api/orders", requireAuth, async (req: AuthRequest, res) => {
     try {
-      const userRole = req.user!.role as "admin" | "buyer" | "seller" | "rider" | "agent";
+      const userRole = req.user!.role as "admin" | "super_admin" | "buyer" | "seller" | "rider" | "agent";
       // Allow context override: buyers can shop, sellers/riders/agents can view purchases vs their work orders
       const context = (req.query.context as string) || userRole;
       
       let orders: any[];
       
-      // Admin sees all orders by default, unless context=buyer is specified
-      if (userRole === "admin" && context === "admin") {
+      // Admin and super_admin see all orders by default, unless context=buyer is specified
+      if ((userRole === "admin" || userRole === "super_admin") && (context === "admin" || context === "super_admin")) {
         orders = await storage.getAllOrders();
       } else {
         // For all other cases, use context-based filtering
@@ -2276,6 +2276,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (!order) {
         return res.status(404).json({ error: "Order not found" });
       }
+      
+      // Create notification for buyer about status update
+      await storage.createNotification({
+        userId: order.buyerId,
+        type: "order",
+        title: "Order Status Updated",
+        message: `Your order #${order.orderNumber} status has been updated to ${status}`,
+        metadata: { orderId: order.id, orderNumber: order.orderNumber, status }
+      });
       
       // Emit real-time order status update to buyer
       io.to(order.buyerId).emit("order_status_updated", {
