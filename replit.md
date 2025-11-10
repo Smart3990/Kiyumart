@@ -6,15 +6,21 @@ KiyuMart is an e-commerce platform for modest Islamic women's fashion, functioni
 
 ## Recent Changes (November 10, 2025)
 
+### Completed Features
+
 1. **Hero Banner CTAs**: Wired action buttons ("Shop Now", "Explore Collection", "View Deals") to navigate to product pages with proper filtering
 2. **Product Expansion**: Seeded 50+ Islamic women's fashion products across 5 categories (Hijabs, Abayas, Modest Dresses, Islamic Accessories, Modest Footwear) with stock imagery
 3. **FREE WebRTC Calling**: Implemented peer-to-peer video/voice calling for admins using browser APIs + Socket.IO signaling (no paid services)
 4. **Auto-Assign Riders**: Round-robin delivery assignment algorithm with load balancing (<10 active orders per rider), seeded 7 test orders across 5 riders
 5. **Video Validation**: Corrected to strict <30 seconds (not ≤30s) per product requirements
+6. **4K Image Enhancement**: Hybrid auto-upscaling system using Cloudinary transformations - automatically enhances images below 4K (3840×2160) with quality validation fallback
 
-### Known Issues
+### Technical Improvements
 
-- TypeScript LSP warning for `vehicleInfo` JSONB type inference (non-blocking, app runs correctly)
+- **Type Safety**: Fixed `vehicleInfo` JSONB type inference issues across rider seed data and application routes
+- **Error Handling**: Improved upload endpoints to properly distinguish validation errors (400) from system errors (500)
+- **Image Quality**: Cloudinary integration now includes smart 4K enhancement with crop: "fill", quality: "auto:best", and eager validation
+- **LSP Diagnostics**: Zero TypeScript errors - all compilation issues resolved
 
 ## User Preferences
 
