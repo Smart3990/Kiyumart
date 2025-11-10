@@ -252,7 +252,7 @@ export default function AdminOrders() {
   }, [isAuthenticated, authLoading, user, navigate]);
 
   const { data: orders = [], isLoading } = useQuery<Order[]>({
-    queryKey: ["/api/orders"],
+    queryKey: ["/api/orders", user?.id],
     enabled: isAuthenticated && (user?.role === "admin" || user?.role === "super_admin"),
   });
 

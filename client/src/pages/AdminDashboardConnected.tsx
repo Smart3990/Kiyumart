@@ -129,7 +129,7 @@ export default function AdminDashboardConnected() {
   });
 
   const { data: orders = [], isLoading: ordersLoading } = useQuery<Order[]>({
-    queryKey: ["/api/orders"],
+    queryKey: ["/api/orders", user?.id],
     enabled: isAuthenticated && (user?.role === "admin" || user?.role === "super_admin"),
   });
 

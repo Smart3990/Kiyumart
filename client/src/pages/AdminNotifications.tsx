@@ -22,7 +22,7 @@ export default function AdminNotifications() {
   const { toast } = useToast();
 
   const { data: notifications = [], isLoading } = useQuery<Notification[]>({
-    queryKey: ["/api/notifications", user?.role],
+    queryKey: ["/api/notifications", user?.id],
     queryFn: async () => {
       const res = await fetch("/api/notifications", { credentials: "include" });
       if (!res.ok) throw new Error("Failed to fetch notifications");
@@ -35,7 +35,7 @@ export default function AdminNotifications() {
       return apiRequest("PATCH", `/api/notifications/${id}/read`);
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/notifications", user?.role] });
+      queryClient.invalidateQueries({ queryKey: ["/api/notifications", user?.id] });
     },
   });
 
@@ -45,7 +45,7 @@ export default function AdminNotifications() {
     },
     onSuccess: () => {
       toast({ title: "Notification deleted" });
-      queryClient.invalidateQueries({ queryKey: ["/api/notifications", user?.role] });
+      queryClient.invalidateQueries({ queryKey: ["/api/notifications", user?.id] });
     },
   });
 
@@ -54,7 +54,7 @@ export default function AdminNotifications() {
       return apiRequest("POST", "/api/notifications/mark-all-read");
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/notifications", user?.role] });
+      queryClient.invalidateQueries({ queryKey: ["/api/notifications", user?.id] });
     },
   });
 
