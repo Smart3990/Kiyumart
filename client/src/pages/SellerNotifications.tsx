@@ -23,6 +23,11 @@ export default function SellerNotifications() {
 
   const { data: notifications = [], isLoading } = useQuery<Notification[]>({
     queryKey: ["/api/notifications", "seller"],
+    queryFn: async () => {
+      const res = await fetch("/api/notifications", { credentials: "include" });
+      if (!res.ok) throw new Error("Failed to fetch notifications");
+      return res.json();
+    },
   });
 
   const markAsReadMutation = useMutation({
