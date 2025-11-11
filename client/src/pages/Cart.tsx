@@ -281,7 +281,7 @@ export default function Cart() {
                       </span>
                     </div>
                     <div className="flex justify-between">
-                      <span className="text-muted-foreground">Shipping</span>
+                      <span className="text-muted-foreground">Delivery</span>
                       <span className="text-sm">Calculated at checkout</span>
                     </div>
                     <div className="border-t pt-3">

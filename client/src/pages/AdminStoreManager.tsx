@@ -412,7 +412,7 @@ export default function AdminStoreManager() {
 
                     <div className="flex items-center justify-between p-4 border rounded-lg">
                       <div className="space-y-1">
-                        <Label htmlFor="shippingZonesEnabled">Shipping Zones</Label>
+                        <Label htmlFor="shippingZonesEnabled">Delivery Zones</Label>
                         <p className="text-sm text-muted-foreground">
                           Enable delivery zone management
                         </p>
