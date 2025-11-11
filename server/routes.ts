@@ -2852,10 +2852,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // ============ Payment Routes (Paystack) ============
   app.post("/api/payments/initialize", requireAuth, async (req: AuthRequest, res) => {
     try {
-      const { orderId } = req.body;
+      const { orderId, checkoutSessionId } = req.body;
       
-      if (!orderId) {
-        return res.status(400).json({ error: "Order ID is required" });
+      if (!orderId && !checkoutSessionId) {
+        return res.status(400).json({ error: "Either Order ID or Checkout Session ID is required" });
       }
       
       // Get platform settings for Paystack key
@@ -2867,24 +2867,67 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
       }
       
-      // Load and validate the order
-      const order = await storage.getOrder(orderId);
-      if (!order) {
-        return res.status(404).json({ error: "Order not found", userMessage: "We couldn't find this order. Please check your order history." });
-      }
+      // Determine if this is multi-vendor (session-based) or single-vendor payment
+      const isMultiVendor = !!checkoutSessionId;
+      let orders: any[] = [];
+      let totalAmount = 0;
       
-      // Verify the user owns this order
-      if (order.buyerId !== req.user!.id) {
-        return res.status(403).json({ error: "Unauthorized to pay for this order", userMessage: "You don't have permission to pay for this order." });
-      }
-      
-      // Prevent double payment
-      if (order.paymentStatus === "completed") {
-        return res.status(400).json({ error: "Order is already paid", userMessage: "This order has already been paid for." });
+      if (isMultiVendor) {
+        // Multi-vendor: Fetch all orders in the session
+        const allOrders = await storage.getAllOrders();
+        orders = allOrders.filter((o: any) => o.checkoutSessionId === checkoutSessionId);
+        
+        if (orders.length === 0) {
+          return res.status(404).json({ 
+            error: "No orders found for this checkout session", 
+            userMessage: "We couldn't find any orders for this checkout. Please try again." 
+          });
+        }
+        
+        // Verify the user owns all orders in this session
+        const allOwnedByUser = orders.every((o: any) => o.buyerId === req.user!.id);
+        if (!allOwnedByUser) {
+          return res.status(403).json({ 
+            error: "Unauthorized to pay for these orders", 
+            userMessage: "You don't have permission to pay for these orders." 
+          });
+        }
+        
+        // Prevent double payment - check if any order is already paid
+        const anyAlreadyPaid = orders.some((o: any) => o.paymentStatus === "completed");
+        if (anyAlreadyPaid) {
+          return res.status(400).json({ 
+            error: "One or more orders are already paid", 
+            userMessage: "Some of these orders have already been paid for." 
+          });
+        }
+        
+        // Calculate total amount across all orders
+        totalAmount = orders.reduce((sum: number, order: any) => sum + parseFloat(order.total), 0);
+        
+      } else {
+        // Single-vendor: Load and validate single order
+        const order = await storage.getOrder(orderId);
+        if (!order) {
+          return res.status(404).json({ error: "Order not found", userMessage: "We couldn't find this order. Please check your order history." });
+        }
+        
+        // Verify the user owns this order
+        if (order.buyerId !== req.user!.id) {
+          return res.status(403).json({ error: "Unauthorized to pay for this order", userMessage: "You don't have permission to pay for this order." });
+        }
+        
+        // Prevent double payment
+        if (order.paymentStatus === "completed") {
+          return res.status(400).json({ error: "Order is already paid", userMessage: "This order has already been paid for." });
+        }
+        
+        orders = [order];
+        totalAmount = parseFloat(order.total);
       }
       
       // Validate order amount
-      if (parseFloat(order.total) <= 0) {
+      if (totalAmount <= 0) {
         return res.status(400).json({ error: "Invalid order amount", userMessage: "Order amount must be greater than zero." });
       }
       
@@ -2894,45 +2937,101 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const controller = new AbortController();
       const timeout = setTimeout(() => controller.abort(), 15000); // 15 second timeout
       
-      // Prepare payment payload
+      // Prepare payment payload (use first order's currency for consistency)
       const paymentPayload: any = {
         email: req.user!.email,
-        amount: Math.round(parseFloat(order.total) * 100),
-        currency: order.currency,
-        channels: ["card", "bank_transfer", "mobile_money"], // Enable all payment channels
+        amount: Math.round(totalAmount * 100), // Total in kobo/pesewas
+        currency: orders[0].currency,
+        channels: ["card", "bank_transfer", "mobile_money"],
         callback_url: callbackUrl,
         metadata: {
-          orderId: order.id,
           userId: req.user!.id,
-          orderNumber: order.orderNumber,
+          buyerId: req.user!.id,
+          isMultiVendor,
+          ...(isMultiVendor ? {
+            checkoutSessionId,
+            orderIds: orders.map((o: any) => o.id),
+            orderNumbers: orders.map((o: any) => o.orderNumber).join(", "),
+          } : {
+            orderId: orders[0].id,
+            orderNumber: orders[0].orderNumber,
+          }),
         },
       };
 
-      // Add split payment for multi-vendor if order has a store
-      if (order.storeId) {
-        try {
-          const store = await storage.getStore(order.storeId);
-          if (store && store.paystackSubaccountId && store.isPayoutVerified) {
-            // Get commission rate from platform settings
-            const commissionRate = parseFloat(settings.defaultCommissionRate?.toString() || "10");
-            
-            // Calculate seller's share (amount is in kobo/pesewas, so percentage calculation is the same)
-            const sellerSharePercentage = 100 - commissionRate;
-            
-            // Add split payment configuration
-            paymentPayload.subaccount = store.paystackSubaccountId;
-            paymentPayload.transaction_charge = commissionRate * 100; // Commission in kobo/pesewas
-            paymentPayload.bearer = "account"; // Platform bears Paystack fees
-            
-            // Add split info to metadata for tracking
-            paymentPayload.metadata.storeId = store.id;
-            paymentPayload.metadata.storeName = store.name;
-            paymentPayload.metadata.commissionRate = commissionRate;
-            paymentPayload.metadata.splitEnabled = true;
+      // Build split payment configuration
+      if (isMultiVendor) {
+        // Multi-vendor: Build subaccounts array with splits for each seller
+        const commissionRate = parseFloat(settings.defaultCommissionRate?.toString() || "10");
+        const subaccounts: any[] = [];
+        const storeErrors: string[] = [];
+        
+        for (const order of orders) {
+          if (order.storeId) {
+            try {
+              const store = await storage.getStore(order.storeId);
+              if (!store) {
+                storeErrors.push(`Store not found for order ${order.orderNumber}`);
+                continue;
+              }
+              
+              if (!store.paystackSubaccountId || !store.isPayoutVerified) {
+                storeErrors.push(`Store ${store.name} is not configured for payments`);
+                continue;
+              }
+              
+              // Calculate seller's share for this order
+              const orderAmount = parseFloat(order.total);
+              const sellerShare = Math.round(orderAmount * (100 - commissionRate) / 100 * 100); // In kobo
+              
+              subaccounts.push({
+                subaccount: store.paystackSubaccountId,
+                share: sellerShare,
+              });
+            } catch (storeError) {
+              storeErrors.push(`Failed to fetch store for order ${order.orderNumber}`);
+              console.error("Store fetch error:", storeError);
+            }
           }
-        } catch (storeError) {
-          console.warn("Could not fetch store for split payment:", storeError);
-          // Continue with regular payment if store fetch fails
+        }
+        
+        // Fail fast if any seller missing subaccount
+        if (storeErrors.length > 0) {
+          return res.status(400).json({
+            error: "Payment configuration incomplete",
+            userMessage: `Some sellers are not set up for payments: ${storeErrors.join("; ")}`,
+            details: storeErrors,
+          });
+        }
+        
+        if (subaccounts.length > 0) {
+          paymentPayload.subaccounts = subaccounts;
+          paymentPayload.bearer = "account"; // Platform bears Paystack fees
+          paymentPayload.metadata.splitEnabled = true;
+          paymentPayload.metadata.commissionRate = commissionRate;
+        }
+        
+      } else {
+        // Single-vendor: Original split logic
+        const order = orders[0];
+        if (order.storeId) {
+          try {
+            const store = await storage.getStore(order.storeId);
+            if (store && store.paystackSubaccountId && store.isPayoutVerified) {
+              const commissionRate = parseFloat(settings.defaultCommissionRate?.toString() || "10");
+              
+              paymentPayload.subaccount = store.paystackSubaccountId;
+              paymentPayload.transaction_charge = commissionRate * 100;
+              paymentPayload.bearer = "account";
+              
+              paymentPayload.metadata.storeId = store.id;
+              paymentPayload.metadata.storeName = store.name;
+              paymentPayload.metadata.commissionRate = commissionRate;
+              paymentPayload.metadata.splitEnabled = true;
+            }
+          } catch (storeError) {
+            console.warn("Could not fetch store for split payment:", storeError);
+          }
         }
       }
       
@@ -2973,11 +3072,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
           });
         }
 
-        // Store the payment reference on the order
-        await storage.updateOrder(orderId, {
-          paymentReference: data.data.reference,
-          paymentStatus: "processing",
-        });
+        // Store the payment reference on all orders
+        const updatePromises = orders.map((order: any) => 
+          storage.updateOrder(order.id, {
+            paymentReference: data.data.reference,
+            paymentStatus: "processing",
+          })
+        );
+        await Promise.all(updatePromises);
+
+        console.log(`✅ Payment initialized for ${isMultiVendor ? `${orders.length} orders in session ${checkoutSessionId}` : `order ${orders[0].orderNumber}`}`);
 
         res.json(data.data);
       } catch (fetchError: any) {
@@ -3067,125 +3171,249 @@ export async function registerRoutes(app: Express): Promise<Server> {
           });
         }
 
-        if (!data.data?.metadata?.orderId) {
-          return res.status(400).json({ 
-            error: "Invalid payment data",
-            userMessage: "Payment verification returned invalid data. Please contact support."
-          });
-        }
-
-        const orderId = data.data.metadata.orderId;
-        const order = await storage.getOrder(orderId);
+        // Determine if multi-vendor payment
+        const isMultiVendor = data.data.metadata?.isMultiVendor || false;
+        let orders: any[] = [];
         
-        if (!order) {
-          return res.status(404).json({ error: "Order not found", userMessage: "Order associated with this payment could not be found." });
-        }
+        if (isMultiVendor) {
+          // Multi-vendor: Fetch all orders in the session
+          const checkoutSessionId = data.data.metadata.checkoutSessionId;
+          const orderIds = data.data.metadata.orderIds || [];
+          
+          if (!checkoutSessionId || !Array.isArray(orderIds) || orderIds.length === 0) {
+            return res.status(400).json({ 
+              error: "Invalid multi-vendor payment data",
+              userMessage: "Multi-vendor payment data is incomplete. Please contact support."
+            });
+          }
+          
+          // Fetch all orders
+          const allOrders = await storage.getAllOrders();
+          orders = allOrders.filter((o: any) => orderIds.includes(o.id));
+          
+          if (orders.length !== orderIds.length) {
+            return res.status(404).json({ 
+              error: "Some orders not found",
+              userMessage: "Some orders in this payment session could not be found."
+            });
+          }
+          
+          // Verify user owns all orders
+          const allOwnedByUser = orders.every((o: any) => o.buyerId === req.user!.id);
+          if (!allOwnedByUser) {
+            return res.status(403).json({ 
+              error: "Unauthorized",
+              userMessage: "You don't have permission to verify these payments."
+            });
+          }
+          
+          // Validate all orders have matching payment reference
+          const allMatchReference = orders.every((o: any) => o.paymentReference === reference);
+          if (!allMatchReference) {
+            return res.status(400).json({ 
+              error: "Payment reference mismatch",
+              userMessage: "Payment reference does not match all orders. Please contact support."
+            });
+          }
+          
+          // Validate total amount
+          const totalExpected = orders.reduce((sum: number, o: any) => sum + parseFloat(o.total), 0);
+          const expectedAmount = Math.round(totalExpected * 100);
+          
+          if (data.data.amount !== expectedAmount) {
+            return res.status(400).json({ 
+              error: "Payment amount mismatch",
+              userMessage: `Payment amount (${data.data.currency} ${(data.data.amount / 100).toFixed(2)}) does not match total (${orders[0].currency} ${totalExpected.toFixed(2)}).`,
+              expected: expectedAmount / 100,
+              received: data.data.amount / 100
+            });
+          }
+          
+          // Validate currency (use first order)
+          if (data.data.currency !== orders[0].currency) {
+            return res.status(400).json({ 
+              error: "Currency mismatch",
+              userMessage: `Payment currency (${data.data.currency}) does not match order currency (${orders[0].currency}).`
+            });
+          }
+          
+        } else {
+          // Single order
+          const orderId = data.data.metadata?.orderId;
+          if (!orderId) {
+            return res.status(400).json({ 
+              error: "Invalid payment data",
+              userMessage: "Payment verification returned invalid data. Please contact support."
+            });
+          }
 
-        // Verify the user owns this order
-        if (order.buyerId !== req.user!.id) {
-          return res.status(403).json({ error: "Unauthorized to verify payment for this order", userMessage: "You don't have permission to verify this payment." });
-        }
+          const order = await storage.getOrder(orderId);
+          
+          if (!order) {
+            return res.status(404).json({ error: "Order not found", userMessage: "Order associated with this payment could not be found." });
+          }
 
-        // Validate the payment reference matches
-        if (order.paymentReference !== reference) {
-          return res.status(400).json({ 
-            error: "Payment reference mismatch",
-            userMessage: "Payment reference does not match the order. Please contact support."
+          // Verify the user owns this order
+          if (order.buyerId !== req.user!.id) {
+            return res.status(403).json({ error: "Unauthorized to verify payment for this order", userMessage: "You don't have permission to verify this payment." });
+          }
+
+          // Validate the payment reference matches
+          if (order.paymentReference !== reference) {
+            return res.status(400).json({ 
+              error: "Payment reference mismatch",
+              userMessage: "Payment reference does not match the order. Please contact support."
+            });
+          }
+
+          // Validate the payment amount matches the order total
+          const expectedAmount = Math.round(parseFloat(order.total) * 100);
+          if (data.data.amount !== expectedAmount) {
+            return res.status(400).json({ 
+              error: "Payment amount mismatch",
+              userMessage: `Payment amount (${data.data.currency} ${(data.data.amount / 100).toFixed(2)}) does not match order total (${order.currency} ${parseFloat(order.total).toFixed(2)}).`,
+              expected: expectedAmount / 100,
+              received: data.data.amount / 100
           });
         }
 
-        // Validate the payment amount matches the order total
-        const expectedAmount = Math.round(parseFloat(order.total) * 100);
-        if (data.data.amount !== expectedAmount) {
+        // Validate currency
+        if (data.data.currency !== order.currency) {
           return res.status(400).json({ 
-            error: "Payment amount mismatch",
-            userMessage: `Payment amount (${data.data.currency} ${(data.data.amount / 100).toFixed(2)}) does not match order total (${order.currency} ${parseFloat(order.total).toFixed(2)}).`,
-            expected: expectedAmount / 100,
-            received: data.data.amount / 100
-        });
+            error: "Currency mismatch",
+            userMessage: `Payment currency (${data.data.currency}) does not match order currency (${order.currency}). Please contact support.`
+          });
+        }
+        
+        orders = [order];
       }
 
-      // Validate currency
-      if (data.data.currency !== order.currency) {
-        return res.status(400).json({ 
-          error: "Currency mismatch",
-          userMessage: `Payment currency (${data.data.currency}) does not match order currency (${order.currency}). Please contact support.`
+      // Establish primary order for consistent access (first order in array)
+      if (orders.length === 0) {
+        return res.status(500).json({
+          error: "No orders found in payment session",
+          userMessage: "Payment verification failed due to missing order data. Please contact support."
         });
       }
+      const primaryOrder = orders[0];
 
+      // Create transaction record (use primary order for single orderId field)
       const transactionData = {
-        orderId: orderId,
-        userId: data.data.metadata.userId,
+        orderId: primaryOrder.id,
+        userId: data.data.metadata.userId || data.data.metadata.buyerId,
         amount: (data.data.amount / 100).toString(),
         currency: data.data.currency,
         paymentProvider: "paystack",
         paymentReference: data.data.reference,
         status: data.data.status === "success" ? "completed" : "failed",
-        metadata: data.data,
+        metadata: {
+          ...data.data,
+          isMultiVendor,
+          orderCount: orders.length,
+          orderIds: orders.map((o: any) => o.id),
+        },
       };
 
       const transaction = await storage.createTransaction(transactionData);
       
       if (data.data.status === "success") {
-        await storage.updateOrder(orderId, {
-          paymentStatus: "completed",
-          status: "processing",
-        });
-        
-        // Calculate and record commission for multi-vendor marketplace
-        await calculateAndRecordCommission(orderId);
-        
-        // Get buyer details
-        const buyer = await storage.getUser(order.buyerId);
-        
-        // Notify admins about new paid order
-        await notifyAdmins(
-          "order",
-          "New order placed",
-          `Order #${order.orderNumber} has been placed by ${buyer?.name || 'Customer'}`,
-          { orderId: order.id, orderNumber: order.orderNumber, buyerId: order.buyerId }
+        // Update ALL orders atomically
+        const updatePromises = orders.map((order: any) =>
+          storage.updateOrder(order.id, {
+            paymentStatus: "completed",
+            status: "processing",
+          })
         );
+        await Promise.all(updatePromises);
         
-        // Create notification for buyer
+        // Calculate and record commission for ALL orders
+        const commissionPromises = orders.map((order: any) => 
+          calculateAndRecordCommission(order.id)
+        );
+        await Promise.all(commissionPromises);
+        
+        // Get buyer details (all orders have same buyer)
+        const buyer = await storage.getUser(primaryOrder.buyerId);
+        
+        // Notify about all orders
+        for (const order of orders) {
+          // Notify admins about each paid order
+          await notifyAdmins(
+            "order",
+            "New order placed",
+            `Order #${order.orderNumber} has been placed by ${buyer?.name || 'Customer'}`,
+            { orderId: order.id, orderNumber: order.orderNumber, buyerId: order.buyerId }
+          );
+        }
+        
+        // Create single notification for buyer (summarize all orders)
+        const orderNumbers = orders.map((o: any) => `#${o.orderNumber}`).join(", ");
+        const totalPaid = (data.data.amount / 100).toFixed(2);
+        
         await storage.createNotification({
-          userId: order.buyerId,
+          userId: primaryOrder.buyerId,
           type: "order",
           title: "Payment Successful",
-          message: `Your payment for order #${order.orderNumber} was successful. Total: ${order.currency} ${order.total}`,
+          message: isMultiVendor 
+            ? `Your payment for ${orders.length} orders (${orderNumbers}) was successful. Total: ${data.data.currency} ${totalPaid}`
+            : `Your payment for order #${primaryOrder.orderNumber} was successful. Total: ${primaryOrder.currency} ${primaryOrder.total}`,
         });
         
         // Emit payment success notification to buyer
-        io.to(order.buyerId).emit("payment_completed", {
-          orderId: order.id,
-          orderNumber: order.orderNumber,
-          amount: `${order.currency} ${order.total}`,
+        io.to(primaryOrder.buyerId).emit("payment_completed", {
+          orderId: primaryOrder.id,
+          orderNumber: orderNumbers,
+          amount: `${data.data.currency} ${totalPaid}`,
           paymentMethod: "Paystack",
+          isMultiVendor,
+          orderCount: orders.length,
         });
         
-        // Also emit order status update
-        io.to(order.buyerId).emit("order_status_updated", {
-          orderId: order.id,
-          orderNumber: order.orderNumber,
-          status: "processing",
-          updatedAt: new Date().toISOString(),
-        });
+        // Emit order status updates for all orders
+        for (const order of orders) {
+          io.to(order.buyerId).emit("order_status_updated", {
+            orderId: order.id,
+            orderNumber: order.orderNumber,
+            status: "processing",
+            updatedAt: new Date().toISOString(),
+          });
+        }
       } else {
-        await storage.updateOrder(orderId, {
-          paymentStatus: "failed",
+        // Payment failed - update all orders
+        const failedUpdatePromises = orders.map((order: any) =>
+          storage.updateOrder(order.id, {
+            paymentStatus: "failed",
+          })
+        );
+        await Promise.all(failedUpdatePromises);
+        
+        await storage.createNotification({
+          userId: primaryOrder.buyerId,
+          type: "order",
+          title: "Payment Failed",
+          message: isMultiVendor
+            ? `Payment for ${orders.length} orders failed. Please try again.`
+            : `Payment for order #${primaryOrder.orderNumber} failed. Please try again.`,
         });
         
         // Emit payment failure notification to buyer
-        io.to(order.buyerId).emit("payment_failed", {
-          orderId: order.id,
-          orderNumber: order.orderNumber,
+        const orderNumbers = orders.map((o: any) => o.orderNumber).join(", ");
+        io.to(primaryOrder.buyerId).emit("payment_failed", {
+          orderId: primaryOrder.id,
+          orderNumber: orderNumbers,
           reason: data.data.gateway_response || "Payment failed",
+          isMultiVendor,
+          orderCount: orders.length,
         });
       }
 
       res.json({ 
         transaction, 
         verified: data.data.status === "success",
-        orderId: order.id,
+        orderId: primaryOrder.id,
+        orderIds: orders.map((o: any) => o.id),
+        isMultiVendor,
+        orderCount: orders.length,
         message: data.data.status === "success" ? "Payment verified successfully" : data.data.gateway_response || "Payment failed"
       });
       } catch (fetchError: any) {

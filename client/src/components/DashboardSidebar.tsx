@@ -22,6 +22,7 @@ import {
   Shield,
   Home,
   DollarSign,
+  UserCheck,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useQuery } from "@tanstack/react-query";
@@ -53,6 +54,7 @@ const menuItems: Record<string, MenuItem[]> = {
     { icon: Users, label: "Users", id: "users" },
     { icon: UserCog, label: "Sellers", id: "sellers" },
     { icon: Truck, label: "Riders", id: "riders" },
+    { icon: UserCheck, label: "Assign Riders", id: "manual-rider-assignment" },
     { icon: Ticket, label: "Applications", id: "applications" },
     { icon: Shield, label: "Permissions", id: "permissions" },
     { icon: MapPin, label: "Delivery Zones", id: "zones" },
@@ -72,6 +74,7 @@ const menuItems: Record<string, MenuItem[]> = {
     { icon: ShoppingBag, label: "Orders", id: "orders" },
     { icon: UserCog, label: "Sellers", id: "sellers" },
     { icon: Truck, label: "Riders", id: "riders" },
+    { icon: UserCheck, label: "Assign Riders", id: "manual-rider-assignment" },
     { icon: MapPin, label: "Delivery Zones", id: "zones" },
     { icon: ShoppingCart, label: "Shopping Cart", id: "my-cart", separator: true },
     { icon: ShoppingBag, label: "My Purchases", id: "my-purchases" },

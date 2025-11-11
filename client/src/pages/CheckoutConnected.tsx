@@ -120,12 +120,17 @@ export default function CheckoutConnected() {
     },
     onSuccess: async (data) => {
       try {
-        const paymentRes = await apiRequest("POST", "/api/payments/initialize", {
-          orderId: data.id,
-        });
+        // Detect multi-vendor checkout and use appropriate payment initialization
+        const paymentPayload = data.isMultiVendor && data.checkoutSessionId
+          ? { checkoutSessionId: data.checkoutSessionId }
+          : { orderId: data.id };
+        
+        const paymentRes = await apiRequest("POST", "/api/payments/initialize", paymentPayload);
         const paymentData = await paymentRes.json();
         
         if (paymentData.authorization_url) {
+          // Clear cart before redirecting to payment
+          await queryClient.invalidateQueries({ queryKey: ["/api/cart"] });
           window.location.href = paymentData.authorization_url;
         } else {
           throw new Error("Failed to initialize payment");
@@ -133,7 +138,7 @@ export default function CheckoutConnected() {
       } catch (error: any) {
         toast({
           title: "Payment Initialization Failed",
-          description: error.message || "Failed to initialize payment",
+          description: error.message || "Failed to initialize payment. Please try again.",
           variant: "destructive",
         });
       }

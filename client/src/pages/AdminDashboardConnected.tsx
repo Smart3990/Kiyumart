@@ -69,6 +69,8 @@ export default function AdminDashboardConnected() {
       setActiveItem("users");
     } else if (path.includes("/admin/sellers")) {
       setActiveItem("sellers");
+    } else if (path.includes("/admin/manual-rider-assignment")) {
+      setActiveItem("manual-rider-assignment");
     } else if (path.includes("/admin/riders")) {
       setActiveItem("riders");
     } else if (path.includes("/admin/applications")) {
@@ -110,6 +112,7 @@ export default function AdminDashboardConnected() {
       id === "users" ? "/admin/users" :
       id === "sellers" ? "/admin/sellers" :
       id === "riders" ? "/admin/riders" :
+      id === "manual-rider-assignment" ? "/admin/manual-rider-assignment" :
       id === "applications" ? "/admin/applications" :
       id === "zones" ? "/admin/zones" :
       id === "my-cart" ? "/cart" :

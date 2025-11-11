@@ -45,6 +45,7 @@ import AdminOrders from "@/pages/AdminOrders";
 import AdminUsers from "@/pages/AdminUsers";
 import AdminSellers from "@/pages/AdminSellers";
 import AdminRiders from "@/pages/AdminRiders";
+import AdminManualRiderAssignment from "@/pages/AdminManualRiderAssignment";
 import AdminAgents from "@/pages/AdminAgents";
 import AdminMessages from "@/pages/AdminMessages";
 import AdminAnalytics from "@/pages/AdminAnalytics";
@@ -140,6 +141,7 @@ function Router() {
       <Route path="/admin/sellers" component={AdminSellers} />
       <Route path="/admin/riders/:id/edit" component={RiderEdit} />
       <Route path="/admin/riders" component={AdminRiders} />
+      <Route path="/admin/manual-rider-assignment" component={AdminManualRiderAssignment} />
       <Route path="/admin/agents" component={AdminAgents} />
       <Route path="/admin/applications" component={AdminApplications} />
       <Route path="/admin/permissions" component={SuperAdminPermissions} />
