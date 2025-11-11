@@ -54,6 +54,7 @@ export interface IStorage {
   // Chat operations
   createMessage(message: InsertChatMessage & { senderId: string }): Promise<ChatMessage>;
   getMessages(userId1: string, userId2: string): Promise<ChatMessage[]>;
+  markMessageDelivered(messageId: string): Promise<void>;
   markMessagesAsRead(senderId: string, receiverId: string): Promise<void>;
   getUnreadMessageCount(userId: string): Promise<number>;
   
@@ -468,16 +469,27 @@ export class DbStorage implements IStorage {
       .orderBy(chatMessages.createdAt);
   }
 
+  async markMessageDelivered(messageId: string): Promise<void> {
+    await db.update(chatMessages)
+      .set({ 
+        status: 'delivered',
+        deliveredAt: new Date()
+      })
+      .where(eq(chatMessages.id, messageId));
+  }
+
   async markMessagesAsRead(senderId: string, receiverId: string): Promise<void> {
     await db.update(chatMessages)
       .set({ 
+        status: 'read',
         isRead: true,
         readAt: new Date()
       })
       .where(
         and(
           eq(chatMessages.senderId, senderId),
-          eq(chatMessages.receiverId, receiverId)
+          eq(chatMessages.receiverId, receiverId),
+          eq(chatMessages.isRead, false)
         )
       );
   }
