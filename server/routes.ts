@@ -250,8 +250,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.patch("/api/profile", requireAuth, async (req: AuthRequest, res) => {
     try {
-      // Only allow updating specific safe fields
-      const allowedFields = ['name', 'username', 'phone', 'address', 'city', 'country', 'email', 'storeName', 'storeDescription', 'storeBanner', 'vehicleInfo'];
+      // CRITICAL FIX: Added storeType and storeTypeMetadata to allow existing sellers to complete their profiles
+      const allowedFields = ['name', 'username', 'phone', 'address', 'city', 'country', 'email', 'storeName', 'storeDescription', 'storeBanner', 'vehicleInfo', 'storeType', 'storeTypeMetadata'];
       const updateData: Record<string, any> = {};
       
       for (const field of allowedFields) {
@@ -265,6 +265,54 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ error: "No valid fields to update" });
       }
 
+      // Validate storeType if being updated (check field presence, not truthiness)
+      if ('storeType' in updateData) {
+        // CRITICAL: Reject empty, null, or invalid values
+        if (!updateData.storeType || !STORE_TYPES.includes(updateData.storeType)) {
+          return res.status(400).json({ error: "Invalid store type. Must be one of: " + STORE_TYPES.join(", ") });
+        }
+        
+        // ONLY validate storeTypeMetadata if it's explicitly provided
+        // Allow sellers to set storeType without metadata to unblock their dashboard access
+        if (updateData.storeTypeMetadata !== undefined) {
+          try {
+            const storeTypeSchema = getStoreTypeSchema(updateData.storeType as StoreType);
+            storeTypeSchema.parse(updateData.storeTypeMetadata);
+          } catch (validationError: any) {
+            const errors = validationError.errors?.map((e: any) => ({
+              field: e.path.join('.'),
+              message: e.message
+            }));
+            return res.status(400).json({ 
+              error: "Invalid store type metadata", 
+              details: errors 
+            });
+          }
+        }
+      }
+      
+      // Validate storeTypeMetadata if being updated without storeType
+      if (updateData.storeTypeMetadata !== undefined && !updateData.storeType) {
+        const currentUser = await storage.getUser(req.user!.id);
+        if (currentUser?.storeType) {
+          try {
+            const storeTypeSchema = getStoreTypeSchema(currentUser.storeType as StoreType);
+            storeTypeSchema.parse(updateData.storeTypeMetadata);
+          } catch (validationError: any) {
+            const errors = validationError.errors?.map((e: any) => ({
+              field: e.path.join('.'),
+              message: e.message
+            }));
+            return res.status(400).json({ 
+              error: "Invalid store type metadata", 
+              details: errors 
+            });
+          }
+        } else {
+          return res.status(400).json({ error: "Cannot update metadata without a store type set" });
+        }
+      }
+
       // Check if email is being changed and if it's already in use
       if (updateData.email) {
         const existingUser = await storage.getUserByEmail(updateData.email);
@@ -276,6 +324,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const updatedUser = await storage.updateUser(req.user!.id, updateData);
       if (!updatedUser) {
         return res.status(404).json({ error: "User not found" });
+      }
+
+      // CRITICAL: If seller updated storeType, propagate to their store record
+      if (updateData.storeType && updatedUser.role === "seller") {
+        try {
+          const existingStore = await storage.getStoreByPrimarySeller(req.user!.id);
+          if (existingStore) {
+            await storage.updateStore(existingStore.id, {
+              storeType: updateData.storeType,
+              storeTypeMetadata: updateData.storeTypeMetadata || existingStore.storeTypeMetadata
+            });
+            console.log(`Updated store ${existingStore.id} with new storeType: ${updateData.storeType}`);
+          }
+        } catch (storeUpdateError: any) {
+          console.error('Failed to update store storeType:', storeUpdateError);
+          // Don't fail the profile update if store update fails
+        }
       }
 
       const { password: _, ...userWithoutPassword } = updatedUser;
