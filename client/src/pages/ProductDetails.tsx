@@ -13,6 +13,7 @@ import { Heart, ShoppingCart, Star, ArrowLeft, Minus, Plus, X } from "lucide-rea
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import ThemeToggle from "@/components/ThemeToggle";
+import { PriceDisplay } from "@/components/PriceDisplay";
 
 interface Product {
   id: string;
@@ -746,13 +747,15 @@ export default function ProductDetails() {
                           </span>
                         </div>
                         <div className="flex items-center gap-2">
-                          <span className="text-lg font-bold text-primary">
-                            {currencySymbol} {sellingPrice.toFixed(2)}
-                          </span>
+                          <PriceDisplay 
+                            amount={sellingPrice}
+                            className="text-lg font-bold text-primary"
+                          />
                           {costPrice && costPrice > sellingPrice && (
-                            <span className="text-sm text-muted-foreground line-through">
-                              {currencySymbol} {costPrice.toFixed(2)}
-                            </span>
+                            <PriceDisplay 
+                              amount={costPrice}
+                              className="text-sm text-muted-foreground line-through"
+                            />
                           )}
                         </div>
                       </div>

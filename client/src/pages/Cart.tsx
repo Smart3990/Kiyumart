@@ -288,7 +288,7 @@ export default function Cart() {
                       <div className="flex justify-between">
                         <span className="text-lg font-semibold">Total</span>
                         <span className="text-lg font-bold text-primary" data-testid="text-total">
-                          {currencySymbol} {subtotal.toFixed(2)}
+                          {formatPrice(subtotal)}
                         </span>
                       </div>
                     </div>
