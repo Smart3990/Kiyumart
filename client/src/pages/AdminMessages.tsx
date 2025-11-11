@@ -11,7 +11,7 @@ import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { useToast } from "@/hooks/use-toast";
-import { Loader2, Search, MessageSquare, Send, ArrowLeft, User } from "lucide-react";
+import { Loader2, Search, MessageSquare, Send, ArrowLeft, User, Phone, Video } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 
 interface UserData {
@@ -268,6 +268,34 @@ export default function AdminMessages() {
                       <h3 className="font-semibold">{selectedUser.name || selectedUser.username}</h3>
                       <p className="text-sm text-muted-foreground">{selectedUser.email} • {selectedUser.role}</p>
                     </div>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      onClick={() => {
+                        toast({
+                          title: "Voice Call",
+                          description: `Initiating voice call with ${selectedUser.name}...`,
+                        });
+                      }}
+                      data-testid="button-voice-call"
+                    >
+                      <Phone className="h-5 w-5" />
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      onClick={() => {
+                        toast({
+                          title: "Video Call",
+                          description: `Initiating video call with ${selectedUser.name}...`,
+                        });
+                      }}
+                      data-testid="button-video-call"
+                    >
+                      <Video className="h-5 w-5" />
+                    </Button>
                   </div>
                 </div>
 

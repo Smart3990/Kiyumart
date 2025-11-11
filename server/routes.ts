@@ -2144,6 +2144,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ error: "Order must contain at least one item" });
       }
       
+      // Get platform settings to check if multi-vendor mode is enabled
+      const platformSettings = await storage.getPlatformSettings();
+      const platformIsMultiVendor = platformSettings?.isMultiVendor ?? false;
+      
       // Server-side price recalculation to prevent tampering
       let serverSubtotal = 0;
       let serverProductSavings = 0;
@@ -2254,7 +2258,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       // Detect multi-vendor cart
-      const isMultiVendor = productsBySeller.size > 1;
+      const hasMultipleSellers = productsBySeller.size > 1;
+      
+      // Validate platform mode against cart contents
+      if (!platformIsMultiVendor && hasMultipleSellers) {
+        return res.status(400).json({ 
+          error: "Platform is in single-store mode",
+          userMessage: "This platform currently operates in single-store mode. You can only purchase products from one seller at a time. Please remove items from other sellers to continue."
+        });
+      }
+      
+      const isMultiVendor = platformIsMultiVendor && hasMultipleSellers;
       let createdOrders: any[] = [];
       let sessionId: string | undefined;
       
