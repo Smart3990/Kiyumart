@@ -1664,8 +1664,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const testUsers = [
         {
-          email: "super_admin@kiyumart.com",
-          password: await bcrypt.hash("super_admin123", 10),
+          email: "superadmin@kiyumart.com",
+          password: await bcrypt.hash("superadmin123", 10),
           name: "Super Admin",
           role: "super_admin",
           isActive: true,
@@ -1749,7 +1749,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         message: "Test users created/verified for all 6 roles",
         users: created,
         credentials: {
-          super_admin: "super_admin@kiyumart.com / super_admin123",
+          super_admin: "superadmin@kiyumart.com / superadmin123",
           admin: "admin@kiyumart.com / admin123",
           seller: "seller@kiyumart.com / seller123",
           buyer: "buyer@kiyumart.com / buyer123",
