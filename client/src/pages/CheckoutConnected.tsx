@@ -190,8 +190,8 @@ export default function CheckoutConnected() {
   }, 0);
 
   const selectedZone = deliveryZones.find(z => z.id === selectedZoneId);
+  // Show full delivery fee for all delivery methods (bus and rider get same fee)
   const deliveryFee = deliveryMethod === "pickup" ? 0 : 
-                      deliveryMethod === "bus" ? (selectedZone ? parseFloat(selectedZone.fee) * 0.5 : 0) :
                       selectedZone ? parseFloat(selectedZone.fee) : 0;
 
   // Calculate coupon discount

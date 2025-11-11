@@ -858,41 +858,40 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ error: "Email already registered" });
       }
 
-      // Validate vehicle information based on vehicle type
+      // Validate and normalize vehicle information based on vehicle type
       if (userData.vehicleInfo) {
-        const { type, plateNumber, license, color } = userData.vehicleInfo as { 
-          type?: string; 
-          plateNumber?: string; 
-          license?: string; 
-          color?: string; 
-        };
+        const rawVehicle = userData.vehicleInfo as any;
+        const type = String(rawVehicle.type || "");
+        const plateNumber = rawVehicle.plateNumber ? String(rawVehicle.plateNumber).trim() : "";
+        const license = rawVehicle.license ? String(rawVehicle.license).trim() : "";
+        const color = rawVehicle.color ? String(rawVehicle.color).trim() : "";
         
         if (type === "car") {
-          if (!plateNumber || !plateNumber.trim()) {
+          if (!plateNumber) {
             return res.status(400).json({ error: "Plate number is required for car riders" });
           }
-          if (!license || !license.trim()) {
+          if (!license) {
             return res.status(400).json({ error: "Driver's license is required for car riders" });
           }
-          if (!color || !color.trim()) {
+          if (!color) {
             return res.status(400).json({ error: "Vehicle color is required for car riders" });
           }
         } else if (type === "motorcycle") {
-          if (!plateNumber || !plateNumber.trim()) {
+          if (!plateNumber) {
             return res.status(400).json({ error: "Plate number is required for motorcycle riders" });
           }
-          if (!license || !license.trim()) {
+          if (!license) {
             return res.status(400).json({ error: "Driver's license is required for motorcycle riders" });
           }
         }
         
-        // Ensure vehicleInfo has proper string types for database insertion
+        // Normalize vehicleInfo: coerce empty strings to null, ensure proper types
         userData.vehicleInfo = {
-          type: type || "",
-          plateNumber: plateNumber || "",
-          license: license || "",
-          color: color || ""
-        } as { type: string; plateNumber?: string; license?: string; color?: string };
+          type,
+          plateNumber: plateNumber || undefined,
+          license: license || undefined,
+          color: color || undefined,
+        };
       }
 
       const hashedPassword = await bcrypt.hash(password, 10);
@@ -2257,13 +2256,35 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.get("/api/orders/:id", requireAuth, async (req, res) => {
+  app.get("/api/orders/:id", requireAuth, async (req: AuthRequest, res) => {
     try {
       const order = await storage.getOrder(req.params.id);
       if (!order) {
         return res.status(404).json({ error: "Order not found" });
       }
-      res.json(order);
+      
+      // Only include customer PII for admin/super_admin or the buyer themselves
+      const isAdmin = req.user!.role === "admin" || req.user!.role === "super_admin";
+      const isBuyer = req.user!.id === order.buyerId;
+      
+      if (isAdmin || isBuyer) {
+        // Fetch customer/buyer information to display in order details
+        const buyer = await storage.getUser(order.buyerId);
+        
+        // Return order with complete customer info (authorized)
+        res.json({
+          ...order,
+          customerInfo: buyer ? {
+            name: buyer.name,
+            email: buyer.email,
+            phone: buyer.phone,
+            address: order.deliveryAddress || buyer.businessAddress || null,
+          } : null
+        });
+      } else {
+        // Return order without PII for unauthorized roles
+        res.json(order);
+      }
     } catch (error: any) {
       res.status(400).json({ error: error.message });
     }
@@ -2278,21 +2299,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       // Create notification for buyer about status update
-      await storage.createNotification({
-        userId: order.buyerId,
-        type: "order",
-        title: "Order Status Updated",
-        message: `Your order #${order.orderNumber} status has been updated to ${status}`,
-        metadata: { orderId: order.id, orderNumber: order.orderNumber, status }
-      });
-      
-      // Emit real-time order status update to buyer
-      io.to(order.buyerId).emit("order_status_updated", {
-        orderId: order.id,
-        orderNumber: order.orderNumber,
-        status: order.status,
-        updatedAt: order.updatedAt,
-      });
+      if (order.buyerId) {
+        await storage.createNotification({
+          userId: order.buyerId,
+          type: "order",
+          title: "Order Status Updated",
+          message: `Your order #${order.orderNumber} status has been updated to ${status}`,
+          metadata: { orderId: order.id, orderNumber: order.orderNumber, status }
+        });
+        
+        // Emit real-time order status update to buyer
+        io.to(order.buyerId).emit("order_status_updated", {
+          orderId: order.id,
+          orderNumber: order.orderNumber,
+          status: order.status,
+          updatedAt: order.updatedAt,
+        });
+      }
       
       res.json(order);
     } catch (error: any) {

@@ -477,21 +477,27 @@ export class DbStorage implements IStorage {
 
   // Cart operations
   async addToCart(userId: string, productId: string, quantity: number, variantId?: string, selectedColor?: string, selectedSize?: string, selectedImageIndex?: number): Promise<Cart> {
+    // FIXED: Different images from same product should be separate cart items
+    // Each combination of product + variant + color + size + imageIndex is unique
+    const imageIdx = selectedImageIndex ?? 0;
+    
     const existing = await db.select().from(cart)
       .where(and(
         eq(cart.userId, userId), 
         eq(cart.productId, productId),
         variantId ? eq(cart.variantId, variantId) : sql`${cart.variantId} IS NULL`,
         selectedColor ? eq(cart.selectedColor, selectedColor) : sql`${cart.selectedColor} IS NULL`,
-        selectedSize ? eq(cart.selectedSize, selectedSize) : sql`${cart.selectedSize} IS NULL`
+        selectedSize ? eq(cart.selectedSize, selectedSize) : sql`${cart.selectedSize} IS NULL`,
+        eq(cart.selectedImageIndex, imageIdx)
       ))
       .limit(1);
 
     if (existing.length > 0) {
+      // Exact match - update quantity and ensure image index is preserved
       const [updated] = await db.update(cart)
         .set({ 
-          quantity: existing[0].quantity + quantity, 
-          selectedImageIndex: selectedImageIndex ?? existing[0].selectedImageIndex,
+          quantity: existing[0].quantity + quantity,
+          selectedImageIndex: imageIdx,
           updatedAt: new Date() 
         })
         .where(eq(cart.id, existing[0].id))
@@ -499,6 +505,7 @@ export class DbStorage implements IStorage {
       return updated;
     }
 
+    // New unique combination - create separate cart item
     const [newItem] = await db.insert(cart).values({ 
       userId, 
       productId, 
@@ -506,7 +513,7 @@ export class DbStorage implements IStorage {
       variantId,
       selectedColor,
       selectedSize,
-      selectedImageIndex: selectedImageIndex ?? 0
+      selectedImageIndex: imageIdx
     }).returning();
     return newItem;
   }
@@ -813,24 +820,49 @@ export class DbStorage implements IStorage {
     const result: any = {};
     
     if (role === "admin" || role === "super_admin" || !userId) {
-      const totalOrders = await db.select({ count: sql<number>`count(*)` }).from(orders);
-      const totalRevenue = await db.select({ sum: sql<number>`sum(${orders.total})` }).from(orders);
+      // Total orders (all statuses for context)
+      const allOrders = await db.select({ count: sql<number>`count(*)` }).from(orders);
+      
+      // Paid/completed orders only for revenue (critical fix)
+      const paidOrders = await db.select({ count: sql<number>`count(*)` })
+        .from(orders)
+        .where(eq(orders.paymentStatus, "completed"));
+      
+      const totalRevenue = await db.select({ sum: sql<number>`sum(${orders.total})` })
+        .from(orders)
+        .where(eq(orders.paymentStatus, "completed"));
+      
       const totalUsers = await db.select({ count: sql<number>`count(*)` }).from(users);
       const totalProducts = await db.select({ count: sql<number>`count(*)` }).from(products);
       
-      result.totalOrders = Number(totalOrders[0]?.count ?? 0);
+      result.totalOrders = Number(allOrders[0]?.count ?? 0);
+      result.paidOrders = Number(paidOrders[0]?.count ?? 0);
       result.totalRevenue = Number(totalRevenue[0]?.sum ?? 0);
       result.totalUsers = Number(totalUsers[0]?.count ?? 0);
       result.totalProducts = Number(totalProducts[0]?.count ?? 0);
     } else if (role === "seller") {
-      const sellerOrders = await db.select({ count: sql<number>`count(*)` })
-        .from(orders)
-        .where(eq(orders.sellerId, userId));
-      const sellerRevenue = await db.select({ sum: sql<number>`sum(${orders.total})` })
+      // Total orders for seller (all statuses)
+      const allSellerOrders = await db.select({ count: sql<number>`count(*)` })
         .from(orders)
         .where(eq(orders.sellerId, userId));
       
-      result.totalOrders = Number(sellerOrders[0]?.count ?? 0);
+      // Paid orders only for revenue
+      const paidSellerOrders = await db.select({ count: sql<number>`count(*)` })
+        .from(orders)
+        .where(and(
+          eq(orders.sellerId, userId),
+          eq(orders.paymentStatus, "completed")
+        ));
+      
+      const sellerRevenue = await db.select({ sum: sql<number>`sum(${orders.total})` })
+        .from(orders)
+        .where(and(
+          eq(orders.sellerId, userId),
+          eq(orders.paymentStatus, "completed")
+        ));
+      
+      result.totalOrders = Number(allSellerOrders[0]?.count ?? 0);
+      result.paidOrders = Number(paidSellerOrders[0]?.count ?? 0);
       result.totalRevenue = Number(sellerRevenue[0]?.sum ?? 0);
     }
     
