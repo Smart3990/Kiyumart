@@ -81,6 +81,8 @@ import AdminStoresList from "@/pages/AdminStoresList";
 import AdminUserEdit from "@/pages/AdminUserEdit";
 import AdminUserCreate from "@/pages/AdminUserCreate";
 import RiderEdit from "@/pages/RiderEdit";
+import RiderDetailsPage from "@/pages/RiderDetailsPage";
+import SellerDetailsPage from "@/pages/SellerDetailsPage";
 import AdminApplications from "@/pages/AdminApplications";
 import AdminProductEdit from "@/pages/AdminProductEdit";
 import AdminProductCreate from "@/pages/AdminProductCreate";
@@ -140,7 +142,9 @@ function Router() {
       <Route path="/admin/users" component={AdminUsers} />
       <Route path="/admin/sellers" component={AdminSellers} />
       <Route path="/admin/riders/:id/edit" component={RiderEdit} />
+      <Route path="/admin/riders/:id" component={RiderDetailsPage} />
       <Route path="/admin/riders" component={AdminRiders} />
+      <Route path="/admin/sellers/:id" component={SellerDetailsPage} />
       <Route path="/admin/manual-rider-assignment" component={AdminManualRiderAssignment} />
       <Route path="/admin/agents" component={AdminAgents} />
       <Route path="/admin/applications" component={AdminApplications} />

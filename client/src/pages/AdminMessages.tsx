@@ -16,6 +16,9 @@ import { formatDistanceToNow } from "date-fns";
 import { MessageStatusTicks } from "@/components/MessageStatusTicks";
 import { useSocket } from "@/contexts/NotificationContext";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { useGroupCall } from "@/hooks/useGroupCall";
+import { ParticipantSelectorDialog } from "@/components/ParticipantSelectorDialog";
+import { GroupCallDialog } from "@/components/GroupCallDialog";
 
 interface UserData {
   id: string;
@@ -49,13 +52,17 @@ export default function AdminMessages() {
   const { toast } = useToast();
   const socket = useSocket();
   
-  // Call state management
+  // 1-on-1 Call state management
   const [incomingCall, setIncomingCall] = useState<{ callerId: string; callerName: string; callType: 'voice' | 'video'; offer: any } | null>(null);
   const [ongoingCall, setOngoingCall] = useState<{ targetUserId: string; targetName: string; callType: 'voice' | 'video' } | null>(null);
   const localVideoRef = useRef<HTMLVideoElement>(null);
   const remoteVideoRef = useRef<HTMLVideoElement>(null);
   const peerConnectionRef = useRef<RTCPeerConnection | null>(null);
   const localStreamRef = useRef<MediaStream | null>(null);
+
+  // Group call management
+  const groupCall = useGroupCall(user?.id || '');
+  const [groupCallInvite, setGroupCallInvite] = useState<{ callId: string; hostId: string; hostName: string; callType: 'voice' | 'video' } | null>(null);
 
   // Get userId from URL search params if present (when clicking from AdminUsers)
   const urlParams = new URLSearchParams(window.location.search);
@@ -145,16 +152,28 @@ export default function AdminMessages() {
       endCall();
     };
 
+    const handleGroupCallInvite = (data: { callId: string; hostId: string; hostName: string; callType: 'voice' | 'video' }) => {
+      console.log("🎥 Group call invite from:", data.hostName, data.callType);
+      setGroupCallInvite({
+        callId: data.callId,
+        hostId: data.hostId,
+        hostName: data.hostName,
+        callType: data.callType
+      });
+    };
+
     socket.on('call_offer', handleCallOffer);
     socket.on('call_answer', handleCallAnswer);
     socket.on('ice_candidate', handleIceCandidate);
     socket.on('call_end', handleCallEnd);
+    socket.on('group_call_invite', handleGroupCallInvite);
 
     return () => {
       socket.off('call_offer', handleCallOffer);
       socket.off('call_answer', handleCallAnswer);
       socket.off('ice_candidate', handleIceCandidate);
       socket.off('call_end', handleCallEnd);
+      socket.off('group_call_invite', handleGroupCallInvite);
     };
   }, [socket]);
 
@@ -561,11 +580,17 @@ export default function AdminMessages() {
                     </div>
                   </div>
                   <div className="flex items-center gap-2">
+                    <ParticipantSelectorDialog
+                      currentUserId={user?.id || ''}
+                      onStartCall={(participantIds, callType) => {
+                        groupCall.startGroupCall(participantIds, callType, user?.role);
+                      }}
+                    />
                     <Button
                       variant="ghost"
                       size="icon"
                       onClick={() => startCall('voice')}
-                      disabled={!selectedUserId || !!ongoingCall || !!incomingCall}
+                      disabled={!selectedUserId || !!ongoingCall || !!incomingCall || groupCall.state.isActive}
                       data-testid="button-voice-call"
                     >
                       <Phone className="h-5 w-5" />
@@ -574,7 +599,7 @@ export default function AdminMessages() {
                       variant="ghost"
                       size="icon"
                       onClick={() => startCall('video')}
-                      disabled={!selectedUserId || !!ongoingCall || !!incomingCall}
+                      disabled={!selectedUserId || !!ongoingCall || !!incomingCall || groupCall.state.isActive}
                       data-testid="button-video-call"
                     >
                       <Video className="h-5 w-5" />
@@ -788,6 +813,61 @@ export default function AdminMessages() {
           </DialogContent>
         </Dialog>
       )}
+
+      {/* Group Call Invitation Dialog */}
+      {groupCallInvite && (
+        <Dialog open={!!groupCallInvite} onOpenChange={(open) => !open && setGroupCallInvite(null)}>
+          <DialogContent data-testid="dialog-group-call-invite">
+            <DialogHeader>
+              <DialogTitle>Incoming Group {groupCallInvite.callType === 'video' ? 'Video' : 'Voice'} Call</DialogTitle>
+            </DialogHeader>
+            <div className="text-center py-6">
+              <div className="h-16 w-16 rounded-full bg-primary/10 flex items-center justify-center mx-auto mb-4">
+                <User className="h-8 w-8 text-primary" />
+              </div>
+              <p className="text-lg font-semibold mb-1">{groupCallInvite.hostName}</p>
+              <p className="text-sm text-muted-foreground mb-6">
+                invites you to a group {groupCallInvite.callType} call
+              </p>
+              <div className="flex gap-3 justify-center">
+                <Button
+                  variant="outline"
+                  onClick={() => setGroupCallInvite(null)}
+                  data-testid="button-decline-group-call"
+                >
+                  Decline
+                </Button>
+                <Button
+                  variant="default"
+                  onClick={() => {
+                    if (groupCallInvite) {
+                      groupCall.joinGroupCall(groupCallInvite.callId, groupCallInvite.callType);
+                      setGroupCallInvite(null);
+                    }
+                  }}
+                  data-testid="button-accept-group-call"
+                >
+                  <Video className="h-4 w-4 mr-2" />
+                  Join Call
+                </Button>
+              </div>
+            </div>
+          </DialogContent>
+        </Dialog>
+      )}
+
+      {/* Group Call Dialog */}
+      <GroupCallDialog
+        isOpen={groupCall.state.isActive}
+        isHost={groupCall.state.isHost}
+        participants={groupCall.state.participants}
+        localStream={groupCall.state.localStream}
+        callType={groupCall.state.callType}
+        onEndCall={groupCall.endGroupCall}
+        onLeaveCall={groupCall.leaveGroupCall}
+        onToggleMute={groupCall.toggleMute}
+        onToggleVideo={groupCall.toggleVideo}
+      />
     </DashboardLayout>
   );
 }

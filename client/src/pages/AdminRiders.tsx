@@ -690,6 +690,15 @@ export default function AdminRiders() {
                       </div>
                     </div>
                     <div className="flex gap-2">
+                      <Button 
+                        variant="outline" 
+                        size="sm"
+                        onClick={() => navigate(`/admin/riders/${rider.id}`)}
+                        data-testid={`button-view-details-${rider.id}`}
+                      >
+                        <Eye className="h-3 w-3 mr-1" />
+                        View Details
+                      </Button>
                       {!rider.isApproved && rider.isActive ? (
                         <ApproveRejectDialog riderData={rider} />
                       ) : (

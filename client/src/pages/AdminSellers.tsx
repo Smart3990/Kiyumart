@@ -931,6 +931,15 @@ export default function AdminSellers() {
                           </p>
                         </div>
                         <div className="flex gap-2 flex-shrink-0">
+                          <Button 
+                            variant="outline" 
+                            size="sm"
+                            onClick={() => navigate(`/admin/sellers/${seller.id}`)}
+                            data-testid={`button-view-details-${seller.id}`}
+                          >
+                            <Eye className="h-3 w-3 mr-1" />
+                            View Details
+                          </Button>
                           <EditSellerDialog sellerData={seller} />
                           <BanActivateDialog sellerData={seller} />
                           {seller.isApproved && sellerToStoreMap.has(seller.id) && (

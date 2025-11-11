@@ -5,7 +5,7 @@ import bcrypt from "bcryptjs";
 import { storage } from "./storage";
 import { db } from "../db";
 import { users, cart, wishlist, chatMessages, notifications, orders, products, stores } from "@shared/schema";
-import { eq, or, isNotNull } from "drizzle-orm";
+import { eq, or, isNotNull, and, desc } from "drizzle-orm";
 import { 
   hashPassword, 
   comparePassword, 
@@ -2661,6 +2661,146 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // ============ Rider & Seller Analytics Routes ============
+  app.get("/api/riders/:riderId/deliveries", requireAuth, requireRole("admin", "super_admin"), async (req, res) => {
+    try {
+      const { riderId } = req.params;
+      
+      const deliveries = await db.query.orders.findMany({
+        where: eq(orders.riderId, riderId),
+        orderBy: [desc(orders.createdAt)],
+        with: {
+          buyer: {
+            columns: {
+              id: true,
+              name: true,
+              email: true,
+            }
+          },
+          seller: {
+            columns: {
+              id: true,
+              name: true,
+              email: true,
+            }
+          },
+        },
+      });
+      
+      res.json(deliveries);
+    } catch (error: any) {
+      res.status(400).json({ error: error.message });
+    }
+  });
+
+  app.get("/api/riders/:riderId/earnings", requireAuth, requireRole("admin", "super_admin"), async (req, res) => {
+    try {
+      const { riderId } = req.params;
+      
+      const deliveries = await db.query.orders.findMany({
+        where: and(
+          eq(orders.riderId, riderId),
+          eq(orders.status, "delivered")
+        ),
+      });
+      
+      const totalDeliveries = deliveries.length;
+      const totalEarnings = deliveries.reduce((sum, order) => {
+        return sum + parseFloat(order.deliveryFee || "0");
+      }, 0);
+      
+      const completedThisMonth = deliveries.filter(order => {
+        const deliveredDate = order.deliveredAt ? new Date(order.deliveredAt) : null;
+        if (!deliveredDate) return false;
+        const now = new Date();
+        return deliveredDate.getMonth() === now.getMonth() && 
+               deliveredDate.getFullYear() === now.getFullYear();
+      }).length;
+      
+      const earningsThisMonth = deliveries
+        .filter(order => {
+          const deliveredDate = order.deliveredAt ? new Date(order.deliveredAt) : null;
+          if (!deliveredDate) return false;
+          const now = new Date();
+          return deliveredDate.getMonth() === now.getMonth() && 
+                 deliveredDate.getFullYear() === now.getFullYear();
+        })
+        .reduce((sum, order) => sum + parseFloat(order.deliveryFee || "0"), 0);
+      
+      res.json({
+        totalDeliveries,
+        totalEarnings,
+        completedThisMonth,
+        earningsThisMonth,
+        avgDeliveryFee: totalDeliveries > 0 ? totalEarnings / totalDeliveries : 0,
+      });
+    } catch (error: any) {
+      res.status(400).json({ error: error.message });
+    }
+  });
+
+  app.get("/api/sellers/:sellerId/sales", requireAuth, requireRole("admin", "super_admin"), async (req, res) => {
+    try {
+      const { sellerId } = req.params;
+      
+      const sales = await db.query.orders.findMany({
+        where: eq(orders.sellerId, sellerId),
+        orderBy: [desc(orders.createdAt)],
+        with: {
+          buyer: {
+            columns: {
+              id: true,
+              name: true,
+              email: true,
+            }
+          },
+        },
+      });
+      
+      const totalSales = sales.length;
+      const totalRevenue = sales.reduce((sum, order) => {
+        return sum + parseFloat(order.total || "0");
+      }, 0);
+      
+      const paidOrders = sales.filter(order => order.paymentStatus === "completed");
+      const totalPaid = paidOrders.reduce((sum, order) => {
+        return sum + parseFloat(order.total || "0");
+      }, 0);
+      
+      const salesThisMonth = sales.filter(order => {
+        const orderDate = order.createdAt ? new Date(order.createdAt) : null;
+        if (!orderDate) return false;
+        const now = new Date();
+        return orderDate.getMonth() === now.getMonth() && 
+               orderDate.getFullYear() === now.getFullYear();
+      }).length;
+      
+      const revenueThisMonth = sales
+        .filter(order => {
+          const orderDate = order.createdAt ? new Date(order.createdAt) : null;
+          if (!orderDate) return false;
+          const now = new Date();
+          return orderDate.getMonth() === now.getMonth() && 
+                 orderDate.getFullYear() === now.getFullYear();
+        })
+        .reduce((sum, order) => sum + parseFloat(order.total || "0"), 0);
+      
+      res.json({
+        sales,
+        analytics: {
+          totalSales,
+          totalRevenue,
+          totalPaid,
+          salesThisMonth,
+          revenueThisMonth,
+          avgOrderValue: totalSales > 0 ? totalRevenue / totalSales : 0,
+        }
+      });
+    } catch (error: any) {
+      res.status(400).json({ error: error.message });
+    }
+  });
+
   // ============ Chat Routes ============
   app.get("/api/support/contacts", requireAuth, async (req: AuthRequest, res) => {
     try {
@@ -3771,6 +3911,203 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (targetUserId) {
         io.to(targetUserId).emit("call_end");
       }
+    });
+
+    // Group Call Handlers for Multi-Party WebRTC (Super Admin Feature)
+    // Uses mesh topology: each participant connects to every other participant
+    const activeGroupCalls = new Map<string, { callId: string; hostId: string; participants: Set<string>; callType: 'voice' | 'video' }>();
+
+    socket.on("group_call_start", async ({ participantIds, callType }) => {
+      try {
+        const hostId = socket.data.userId;
+        const host = await storage.getUser(hostId);
+        
+        if (!host) {
+          socket.emit("error", { message: "Host not found" });
+          return;
+        }
+
+        // Only super_admin can start group calls
+        if (host.role !== "super_admin" && host.role !== "admin") {
+          socket.emit("error", { message: "Only admins can start group calls" });
+          return;
+        }
+
+        const callId = `group_${Date.now()}_${Math.random().toString(36).substring(7)}`;
+        const participants = new Set([hostId, ...participantIds]);
+
+        activeGroupCalls.set(callId, {
+          callId,
+          hostId,
+          participants,
+          callType
+        });
+
+        console.log(`🎥 Group call ${callId} started by ${host.name} with ${participants.size} participants`);
+
+        // Notify all participants (excluding host who initiated)
+        for (const participantId of participantIds) {
+          io.to(participantId).emit("group_call_invite", {
+            callId,
+            hostId,
+            hostName: host.name,
+            participantIds: Array.from(participants),
+            callType
+          });
+        }
+
+        // Confirm to host
+        socket.emit("group_call_started", {
+          callId,
+          participants: Array.from(participants),
+          callType
+        });
+      } catch (error) {
+        console.error("Error starting group call:", error);
+        socket.emit("error", { message: "Failed to start group call" });
+      }
+    });
+
+    socket.on("group_call_join", async ({ callId }) => {
+      try {
+        const userId = socket.data.userId;
+        const user = await storage.getUser(userId);
+        
+        if (!user) {
+          socket.emit("error", { message: "User not found" });
+          return;
+        }
+
+        const call = activeGroupCalls.get(callId);
+        if (!call) {
+          socket.emit("error", { message: "Group call not found" });
+          return;
+        }
+
+        call.participants.add(userId);
+
+        console.log(`🎥 ${user.name} joined group call ${callId}`);
+
+        // Notify all existing participants about the new joiner
+        for (const participantId of call.participants) {
+          if (participantId !== userId) {
+            io.to(participantId).emit("group_call_participant_joined", {
+              callId,
+              userId,
+              userName: user.name,
+              participants: Array.from(call.participants)
+            });
+          }
+        }
+
+        // Send current participant list to the new joiner
+        socket.emit("group_call_joined", {
+          callId,
+          participants: Array.from(call.participants),
+          callType: call.callType
+        });
+      } catch (error) {
+        console.error("Error joining group call:", error);
+        socket.emit("error", { message: "Failed to join group call" });
+      }
+    });
+
+    socket.on("group_call_offer", ({ callId, targetUserId, offer }) => {
+      const userId = socket.data.userId;
+      const call = activeGroupCalls.get(callId);
+      
+      if (!call || !call.participants.has(userId) || !call.participants.has(targetUserId)) {
+        return;
+      }
+
+      console.log(`🎥 Group call offer: ${userId} → ${targetUserId} in ${callId}`);
+      io.to(targetUserId).emit("group_call_offer", {
+        callId,
+        fromUserId: userId,
+        offer
+      });
+    });
+
+    socket.on("group_call_answer", ({ callId, targetUserId, answer }) => {
+      const userId = socket.data.userId;
+      const call = activeGroupCalls.get(callId);
+      
+      if (!call || !call.participants.has(userId) || !call.participants.has(targetUserId)) {
+        return;
+      }
+
+      console.log(`🎥 Group call answer: ${userId} → ${targetUserId} in ${callId}`);
+      io.to(targetUserId).emit("group_call_answer", {
+        callId,
+        fromUserId: userId,
+        answer
+      });
+    });
+
+    socket.on("group_ice_candidate", ({ callId, targetUserId, candidate }) => {
+      const userId = socket.data.userId;
+      const call = activeGroupCalls.get(callId);
+      
+      if (!call || !call.participants.has(userId) || !call.participants.has(targetUserId)) {
+        return;
+      }
+
+      io.to(targetUserId).emit("group_ice_candidate", {
+        callId,
+        fromUserId: userId,
+        candidate
+      });
+    });
+
+    socket.on("group_call_leave", ({ callId }) => {
+      const userId = socket.data.userId;
+      const call = activeGroupCalls.get(callId);
+      
+      if (!call || !call.participants.has(userId)) {
+        return;
+      }
+
+      call.participants.delete(userId);
+      console.log(`🎥 User ${userId} left group call ${callId}`);
+
+      // Notify remaining participants
+      for (const participantId of call.participants) {
+        io.to(participantId).emit("group_call_participant_left", {
+          callId,
+          userId,
+          participants: Array.from(call.participants)
+        });
+      }
+
+      // Clean up call if no participants remain
+      if (call.participants.size === 0) {
+        activeGroupCalls.delete(callId);
+        console.log(`🎥 Group call ${callId} ended (no participants)`);
+      }
+    });
+
+    socket.on("group_call_end", ({ callId }) => {
+      const userId = socket.data.userId;
+      const call = activeGroupCalls.get(callId);
+      
+      if (!call) {
+        return;
+      }
+
+      // Only host can end the entire call
+      if (call.hostId !== userId) {
+        socket.emit("error", { message: "Only host can end the group call" });
+        return;
+      }
+
+      console.log(`🎥 Group call ${callId} ended by host ${userId}`);
+
+      // Notify all participants
+      for (const participantId of call.participants) {
+        io.to(participantId).emit("group_call_ended", { callId });
+      }
+
+      activeGroupCalls.delete(callId);
     });
 
     // WhatsApp-style message status handlers (SECURED with ownership validation)
