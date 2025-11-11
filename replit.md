@@ -4,17 +4,50 @@
 
 KiyuMart is an e-commerce platform for modest Islamic women's fashion, functioning as both a single-store and multi-vendor marketplace. It provides comprehensive e-commerce features including product and order management, real-time delivery tracking, live chat, and Paystack payments. The platform supports a diverse product range, dynamic category and store management, extensive admin dashboards, and a robust application verification system for sellers and riders. The project aims to deliver a seamless and inclusive online shopping experience within the modest fashion market.
 
+## Recent Changes (November 11, 2025)
+
+### Completed Features
+
+1. **WhatsApp-Style Message Status Ticks**: Real-time message delivery and read status indicators
+   - Single gray tick: Message sent to server
+   - Double gray tick: Message delivered to recipient
+   - Double blue tick: Message read by recipient
+   - Real-time updates via Socket.IO (no page refresh needed)
+   - React Query cache optimistic updates for instant UI feedback
+   - Backend handlers: `message_delivered` and `message_read` events
+   - Component: MessageStatusTicks with color-coded status display
+
+2. **Production-Ready WebRTC Voice/Video Calling**: Full peer-to-peer calling system for admins
+   - Voice and video calling between admin and all user roles
+   - Browser-based WebRTC using native getUserMedia API
+   - Socket.IO signaling for offer/answer/ICE candidate exchange
+   - STUN server: stun.l.google.com:19302 for NAT traversal
+   - Incoming call dialog with caller identification
+   - Ongoing call dialog with live video streams
+   - Proper cleanup and media stream lifecycle management
+   - Fixed critical ICE candidate bug (stale closure issue resolved)
+   - Phone/Video buttons with smart disabled states during active calls
+
+### Technical Improvements
+
+- **NotificationContext Refactor**: Converted from refs to React state to expose live Socket.IO instance via useSocket() hook
+- **ICE Candidate Fix**: Resolved stale closure bug by passing targetUserId as parameter to initPeerConnection() instead of relying on async state
+- **WebRTC State Management**: Implemented proper peer connection lifecycle with refs for streams and peer connection objects
+- **Message Status Architecture**: Socket.IO event listeners integrated with TanStack Query cache updates for real-time UI synchronization
+- **Call Signaling Enhanced**: Backend call_offer handler now relays callType and callerName alongside offer for proper caller identification
+- **Media Permissions**: Proper browser permission handling for camera and microphone access
+- **LSP Clean**: Zero TypeScript errors across all new implementations
+
 ## Recent Changes (November 10, 2025)
 
 ### Completed Features
 
 1. **Hero Banner CTAs**: Wired action buttons ("Shop Now", "Explore Collection", "View Deals") to navigate to product pages with proper filtering
 2. **Product Expansion**: Seeded 50+ Islamic women's fashion products across 5 categories (Hijabs, Abayas, Modest Dresses, Islamic Accessories, Modest Footwear) with stock imagery
-3. **FREE WebRTC Calling**: Implemented peer-to-peer video/voice calling for admins using browser APIs + Socket.IO signaling (no paid services)
-4. **Auto-Assign Riders**: Round-robin delivery assignment algorithm with load balancing (<10 active orders per rider), seeded 7 test orders across 5 riders
-5. **Video Validation**: Corrected to strict <30 seconds (not ≤30s) per product requirements
-6. **4K Image Enhancement**: Hybrid auto-upscaling system using Cloudinary transformations - automatically enhances images below 4K (3840×2160) with quality validation fallback
-7. **Admin Dashboard Fixes**: Resolved 7 critical navigation and data access issues, fixed notification queryFn bug preventing invalid URLs
+3. **Auto-Assign Riders**: Round-robin delivery assignment algorithm with load balancing (<10 active orders per rider), seeded 7 test orders across 5 riders
+4. **Video Validation**: Corrected to strict <30 seconds (not ≤30s) per product requirements
+5. **4K Image Enhancement**: Hybrid auto-upscaling system using Cloudinary transformations - automatically enhances images below 4K (3840×2160) with quality validation fallback
+6. **Admin Dashboard Fixes**: Resolved 7 critical navigation and data access issues, fixed notification queryFn bug preventing invalid URLs
 
 ### Technical Improvements
 
