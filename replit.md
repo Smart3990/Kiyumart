@@ -6,6 +6,24 @@ KiyuMart is an e-commerce platform for modest Islamic women's fashion, functioni
 
 ## Recent Changes (November 11, 2025)
 
+### Production Readiness (Tasks 1-7 Complete)
+
+1. **Multi-Currency Formatting System** (Task 7): All 20 hardcoded "GHS" instances replaced with centralized formatPrice utility
+   - Created PriceDisplay component wrapping formatPrice from useLanguage hook
+   - Systematic replacement across RiderDashboard, RiderDetailsPage, SellerDetailsPage, SellerDashboardConnected, Cart, ProductDetails
+   - Automatic currency switching based on language (English→GHS, French→CFA, Arabic→SAR)
+   - Zero LSP errors, production-ready implementation
+
+2. **Analytics Endpoints Stabilization** (Tasks 1-3): Fixed rider/seller analytics crashes
+   - Fixed storage.getOrders() regression by migrating to storage.getOrdersByUser(userId, role)
+   - Broadened admin access from super_admin-only to include admin role
+   - Updated order counting logic to count only paymentStatus==="completed" orders
+   - Rider deliveries and seller sales endpoints now stable
+
+3. **UI Terminology Consistency** (Task 4): Replaced all "shipping" references with "delivery" across dashboards
+
+4. **Seller Onboarding Enhancement** (Tasks 5-6): Conditional forms with vehicleInfo JSONB validation
+
 ### Completed Features
 
 1. **WhatsApp-Style Message Status Ticks**: Real-time message delivery and read status indicators
