@@ -242,6 +242,7 @@ export const orders = pgTable("orders", {
   sellerId: varchar("seller_id").notNull().references(() => users.id),
   riderId: varchar("rider_id").references(() => users.id),
   storeId: varchar("store_id").references(() => stores.id),
+  checkoutSessionId: varchar("checkout_session_id"),
   status: orderStatusEnum("status").notNull().default("pending"),
   deliveryMethod: deliveryMethodEnum("delivery_method").notNull(),
   deliveryZoneId: varchar("delivery_zone_id").references(() => deliveryZones.id),
@@ -271,6 +272,7 @@ export const orders = pgTable("orders", {
   statusIdx: index("orders_status_idx").on(table.status),
   paymentStatusIdx: index("orders_payment_status_idx").on(table.paymentStatus),
   createdAtIdx: index("orders_created_at_idx").on(table.createdAt),
+  checkoutSessionIdx: index("orders_checkout_session_id_idx").on(table.checkoutSessionId),
 }));
 
 export const orderItems = pgTable("order_items", {
