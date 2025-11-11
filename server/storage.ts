@@ -276,6 +276,65 @@ export class DbStorage implements IStorage {
     return newOrder;
   }
 
+  async createMultiSellerOrders(
+    baseOrderData: Omit<InsertOrder, 'sellerId' | 'storeId' | 'subtotal' | 'total' | 'processingFee'>,
+    itemsBySeller: Array<{
+      sellerId: string;
+      storeId: string | null;
+      items: Array<{ productId: string; quantity: number; price: string; total: string }>;
+      subtotal: number;
+      deliveryFee: number;
+      processingFee: number;
+      couponDiscount: number;
+      total: number;
+    }>
+  ): Promise<{ sessionId: string; orders: Order[] }> {
+    return await db.transaction(async (tx) => {
+      const sessionId = `SESSION-${Date.now()}`;
+      const createdOrders: Order[] = [];
+
+      for (const sellerGroup of itemsBySeller) {
+        const orderNumber = `ORD-${Date.now()}-${sellerGroup.sellerId.slice(0, 8)}`;
+        const qrCode = `${orderNumber}-${baseOrderData.buyerId}`;
+
+        const [newOrder] = await tx.insert(orders).values({
+          ...baseOrderData,
+          sellerId: sellerGroup.sellerId,
+          storeId: sellerGroup.storeId,
+          checkoutSessionId: sessionId,
+          orderNumber,
+          qrCode,
+          subtotal: sellerGroup.subtotal.toFixed(2),
+          deliveryFee: sellerGroup.deliveryFee.toFixed(2),
+          processingFee: sellerGroup.processingFee.toFixed(2),
+          couponDiscount: sellerGroup.couponDiscount > 0 ? sellerGroup.couponDiscount.toFixed(2) : null,
+          total: sellerGroup.total.toFixed(2),
+        }).returning();
+
+        for (const item of sellerGroup.items) {
+          await tx.insert(orderItems).values({
+            orderId: newOrder.id,
+            ...item,
+          });
+        }
+
+        createdOrders.push(newOrder);
+      }
+
+      // Increment coupon usage count if coupon was applied
+      if (baseOrderData.couponCode) {
+        await tx.update(coupons)
+          .set({ usedCount: sql`COALESCE(${coupons.usedCount}, 0) + 1` })
+          .where(eq(coupons.code, baseOrderData.couponCode));
+      }
+
+      // Clear cart once after all orders created
+      await tx.delete(cart).where(eq(cart.userId, baseOrderData.buyerId));
+
+      return { sessionId, orders: createdOrders };
+    });
+  }
+
   async getOrder(id: string): Promise<Order | undefined> {
     const result = await db.select().from(orders).where(eq(orders.id, id)).limit(1);
     return result[0];

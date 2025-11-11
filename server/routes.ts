@@ -2148,6 +2148,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       let serverSubtotal = 0;
       let serverProductSavings = 0;
       const validatedItems = [];
+      const productsBySeller = new Map<string, { sellerId: string; storeId: string | null; products: any[] }>();
       
       for (const item of items) {
         const product = await storage.getProduct(item.productId);
@@ -2169,12 +2170,25 @@ export async function registerRoutes(app: Express): Promise<Server> {
         serverProductSavings += (originalPrice - discountedPrice) * item.quantity;
         serverSubtotal += itemTotal;
         
-        validatedItems.push({
+        const validatedItem = {
           productId: item.productId,
           quantity: item.quantity,
           price: discountedPrice.toFixed(2),
           total: itemTotal.toFixed(2),
-        });
+          product,
+        };
+        
+        validatedItems.push(validatedItem);
+        
+        // Group by seller for multi-vendor detection
+        if (!productsBySeller.has(product.sellerId)) {
+          productsBySeller.set(product.sellerId, {
+            sellerId: product.sellerId,
+            storeId: product.storeId,
+            products: []
+          });
+        }
+        productsBySeller.get(product.sellerId)!.products.push(validatedItem);
       }
       
       // Verify client-submitted subtotal matches server calculation
@@ -2188,30 +2202,35 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       // Re-validate coupon on server-side
-      let serverCouponDiscount = 0;
-      if (orderData.couponCode && orderData.sellerId) {
+      // For multi-vendor carts, coupon applies ONLY to the seller who issued it
+      let couponOwningSellerId: string | null = null;
+      
+      if (orderData.couponCode) {
         try {
-          const validationResult = await storage.validateCoupon(
-            orderData.couponCode,
-            orderData.sellerId,
-            serverSubtotal
-          );
+          // Load coupon to determine which seller owns it
+          const coupon = await storage.getCouponByCode(orderData.couponCode);
           
-          if (!validationResult.valid) {
+          if (!coupon) {
             return res.status(400).json({ 
-              error: validationResult.message || "Invalid coupon" 
+              error: "Invalid coupon code" 
             });
           }
           
-          serverCouponDiscount = parseFloat(validationResult.discountAmount || "0");
-          
-          // Verify the discount amount matches
-          const clientDiscount = parseFloat(orderData.couponDiscount || "0");
-          if (Math.abs(serverCouponDiscount - clientDiscount) > 0.01) {
+          if (!coupon.isActive) {
             return res.status(400).json({ 
-              error: "Coupon discount amount mismatch. Please refresh and try again." 
+              error: "This coupon is no longer active" 
             });
           }
+          
+          // Check if coupon owner's products are in the cart
+          if (!productsBySeller.has(coupon.sellerId)) {
+            return res.status(400).json({ 
+              error: "This coupon can only be used with products from the seller who issued it" 
+            });
+          }
+          
+          // Set the coupon owner (will be validated against seller's subtotal later)
+          couponOwningSellerId = coupon.sellerId;
         } catch (validationError: any) {
           return res.status(400).json({ 
             error: `Coupon validation failed: ${validationError.message}` 
@@ -2219,10 +2238,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
       }
       
-      // Recalculate total server-side
+      // Recalculate total server-side (note: multi-vendor coupons calculated per-seller later)
       const deliveryFee = parseFloat(orderData.deliveryFee || "0");
-      const serverProcessingFee = (serverSubtotal - serverCouponDiscount + deliveryFee) * 0.0195;
-      const serverTotal = serverSubtotal - serverCouponDiscount + deliveryFee + serverProcessingFee;
+      const serverProcessingFee = (serverSubtotal + deliveryFee) * 0.0195;
+      const serverTotal = serverSubtotal + deliveryFee + serverProcessingFee;
       
       // Verify total matches
       const clientTotal = parseFloat(orderData.total || "0");
@@ -2234,44 +2253,146 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
       }
       
-      const orderInput = {
-        ...orderData,
-        buyerId: req.user!.id,
-        subtotal: serverSubtotal.toFixed(2),
-        couponDiscount: serverCouponDiscount > 0 ? serverCouponDiscount.toFixed(2) : null,
-        processingFee: serverProcessingFee.toFixed(2),
-        total: serverTotal.toFixed(2),
-      };
-
-      const validatedOrder = insertOrderSchema.parse(orderInput);
-      const order = await storage.createOrder(validatedOrder, validatedItems);
+      // Detect multi-vendor cart
+      const isMultiVendor = productsBySeller.size > 1;
+      let createdOrders: any[] = [];
+      let sessionId: string | undefined;
       
-      // Automatic rider assignment with round-robin load balancing
+      if (isMultiVendor) {
+        // Multi-vendor: create separate order per seller with proportional delivery fee
+        // Coupon applies ONLY to the seller who issued it
+        const itemsBySeller = await Promise.all(
+          Array.from(productsBySeller.values()).map(async sellerGroup => {
+            const sellerSubtotal = sellerGroup.products.reduce((sum, item) => sum + parseFloat(item.total), 0);
+            const sellerProportion = sellerSubtotal / serverSubtotal;
+            
+            // Proportionally allocate delivery fee to each seller
+            const sellerDeliveryFee = deliveryFee * sellerProportion;
+            
+            // Apply coupon discount ONLY to the seller who owns the coupon
+            let sellerCouponDiscount = 0;
+            if (couponOwningSellerId && sellerGroup.sellerId === couponOwningSellerId && orderData.couponCode) {
+              // Validate coupon against THIS seller's subtotal
+              const validationResult = await storage.validateCoupon(
+                orderData.couponCode,
+                sellerGroup.sellerId,
+                sellerSubtotal
+              );
+              
+              if (validationResult.valid) {
+                sellerCouponDiscount = parseFloat(validationResult.discountAmount || "0");
+              }
+            }
+            
+            // Calculate processing fee for this seller's order AFTER applying coupon
+            const sellerProcessingFee = (sellerSubtotal - sellerCouponDiscount + sellerDeliveryFee) * 0.0195;
+            const sellerTotal = sellerSubtotal - sellerCouponDiscount + sellerDeliveryFee + sellerProcessingFee;
+            
+            return {
+              sellerId: sellerGroup.sellerId,
+              storeId: sellerGroup.storeId,
+              items: sellerGroup.products.map(p => ({
+                productId: p.productId,
+                quantity: p.quantity,
+                price: p.price,
+                total: p.total
+              })),
+              subtotal: sellerSubtotal,
+              deliveryFee: sellerDeliveryFee,
+              processingFee: sellerProcessingFee,
+              couponDiscount: sellerCouponDiscount > 0 ? sellerCouponDiscount : 0, // Will be converted to null in storage
+              total: sellerTotal
+            };
+          })
+        );
+        
+        const baseOrderData = {
+          buyerId: req.user!.id,
+          status: orderData.status || 'pending',
+          deliveryMethod: orderData.deliveryMethod,
+          deliveryZoneId: orderData.deliveryZoneId || null,
+          deliveryAddress: orderData.deliveryAddress || null,
+          deliveryCity: orderData.deliveryCity || null,
+          deliveryPhone: orderData.deliveryPhone || null,
+          deliveryLatitude: orderData.deliveryLatitude || null,
+          deliveryLongitude: orderData.deliveryLongitude || null,
+          currency: orderData.currency || 'GHS',
+          paymentStatus: 'pending',
+          couponCode: orderData.couponCode || null,
+          estimatedDelivery: orderData.estimatedDelivery || null,
+        };
+        
+        const result = await storage.createMultiSellerOrders(baseOrderData as any, itemsBySeller);
+        sessionId = result.sessionId;
+        createdOrders = result.orders;
+        
+        console.log(`✅ Created ${createdOrders.length} orders for multi-vendor checkout (session: ${sessionId})`);
+      } else {
+        // Single vendor: use existing createOrder method
+        // For single-vendor, validate coupon if present
+        let singleVendorCouponDiscount = 0;
+        if (couponOwningSellerId && orderData.couponCode) {
+          const validationResult = await storage.validateCoupon(
+            orderData.couponCode,
+            couponOwningSellerId,
+            serverSubtotal
+          );
+          if (validationResult.valid) {
+            singleVendorCouponDiscount = parseFloat(validationResult.discountAmount || "0");
+          }
+        }
+        
+        // Recalculate processing fee and total with coupon discount
+        const finalProcessingFee = (serverSubtotal - singleVendorCouponDiscount + deliveryFee) * 0.0195;
+        const finalTotal = serverSubtotal - singleVendorCouponDiscount + deliveryFee + finalProcessingFee;
+        
+        const orderInput = {
+          ...orderData,
+          buyerId: req.user!.id,
+          subtotal: serverSubtotal.toFixed(2),
+          couponDiscount: singleVendorCouponDiscount > 0 ? singleVendorCouponDiscount.toFixed(2) : null,
+          processingFee: finalProcessingFee.toFixed(2),
+          total: finalTotal.toFixed(2),
+        };
+
+        const validatedOrder = insertOrderSchema.parse(orderInput);
+        const order = await storage.createOrder(validatedOrder, validatedItems.map(v => ({
+          productId: v.productId,
+          quantity: v.quantity,
+          price: v.price,
+          total: v.total
+        })));
+        createdOrders = [order];
+      }
+      
+      // Automatic rider assignment with round-robin load balancing for all orders
       try {
         const availableRiders = await storage.getAvailableRidersWithOrderCounts();
         
         if (availableRiders.length > 0) {
-          const selectedRider = availableRiders[0];
-          
-          const updatedOrder = await storage.assignRider(order.id, selectedRider.rider.id);
-          
-          await storage.createNotification({
-            userId: selectedRider.rider.id,
-            type: 'order',
-            title: 'New Order Assigned',
-            message: `Order ${order.orderNumber} has been automatically assigned to you`,
-            metadata: { orderId: order.id, orderNumber: order.orderNumber } as any
-          });
-          
-          io.to(selectedRider.rider.id).emit('new_order_assigned', {
-            orderId: order.id,
-            orderNumber: order.orderNumber,
-            message: `New order ${order.orderNumber} assigned to you`
-          });
-          
-          console.log(`✅ Auto-assigned order ${order.orderNumber} to rider ${selectedRider.rider.name} (${selectedRider.activeOrderCount} active orders)`);
+          for (const order of createdOrders) {
+            const selectedRider = availableRiders[0];
+            
+            await storage.assignRider(order.id, selectedRider.rider.id);
+            
+            await storage.createNotification({
+              userId: selectedRider.rider.id,
+              type: 'order',
+              title: 'New Order Assigned',
+              message: `Order ${order.orderNumber} has been automatically assigned to you`,
+              metadata: { orderId: order.id, orderNumber: order.orderNumber } as any
+            });
+            
+            io.to(selectedRider.rider.id).emit('new_order_assigned', {
+              orderId: order.id,
+              orderNumber: order.orderNumber,
+              message: `New order ${order.orderNumber} assigned to you`
+            });
+            
+            console.log(`✅ Auto-assigned order ${order.orderNumber} to rider ${selectedRider.rider.name}`);
+          }
         } else {
-          console.log(`⚠️ No available riders for order ${order.orderNumber}`);
+          console.log(`⚠️ No available riders for ${createdOrders.length} orders`);
         }
       } catch (riderAssignmentError: any) {
         console.error('Rider auto-assignment failed:', riderAssignmentError);
@@ -2280,7 +2401,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // NOTE: Order notification will be sent after successful payment verification
       // See /api/payments/verify/:reference endpoint
       
-      res.json(order);
+      // Return response: single order for single-vendor (backward compatible)
+      // or first order + session info for multi-vendor
+      if (isMultiVendor) {
+        res.json({ 
+          ...createdOrders[0],
+          checkoutSessionId: sessionId,
+          isMultiVendor: true,
+          totalOrders: createdOrders.length 
+        });
+      } else {
+        res.json(createdOrders[0]);
+      }
     } catch (error: any) {
       res.status(400).json({ error: error.message });
     }
@@ -2370,7 +2502,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           type: "order",
           title: "Order Status Updated",
           message: `Your order #${order.orderNumber} status has been updated to ${status}`,
-          metadata: { orderId: order.id, orderNumber: order.orderNumber, status }
+          metadata: { orderId: order.id, orderNumber: order.orderNumber, status } as any
         });
         
         // Emit real-time order status update to buyer
