@@ -50,14 +50,14 @@ export default function RiderEdit() {
   const riderId = window.location.pathname.split("/")[3];
 
   useEffect(() => {
-    if (!authLoading && (!isAuthenticated || user?.role !== "admin")) {
+    if (!authLoading && (!isAuthenticated || (user?.role !== "admin" && user?.role !== "super_admin"))) {
       navigate("/auth");
     }
   }, [isAuthenticated, authLoading, user, navigate]);
 
-  const { data: riderData, isLoading: riderLoading } = useQuery<RiderUser>({
+  const { data: riderData, isLoading: riderLoading} = useQuery<RiderUser>({
     queryKey: ["/api/users", riderId],
-    enabled: !!riderId && isAuthenticated && user?.role === "admin",
+    enabled: !!riderId && isAuthenticated && (user?.role === "admin" || user?.role === "super_admin"),
   });
 
   const form = useForm<EditRiderFormData>({
@@ -143,7 +143,7 @@ export default function RiderEdit() {
     updateRiderMutation.mutate(data);
   };
 
-  if (authLoading || !isAuthenticated || user?.role !== "admin") {
+  if (authLoading || !isAuthenticated || (user?.role !== "admin" && user?.role !== "super_admin")) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
         <Loader2 className="h-8 w-8 animate-spin text-primary" />
