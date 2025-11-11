@@ -14,7 +14,7 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, Di
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
-import { Loader2, Search, Store, Plus, Edit, Trash2, ArrowLeft } from "lucide-react";
+import { Loader2, Search, Store, Plus, Edit, Trash2, ArrowLeft, Eye } from "lucide-react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -395,6 +395,18 @@ export default function AdminStoresList() {
                       </TableCell>
                       <TableCell className="text-right">
                         <div className="flex justify-end gap-2">
+                          <Button 
+                            variant="ghost" 
+                            size="icon"
+                            onClick={() => {
+                              if (store.primarySellerId) {
+                                navigate(`/sellers/${store.primarySellerId}`);
+                              }
+                            }}
+                            data-testid={`button-view-${store.id}`}
+                          >
+                            <Eye className="h-4 w-4" />
+                          </Button>
                           <Button 
                             variant="ghost" 
                             size="icon"

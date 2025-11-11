@@ -371,7 +371,7 @@ export default function AdminDashboardConnected() {
                         status={order.status as any}
                         deliveryMethod={order.deliveryMethod as any}
                         date={formattedDate}
-                        onViewDetails={(id) => console.log('View details:', id)}
+                        onViewDetails={() => navigate(`/orders/${order.id}`)}
                       />
                     );
                   })}

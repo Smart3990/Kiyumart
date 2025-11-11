@@ -3607,6 +3607,57 @@ export async function registerRoutes(app: Express): Promise<Server> {
         socket.emit("error", { message: "Failed to update message status" });
       }
     });
+
+    // Real-time message sending handler
+    socket.on("new_message", async ({ receiverId, message }) => {
+      try {
+        const senderId = socket.data.userId; // Authenticated user from middleware
+        
+        if (!receiverId || !message?.trim()) {
+          socket.emit("error", { message: "Receiver ID and message are required" });
+          return;
+        }
+
+        // Create message in database
+        const { db } = await import("../db/index");
+        const { chatMessages } = await import("@shared/schema");
+        
+        const [newMessage] = await db.insert(chatMessages).values({
+          senderId,
+          receiverId,
+          message: message.trim(),
+          status: 'sent',
+          isRead: false
+        }).returning();
+
+        console.debug(`✅ New message from ${senderId} to ${receiverId}: ${newMessage.id}`);
+
+        // Broadcast to receiver in real-time
+        io.to(receiverId).emit("new_message", {
+          id: newMessage.id,
+          senderId: newMessage.senderId,
+          receiverId: newMessage.receiverId,
+          message: newMessage.message,
+          status: newMessage.status,
+          isRead: newMessage.isRead,
+          createdAt: newMessage.createdAt,
+          deliveredAt: newMessage.deliveredAt,
+          readAt: newMessage.readAt
+        });
+
+        // Acknowledge to sender
+        socket.emit("message_sent", {
+          id: newMessage.id,
+          tempId: message.tempId, // For optimistic UI updates
+          status: 'sent',
+          createdAt: newMessage.createdAt
+        });
+
+      } catch (error) {
+        console.error("Error sending message:", error);
+        socket.emit("error", { message: "Failed to send message" });
+      }
+    });
   });
 
   // ============ Customer Support Routes ============
