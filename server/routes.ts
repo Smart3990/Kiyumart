@@ -683,8 +683,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.post("/api/users", requireAuth, requireRole("admin", "super_admin"), async (req, res) => {
     try {
-      // Capture store data before schema parsing strips it
-      const { storeName, storeDescription, storeBanner } = req.body;
+      // Capture additional data before schema parsing
+      const { storeName, storeDescription, storeBanner, storeType, vehicleType, vehicleColor, vehiclePlateNumber } = req.body;
       
       const validatedData = insertUserSchema.parse(req.body);
       const existingUser = await storage.getUserByEmail(validatedData.email);
@@ -695,12 +695,30 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       const hashedPassword = await hashPassword(validatedData.password);
       
+      // Build user data with role-specific fields
       const userData: any = {
         ...validatedData,
         password: hashedPassword,
         isApproved: true,
         applicationStatus: "approved", // Auto-approve manually created users
       };
+
+      // Handle rider-specific fields - coerce into vehicleInfo JSONB
+      if (validatedData.role === "rider" && vehicleType) {
+        userData.vehicleInfo = {
+          type: vehicleType,
+          color: vehicleColor || "",
+          plateNumber: vehiclePlateNumber || undefined,
+        };
+      }
+
+      // Handle seller-specific fields
+      if (validatedData.role === "seller" && storeType) {
+        userData.storeType = storeType;
+        userData.storeName = storeName;
+        userData.storeDescription = storeDescription;
+        userData.storeBanner = storeBanner;
+      }
       
       const user = await storage.createUser(userData);
       
@@ -711,11 +729,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
           if (!existingStore) {
             const storeData = {
               primarySellerId: user.id,
-              name: storeName || user.name + "'s Store",
-              description: storeDescription || "",
-              logo: storeBanner || "",
-              storeType: req.body.storeType,
-              storeTypeMetadata: req.body.storeTypeMetadata,
+              name: storeName || user.storeName || user.name + "'s Store",
+              description: storeDescription || user.storeDescription || "",
+              logo: storeBanner || user.storeBanner || "",
+              banner: storeBanner || user.storeBanner || "",
+              storeType: storeType || user.storeType,
+              storeTypeMetadata: {},
               isActive: true,
               isApproved: true
             };
@@ -727,6 +746,25 @@ export async function registerRoutes(app: Express): Promise<Server> {
             
             const newStore = await storage.createStore(storeData);
             console.log(`Successfully created store ${newStore.id} for seller ${user.id}`);
+            
+            // Initialize categories for this store type
+            if (storeType) {
+              try {
+                const categories = await storage.getCategories();
+                const relevantCategories = categories.filter(cat => 
+                  cat.storeTypes && cat.storeTypes.includes(storeType)
+                );
+                
+                if (relevantCategories.length === 0) {
+                  console.warn(`No categories found for store type: ${storeType}. Seller may need manual category setup.`);
+                } else {
+                  console.log(`Found ${relevantCategories.length} categories for store type "${storeType}":`, 
+                    relevantCategories.map(c => c.name));
+                }
+              } catch (catError: any) {
+                console.error(`Failed to query categories for store type ${storeType}:`, catError);
+              }
+            }
           }
         } catch (storeError: any) {
           console.error(`CRITICAL: Failed to create store for new seller ${user.id}:`, {
@@ -2666,29 +2704,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const { riderId } = req.params;
       
-      const deliveries = await db.query.orders.findMany({
-        where: eq(orders.riderId, riderId),
-        orderBy: [desc(orders.createdAt)],
-        with: {
-          buyer: {
-            columns: {
-              id: true,
-              name: true,
-              email: true,
-            }
-          },
-          seller: {
-            columns: {
-              id: true,
-              name: true,
-              email: true,
-            }
-          },
-        },
-      });
+      const allOrders = await storage.getOrders();
+      const deliveries = allOrders
+        .filter(order => order.riderId === riderId)
+        .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
       
       res.json(deliveries);
     } catch (error: any) {
+      console.error("Error fetching rider deliveries:", error);
       res.status(400).json({ error: error.message });
     }
   });
@@ -2743,19 +2766,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const { sellerId } = req.params;
       
-      const sales = await db.query.orders.findMany({
-        where: eq(orders.sellerId, sellerId),
-        orderBy: [desc(orders.createdAt)],
-        with: {
-          buyer: {
-            columns: {
-              id: true,
-              name: true,
-              email: true,
-            }
-          },
-        },
-      });
+      const allOrders = await storage.getOrders();
+      const sales = allOrders
+        .filter(order => order.sellerId === sellerId)
+        .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
       
       const totalSales = sales.length;
       const totalRevenue = sales.reduce((sum, order) => {
@@ -2797,6 +2811,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
       });
     } catch (error: any) {
+      console.error("Error fetching seller sales:", error);
       res.status(400).json({ error: error.message });
     }
   });

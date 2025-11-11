@@ -630,6 +630,11 @@ export const insertUserSchema = createInsertSchema(users).pick({
   storeType: true,
   storeTypeMetadata: true,
   vehicleInfo: true,
+}).extend({
+  // Additional fields for form submission that map to user/store data
+  vehicleType: z.string().optional(), // Maps to vehicleInfo.type
+  vehicleColor: z.string().optional(), // Maps to vehicleInfo.color
+  vehiclePlateNumber: z.string().optional(), // Maps to vehicleInfo.plateNumber
 });
 
 export const insertAdminPermissionSchema = createInsertSchema(adminPermissions).pick({

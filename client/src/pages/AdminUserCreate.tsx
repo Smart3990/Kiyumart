@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useMutation } from "@tanstack/react-query";
@@ -10,10 +10,25 @@ import { useToast } from "@/hooks/use-toast";
 import DashboardLayout from "@/components/DashboardLayout";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
-import { ArrowLeft, Loader2 } from "lucide-react";
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage, FormDescription } from "@/components/ui/form";
+import { ArrowLeft, Loader2, Upload } from "lucide-react";
+import MediaUploadInput from "@/components/MediaUploadInput";
+
+const STORE_TYPES = [
+  { value: "clothing", label: "Clothing & Fashion" },
+  { value: "electronics", label: "Electronics" },
+  { value: "food_beverages", label: "Food & Beverages" },
+  { value: "beauty_cosmetics", label: "Beauty & Cosmetics" },
+  { value: "home_garden", label: "Home & Garden" },
+  { value: "sports_fitness", label: "Sports & Fitness" },
+  { value: "books_media", label: "Books & Media" },
+  { value: "toys_games", label: "Toys & Games" },
+  { value: "automotive", label: "Automotive" },
+  { value: "health_wellness", label: "Health & Wellness" },
+];
 
 const createUserSchema = z.object({
   name: z.string().min(2, "Name must be at least 2 characters"),
@@ -21,6 +36,31 @@ const createUserSchema = z.object({
   password: z.string().min(6, "Password must be at least 6 characters"),
   phone: z.string().optional(),
   role: z.enum(["buyer", "seller", "rider", "agent", "admin"]),
+  // Seller-specific fields
+  storeName: z.string().optional(),
+  storeDescription: z.string().optional(),
+  storeType: z.enum(["clothing", "electronics", "food_beverages", "beauty_cosmetics", "home_garden", "sports_fitness", "books_media", "toys_games", "automotive", "health_wellness"]).optional(),
+  storeBanner: z.string().optional(),
+  // Rider-specific fields
+  vehicleType: z.string().optional(),
+  vehicleColor: z.string().optional(),
+  vehiclePlateNumber: z.string().optional(),
+}).refine((data) => {
+  if (data.role === "seller") {
+    return data.storeName && data.storeType && data.storeName.length >= 2;
+  }
+  return true;
+}, {
+  message: "Store name and store type are required for sellers",
+  path: ["storeName"],
+}).refine((data) => {
+  if (data.role === "rider") {
+    return data.vehicleType && data.vehicleColor;
+  }
+  return true;
+}, {
+  message: "Vehicle type and color are required for riders",
+  path: ["vehicleType"],
 });
 
 type CreateUserFormData = z.infer<typeof createUserSchema>;
@@ -39,6 +79,8 @@ export default function AdminUserCreate() {
     }
   }, [isAuthenticated, authLoading, user, navigate]);
 
+  const [storeBannerUrl, setStoreBannerUrl] = useState<string>("");
+
   const form = useForm<CreateUserFormData>({
     resolver: zodResolver(createUserSchema),
     defaultValues: {
@@ -47,8 +89,18 @@ export default function AdminUserCreate() {
       password: "",
       phone: "",
       role: defaultRole,
+      storeName: "",
+      storeDescription: "",
+      storeType: undefined,
+      storeBanner: "",
+      vehicleType: "",
+      vehicleColor: "",
+      vehiclePlateNumber: "",
     },
   });
+
+  const selectedRole = form.watch("role");
+  const selectedVehicleType = form.watch("vehicleType");
 
   const createUserMutation = useMutation({
     mutationFn: async (data: CreateUserFormData) => {
@@ -190,6 +242,158 @@ export default function AdminUserCreate() {
                     </FormItem>
                   )}
                 />
+
+                {/* Seller-specific fields */}
+                {selectedRole === "seller" && (
+                  <>
+                    <FormField
+                      control={form.control}
+                      name="storeType"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Store Type / Category <span className="text-destructive">*</span></FormLabel>
+                          <Select onValueChange={field.onChange} value={field.value}>
+                            <FormControl>
+                              <SelectTrigger data-testid="select-store-type-trigger">
+                                <SelectValue placeholder="Select store type" />
+                              </SelectTrigger>
+                            </FormControl>
+                            <SelectContent data-testid="select-store-type-content">
+                              {STORE_TYPES.map((type) => (
+                                <SelectItem key={type.value} value={type.value} data-testid={`select-store-type-${type.value}`}>
+                                  {type.label}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                          <FormDescription>
+                            This determines which product categories will be available for this seller
+                          </FormDescription>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+
+                    <FormField
+                      control={form.control}
+                      name="storeName"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Store Name <span className="text-destructive">*</span></FormLabel>
+                          <FormControl>
+                            <Input placeholder="My Store" {...field} data-testid="input-store-name" />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+
+                    <FormField
+                      control={form.control}
+                      name="storeDescription"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Store Description</FormLabel>
+                          <FormControl>
+                            <Textarea 
+                              placeholder="Describe your store..." 
+                              {...field} 
+                              rows={3}
+                              data-testid="input-store-description" 
+                            />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+
+                    <FormField
+                      control={form.control}
+                      name="storeBanner"
+                      render={({ field }) => (
+                        <FormItem>
+                          <MediaUploadInput
+                            id="storeBanner"
+                            label="Store Banner Image"
+                            value={field.value || ""}
+                            onChange={(url) => {
+                              field.onChange(url);
+                              setStoreBannerUrl(url);
+                            }}
+                            accept="image"
+                            description="Upload a banner image for the store (recommended: 1200x400px)"
+                          />
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                  </>
+                )}
+
+                {/* Rider-specific fields */}
+                {selectedRole === "rider" && (
+                  <>
+                    <FormField
+                      control={form.control}
+                      name="vehicleType"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Vehicle Type <span className="text-destructive">*</span></FormLabel>
+                          <Select onValueChange={field.onChange} value={field.value}>
+                            <FormControl>
+                              <SelectTrigger data-testid="select-vehicle-type-trigger">
+                                <SelectValue placeholder="Select vehicle type" />
+                              </SelectTrigger>
+                            </FormControl>
+                            <SelectContent data-testid="select-vehicle-type-content">
+                              <SelectItem value="bicycle">Bicycle</SelectItem>
+                              <SelectItem value="motorcycle">Motorcycle</SelectItem>
+                              <SelectItem value="car">Car</SelectItem>
+                              <SelectItem value="van">Van</SelectItem>
+                            </SelectContent>
+                          </Select>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+
+                    <FormField
+                      control={form.control}
+                      name="vehicleColor"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Vehicle Color <span className="text-destructive">*</span></FormLabel>
+                          <FormControl>
+                            <Input placeholder="e.g., Red, Blue, Black" {...field} data-testid="input-vehicle-color" />
+                          </FormControl>
+                          <FormDescription>
+                            Required for all vehicle types
+                          </FormDescription>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+
+                    {selectedVehicleType && selectedVehicleType !== "bicycle" && (
+                      <FormField
+                        control={form.control}
+                        name="vehiclePlateNumber"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Plate Number</FormLabel>
+                            <FormControl>
+                              <Input placeholder="GR-1234-20" {...field} data-testid="input-plate-number" />
+                            </FormControl>
+                            <FormDescription>
+                              Required for motorized vehicles
+                            </FormDescription>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                    )}
+                  </>
+                )}
 
                 <div className="flex gap-4 pt-4">
                   <Button
