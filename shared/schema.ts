@@ -813,6 +813,16 @@ export const insertLocalizationStringSchema = createInsertSchema(localizationStr
 export const insertSecuritySettingSchema = createInsertSchema(securitySettings).omit({ id: true, createdAt: true, updatedAt: true });
 
 // TypeScript types
+// Vehicle Info schema for rider onboarding
+export const vehicleInfoSchema = z.object({
+  type: z.string(),
+  plateNumber: z.string().optional(),
+  license: z.string().optional(),
+  color: z.string().optional()
+});
+
+export type VehicleInfo = z.infer<typeof vehicleInfoSchema>;
+
 export type InsertUser = z.infer<typeof insertUserSchema>;
 export type User = typeof users.$inferSelect;
 

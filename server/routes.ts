@@ -19,7 +19,7 @@ import { uploadToCloudinary, uploadWithMetadata, uploadWith4KEnhancement } from 
 import { getExchangeRates, convertCurrency, SUPPORTED_CURRENCIES } from "./currency";
 import multer from "multer";
 import sharp from "sharp";
-import { insertUserSchema, insertProductSchema, insertDeliveryZoneSchema, insertOrderSchema, insertWishlistSchema, insertReviewSchema, insertBannerCollectionSchema, insertMarketplaceBannerSchema, insertFooterPageSchema } from "@shared/schema";
+import { insertUserSchema, insertProductSchema, insertDeliveryZoneSchema, insertOrderSchema, insertWishlistSchema, insertReviewSchema, insertBannerCollectionSchema, insertMarketplaceBannerSchema, insertFooterPageSchema, vehicleInfoSchema } from "@shared/schema";
 import { getStoreTypeSchema, type StoreType, STORE_TYPES } from "@shared/storeTypes";
 
 const upload = multer({ storage: multer.memoryStorage() });
@@ -703,13 +703,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
         applicationStatus: "approved", // Auto-approve manually created users
       };
 
-      // Handle rider-specific fields - coerce into vehicleInfo JSONB
+      // Handle rider-specific fields - validate and coerce into vehicleInfo JSONB
       if (validatedData.role === "rider" && vehicleType) {
-        userData.vehicleInfo = {
+        const vehiclePayload = {
           type: vehicleType,
-          color: vehicleColor || "",
-          plateNumber: vehiclePlateNumber || undefined,
+          color: vehicleColor,
+          plateNumber: vehiclePlateNumber,
         };
+        
+        const parsedVehicle = vehicleInfoSchema.safeParse(vehiclePayload);
+        if (!parsedVehicle.success) {
+          return res.status(400).json({ 
+            error: "Invalid vehicle information",
+            details: parsedVehicle.error.issues 
+          });
+        }
+        
+        userData.vehicleInfo = parsedVehicle.data;
       }
 
       // Handle seller-specific fields
@@ -950,25 +960,33 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.post("/api/applications/rider", async (req, res) => {
     try {
-      const { password, ...userData } = req.body;
+      const { password, ...rawUserData } = req.body;
       
       if (!password || password.length < 8) {
         return res.status(400).json({ error: "Password must be at least 8 characters" });
       }
 
-      const existingUser = await storage.getUserByEmail(userData.email);
+      const existingUser = await storage.getUserByEmail(rawUserData.email);
       if (existingUser) {
         return res.status(400).json({ error: "Email already registered" });
       }
 
-      // Validate and normalize vehicle information based on vehicle type
-      if (userData.vehicleInfo) {
-        const rawVehicle = userData.vehicleInfo as any;
-        const type = String(rawVehicle.type || "");
-        const plateNumber = rawVehicle.plateNumber ? String(rawVehicle.plateNumber).trim() : "";
-        const license = rawVehicle.license ? String(rawVehicle.license).trim() : "";
-        const color = rawVehicle.color ? String(rawVehicle.color).trim() : "";
+      // Build properly typed user data
+      const userData: any = { ...rawUserData };
+
+      // Validate and normalize vehicle information using vehicleInfoSchema
+      if (rawUserData.vehicleInfo) {
+        const parsedVehicle = vehicleInfoSchema.safeParse(rawUserData.vehicleInfo);
+        if (!parsedVehicle.success) {
+          return res.status(400).json({ 
+            error: "Invalid vehicle information",
+            details: parsedVehicle.error.issues 
+          });
+        }
         
+        const { type, plateNumber, license, color } = parsedVehicle.data;
+        
+        // Validate required fields based on vehicle type
         if (type === "car") {
           if (!plateNumber) {
             return res.status(400).json({ error: "Plate number is required for car riders" });
@@ -988,13 +1006,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           }
         }
         
-        // Normalize vehicleInfo: coerce empty strings to undefined, ensure proper types
-        userData.vehicleInfo = {
-          type,
-          plateNumber: plateNumber ? plateNumber : undefined,
-          license: license ? license : undefined,
-          color: color ? color : undefined,
-        } as { type: string; plateNumber?: string; license?: string; color?: string };
+        userData.vehicleInfo = parsedVehicle.data as { type: string; plateNumber?: string; license?: string; color?: string };
       }
 
       const hashedPassword = await bcrypt.hash(password, 10);

@@ -891,10 +891,7 @@ export class DbStorage implements IStorage {
     const result: any = {};
     
     if (role === "admin" || role === "super_admin" || !userId) {
-      // Total orders (all statuses for context)
-      const allOrders = await db.select({ count: sql<number>`count(*)` }).from(orders);
-      
-      // Paid/completed orders only for revenue (critical fix)
+      // Only count paid/completed orders (critical production fix)
       const paidOrders = await db.select({ count: sql<number>`count(*)` })
         .from(orders)
         .where(eq(orders.paymentStatus, "completed"));
@@ -906,18 +903,13 @@ export class DbStorage implements IStorage {
       const totalUsers = await db.select({ count: sql<number>`count(*)` }).from(users);
       const totalProducts = await db.select({ count: sql<number>`count(*)` }).from(products);
       
-      result.totalOrders = Number(allOrders[0]?.count ?? 0);
+      result.totalOrders = Number(paidOrders[0]?.count ?? 0);
       result.paidOrders = Number(paidOrders[0]?.count ?? 0);
       result.totalRevenue = Number(totalRevenue[0]?.sum ?? 0);
       result.totalUsers = Number(totalUsers[0]?.count ?? 0);
       result.totalProducts = Number(totalProducts[0]?.count ?? 0);
     } else if (role === "seller") {
-      // Total orders for seller (all statuses)
-      const allSellerOrders = await db.select({ count: sql<number>`count(*)` })
-        .from(orders)
-        .where(eq(orders.sellerId, userId));
-      
-      // Paid orders only for revenue
+      // Only count paid orders for sellers (critical production fix)
       const paidSellerOrders = await db.select({ count: sql<number>`count(*)` })
         .from(orders)
         .where(and(
@@ -932,7 +924,7 @@ export class DbStorage implements IStorage {
           eq(orders.paymentStatus, "completed")
         ));
       
-      result.totalOrders = Number(allSellerOrders[0]?.count ?? 0);
+      result.totalOrders = Number(paidSellerOrders[0]?.count ?? 0);
       result.paidOrders = Number(paidSellerOrders[0]?.count ?? 0);
       result.totalRevenue = Number(sellerRevenue[0]?.sum ?? 0);
     }
