@@ -40,8 +40,15 @@ interface AvailableRider {
   activeOrderCount: number;
 }
 
-function ViewOrderDialog({ orderId }: { orderId: string }) {
-  const [open, setOpen] = useState(false);
+function ViewOrderDialog({ 
+  orderId, 
+  open, 
+  onOpenChange 
+}: { 
+  orderId: string; 
+  open: boolean; 
+  onOpenChange: (open: boolean) => void; 
+}) {
   const { toast } = useToast();
   const { formatPrice } = useLanguage();
 
@@ -109,12 +116,7 @@ function ViewOrderDialog({ orderId }: { orderId: string }) {
   });
 
   return (
-    <Dialog open={open} onOpenChange={setOpen}>
-      <DialogTrigger asChild>
-        <Button variant="ghost" size="icon" data-testid={`button-view-${orderId}`}>
-          <Eye className="h-4 w-4" />
-        </Button>
-      </DialogTrigger>
+    <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>Order Details</DialogTitle>
@@ -244,6 +246,11 @@ export default function AdminOrders() {
   const [, navigate] = useLocation();
   const { user, isAuthenticated, isLoading: authLoading } = useAuth();
   const { formatPrice } = useLanguage();
+  
+  // Parse URL params to get orderId for dialog
+  const urlParams = new URLSearchParams(window.location.search);
+  const orderIdFromUrl = urlParams.get('orderId');
+  const [openOrderId, setOpenOrderId] = useState<string | null>(orderIdFromUrl);
 
   useEffect(() => {
     if (!authLoading && (!isAuthenticated || (user?.role !== "admin" && user?.role !== "super_admin"))) {
@@ -255,6 +262,33 @@ export default function AdminOrders() {
     queryKey: ["/api/orders", user?.id],
     enabled: isAuthenticated && (user?.role === "admin" || user?.role === "super_admin"),
   });
+  
+  // Sync openOrderId with URL params
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const orderId = params.get('orderId');
+    setOpenOrderId(orderId);
+  }, [window.location.search]);
+  
+  // Validate orderId exists in orders list, auto-close if invalid
+  useEffect(() => {
+    if (openOrderId && orders.length > 0) {
+      const orderExists = orders.some(o => o.id === openOrderId);
+      if (!orderExists) {
+        handleCloseDialog();
+      }
+    }
+  }, [openOrderId, orders]);
+  
+  const handleOpenDialog = (orderId: string) => {
+    navigate(`/admin/orders?orderId=${orderId}`, { replace: true });
+    setOpenOrderId(orderId);
+  };
+  
+  const handleCloseDialog = () => {
+    navigate('/admin/orders', { replace: true });
+    setOpenOrderId(null);
+  };
 
   const filteredOrders = orders.filter(o => 
     o.orderNumber.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -343,7 +377,14 @@ export default function AdminOrders() {
                       </div>
                     </div>
                     <div className="flex gap-2">
-                      <ViewOrderDialog orderId={order.id} />
+                      <Button 
+                        variant="ghost" 
+                        size="icon"
+                        onClick={() => handleOpenDialog(order.id)}
+                        data-testid={`button-view-${order.id}`}
+                      >
+                        <Eye className="h-4 w-4" />
+                      </Button>
                     </div>
                   </div>
                 </Card>
@@ -357,6 +398,17 @@ export default function AdminOrders() {
                 </div>
               )}
             </div>
+          )}
+          
+          {/* Conditional ViewOrderDialog render when openOrderId is set */}
+          {openOrderId && (
+            <ViewOrderDialog 
+              orderId={openOrderId}
+              open={!!openOrderId}
+              onOpenChange={(isOpen) => {
+                if (!isOpen) handleCloseDialog();
+              }}
+            />
           )}
       </div>
     </DashboardLayout>

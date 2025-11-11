@@ -196,6 +196,31 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
       });
     });
 
+    // Real-time Chat Messages
+    socket.on("new_message", (data: {
+      id: string;
+      senderId: string;
+      receiverId: string;
+      message: string;
+      status: string;
+      createdAt: string;
+    }) => {
+      console.log("💬 New message received:", data);
+      
+      // Invalidate messages queries to refresh chat UI
+      queryClient.invalidateQueries({ queryKey: ["/api/messages"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/messages", data.senderId] });
+      
+      // Show toast notification for new message
+      toast({
+        title: "New Message",
+        description: data.message.length > 50 
+          ? `${data.message.substring(0, 50)}...`
+          : data.message,
+        duration: 4000,
+      });
+    });
+
     // Seller Application Approved (for real-time store updates)
     if (user.role === "seller") {
       const sellerApprovedEvent = `seller-approved:${user.id}`;
