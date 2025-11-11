@@ -11,7 +11,7 @@ import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Loader2, Search, Package, Edit, Trash2, Plus, Eye } from "lucide-react";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage, FormDescription } from "@/components/ui/form";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useForm } from "react-hook-form";
@@ -422,7 +422,7 @@ function DeleteProductDialog({ product }: { product: Product }) {
 
   return (
     <AlertDialog open={open} onOpenChange={setOpen}>
-      <DialogTrigger asChild>
+      <AlertDialogTrigger asChild>
         <Button 
           variant="ghost" 
           size="icon"
@@ -430,7 +430,7 @@ function DeleteProductDialog({ product }: { product: Product }) {
         >
           <Trash2 className="h-4 w-4 text-destructive" />
         </Button>
-      </DialogTrigger>
+      </AlertDialogTrigger>
       <AlertDialogContent>
         <AlertDialogHeader>
           <AlertDialogTitle>Delete Product?</AlertDialogTitle>
