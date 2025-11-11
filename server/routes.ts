@@ -3185,11 +3185,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // ============ Socket.IO for Real-time Chat ============
   const userSockets = new Map<string, string>();
 
-  // Helper function to send notifications to all admins
+  // Helper function to send notifications to all admins and super_admins
   async function notifyAdmins(type: string, title: string, message: string, metadata?: Record<string, any>) {
     try {
       const admins = await storage.getUsersByRole("admin");
-      for (const admin of admins) {
+      const superAdmins = await storage.getUsersByRole("super_admin");
+      const allAdmins = [...admins, ...superAdmins];
+      
+      for (const admin of allAdmins) {
         // Save notification to database
         await storage.createNotification({
           userId: admin.id,
@@ -3200,11 +3203,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
         
         // Send real-time notification via Socket.IO
-        io.to(admin.id).emit("notification", {
-          title,
-          message,
-          type: "default",
-        });
+        if (admin.id) {
+          io.to(admin.id).emit("notification", {
+            title,
+            message,
+            type: "default",
+          });
+        }
       }
     } catch (error) {
       console.error("Error notifying admins:", error);
