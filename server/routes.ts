@@ -950,13 +950,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
           }
         }
         
-        // Normalize vehicleInfo: coerce empty strings to null, ensure proper types
+        // Normalize vehicleInfo: coerce empty strings to undefined, ensure proper types
         userData.vehicleInfo = {
           type,
-          plateNumber: plateNumber || undefined,
-          license: license || undefined,
-          color: color || undefined,
-        };
+          plateNumber: plateNumber ? plateNumber : undefined,
+          license: license ? license : undefined,
+          color: color ? color : undefined,
+        } as { type: string; plateNumber?: string; license?: string; color?: string };
       }
 
       const hashedPassword = await bcrypt.hash(password, 10);
@@ -3734,12 +3734,27 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
     });
 
-    socket.on("call_offer", ({ offer, targetUserId }) => {
-      console.log(`📞 Call offer from ${socket.data.userId} to ${targetUserId}`);
-      io.to(targetUserId).emit("call_offer", {
-        offer,
-        callerId: socket.data.userId
-      });
+    socket.on("call_offer", async ({ offer, targetUserId, callType }) => {
+      try {
+        const callerId = socket.data.userId;
+        const caller = await storage.getUser(callerId);
+        
+        if (!caller) {
+          socket.emit("error", { message: "Caller not found" });
+          return;
+        }
+
+        console.log(`📞 Call offer (${callType}) from ${caller.name} to ${targetUserId}`);
+        io.to(targetUserId).emit("call_offer", {
+          offer,
+          callerId,
+          callerName: caller.name,
+          callType
+        });
+      } catch (error) {
+        console.error("Error handling call offer:", error);
+        socket.emit("error", { message: "Failed to initiate call" });
+      }
     });
 
     socket.on("call_answer", ({ answer, targetUserId }) => {

@@ -1,48 +1,57 @@
-import { createContext, useContext, useEffect, useRef, ReactNode } from "react";
+import { createContext, useContext, useEffect, useState, ReactNode } from "react";
 import { useAuth } from "@/lib/auth";
 import { useToast } from "@/hooks/use-toast";
 import { queryClient } from "@/lib/queryClient";
 import { io, Socket } from "socket.io-client";
 
 interface NotificationContextType {
+  socket: Socket | null;
   isConnected: boolean;
 }
 
 const NotificationContext = createContext<NotificationContextType | undefined>(undefined);
 
+export function useSocket() {
+  const context = useContext(NotificationContext);
+  if (!context) {
+    throw new Error("useSocket must be used within NotificationProvider");
+  }
+  return context.socket;
+}
+
 export function NotificationProvider({ children }: { children: ReactNode }) {
   const { user } = useAuth();
   const { toast } = useToast();
-  const socketRef = useRef<Socket | null>(null);
-  const isConnectedRef = useRef(false);
+  const [socket, setSocket] = useState<Socket | null>(null);
+  const [isConnected, setIsConnected] = useState(false);
 
   useEffect(() => {
     if (!user) {
-      if (socketRef.current) {
-        socketRef.current.disconnect();
-        socketRef.current = null;
-        isConnectedRef.current = false;
+      if (socket) {
+        socket.disconnect();
+        setSocket(null);
+        setIsConnected(false);
       }
       return;
     }
 
-    const socket = io({
+    const newSocket = io({
       auth: { userId: user.id }
     });
 
-    socket.on("connect", () => {
+    newSocket.on("connect", () => {
       console.log("🔔 Notification system connected");
-      isConnectedRef.current = true;
-      socket.emit("register", user.id);
+      setIsConnected(true);
+      newSocket.emit("register", user.id);
     });
 
-    socket.on("disconnect", () => {
+    newSocket.on("disconnect", () => {
       console.log("🔕 Notification system disconnected");
-      isConnectedRef.current = false;
+      setIsConnected(false);
     });
 
     // Order Status Updates
-    socket.on("order_status_updated", (data: { 
+    newSocket.on("order_status_updated", (data: { 
       orderId: string; 
       orderNumber: string; 
       status: string; 
@@ -68,7 +77,7 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
     });
 
     // Payment Confirmation
-    socket.on("payment_completed", (data: {
+    newSocket.on("payment_completed", (data: {
       orderId: string;
       orderNumber: string;
       amount: string;
@@ -87,7 +96,7 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
     });
 
     // Payment Failed
-    socket.on("payment_failed", (data: {
+    newSocket.on("payment_failed", (data: {
       orderId: string;
       orderNumber: string;
       reason: string;
@@ -103,7 +112,7 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
     });
 
     // Delivery Updates
-    socket.on("rider_location_updated", (data: {
+    newSocket.on("rider_location_updated", (data: {
       orderId: string;
       orderNumber: string;
       latitude: string;
@@ -128,7 +137,7 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
     });
 
     // Order Shipped
-    socket.on("order_shipped", (data: {
+    newSocket.on("order_shipped", (data: {
       orderId: string;
       orderNumber: string;
       trackingNumber?: string;
@@ -147,7 +156,7 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
     });
 
     // New Product Available (for wishlist items)
-    socket.on("product_back_in_stock", (data: {
+    newSocket.on("product_back_in_stock", (data: {
       productId: string;
       productName: string;
     }) => {
@@ -164,7 +173,7 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
     });
 
     // General Notifications
-    socket.on("notification", (data: {
+    newSocket.on("notification", (data: {
       title: string;
       message: string;
       type?: "default" | "success" | "error" | "warning";
@@ -180,7 +189,7 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
     });
 
     // Promotional/Marketing Messages
-    socket.on("promotion", (data: {
+    newSocket.on("promotion", (data: {
       title: string;
       message: string;
       code?: string;
@@ -197,7 +206,7 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
     });
 
     // Real-time Chat Messages
-    socket.on("new_message", (data: {
+    newSocket.on("new_message", (data: {
       id: string;
       senderId: string;
       receiverId: string;
@@ -224,7 +233,7 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
     // Seller Application Approved (for real-time store updates)
     if (user.role === "seller") {
       const sellerApprovedEvent = `seller-approved:${user.id}`;
-      socket.on(sellerApprovedEvent, (data: {
+      newSocket.on(sellerApprovedEvent, (data: {
         sellerId: string;
         timestamp: string;
       }) => {
@@ -242,17 +251,17 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
       });
     }
 
-    socketRef.current = socket;
+    setSocket(newSocket);
 
     return () => {
-      socket.disconnect();
-      socketRef.current = null;
-      isConnectedRef.current = false;
+      newSocket.disconnect();
+      setSocket(null);
+      setIsConnected(false);
     };
   }, [user?.id, user?.role, toast]);
 
   return (
-    <NotificationContext.Provider value={{ isConnected: isConnectedRef.current }}>
+    <NotificationContext.Provider value={{ socket, isConnected }}>
       {children}
     </NotificationContext.Provider>
   );

@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useLocation } from "wouter";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import DashboardLayout from "@/components/DashboardLayout";
@@ -11,8 +11,11 @@ import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { useToast } from "@/hooks/use-toast";
-import { Loader2, Search, MessageSquare, Send, ArrowLeft, User, Phone, Video } from "lucide-react";
+import { Loader2, Search, MessageSquare, Send, ArrowLeft, User, Phone, Video, PhoneOff } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
+import { MessageStatusTicks } from "@/components/MessageStatusTicks";
+import { useSocket } from "@/contexts/NotificationContext";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 
 interface UserData {
   id: string;
@@ -31,6 +34,9 @@ interface Message {
   message: string;
   createdAt: string;
   isRead: boolean;
+  status: 'sent' | 'delivered' | 'read';
+  deliveredAt?: string | null;
+  readAt?: string | null;
 }
 
 export default function AdminMessages() {
@@ -41,6 +47,15 @@ export default function AdminMessages() {
   const [, navigate] = useLocation();
   const { user, isAuthenticated, isLoading: authLoading } = useAuth();
   const { toast } = useToast();
+  const socket = useSocket();
+  
+  // Call state management
+  const [incomingCall, setIncomingCall] = useState<{ callerId: string; callerName: string; callType: 'voice' | 'video'; offer: any } | null>(null);
+  const [ongoingCall, setOngoingCall] = useState<{ targetUserId: string; targetName: string; callType: 'voice' | 'video' } | null>(null);
+  const localVideoRef = useRef<HTMLVideoElement>(null);
+  const remoteVideoRef = useRef<HTMLVideoElement>(null);
+  const peerConnectionRef = useRef<RTCPeerConnection | null>(null);
+  const localStreamRef = useRef<MediaStream | null>(null);
 
   // Get userId from URL search params if present (when clicking from AdminUsers)
   const urlParams = new URLSearchParams(window.location.search);
@@ -51,6 +66,106 @@ export default function AdminMessages() {
       navigate("/auth");
     }
   }, [isAuthenticated, authLoading, user, navigate]);
+
+  // Socket.IO event listeners for message status updates
+  useEffect(() => {
+    if (!socket || !selectedUserId) return;
+
+    const handleMessageDelivered = (data: { messageId: string; deliveredAt: string }) => {
+      console.log("📨 Message delivered:", data);
+      queryClient.setQueryData<Message[]>(["/api/messages", selectedUserId], (oldMessages) => {
+        if (!oldMessages) return oldMessages;
+        return oldMessages.map((msg) =>
+          msg.id === data.messageId
+            ? { ...msg, status: "delivered" as const, deliveredAt: data.deliveredAt }
+            : msg
+        );
+      });
+    };
+
+    const handleMessageRead = (data: { messageIds: string[]; readAt: string }) => {
+      console.log("👀 Messages read:", data);
+      queryClient.setQueryData<Message[]>(["/api/messages", selectedUserId], (oldMessages) => {
+        if (!oldMessages) return oldMessages;
+        return oldMessages.map((msg) =>
+          data.messageIds.includes(msg.id)
+            ? { ...msg, status: "read" as const, readAt: data.readAt, isRead: true }
+            : msg
+        );
+      });
+    };
+
+    socket.on("message_delivered", handleMessageDelivered);
+    socket.on("message_read", handleMessageRead);
+
+    return () => {
+      socket.off("message_delivered", handleMessageDelivered);
+      socket.off("message_read", handleMessageRead);
+    };
+  }, [socket, selectedUserId]);
+
+  // Socket.IO event listeners for WebRTC calls
+  useEffect(() => {
+    if (!socket) return;
+
+    const handleCallOffer = (data: { callerId: string; callerName: string; callType: 'voice' | 'video'; offer: RTCSessionDescriptionInit }) => {
+      console.log("📞 Incoming call from:", data.callerName, data.callType);
+      setIncomingCall({
+        callerId: data.callerId,
+        callerName: data.callerName,
+        callType: data.callType,
+        offer: data.offer
+      });
+    };
+
+    const handleCallAnswer = async (data: { answer: RTCSessionDescriptionInit }) => {
+      console.log("📞 Call answer received");
+      try {
+        if (peerConnectionRef.current) {
+          await peerConnectionRef.current.setRemoteDescription(new RTCSessionDescription(data.answer));
+        }
+      } catch (error) {
+        console.error("❌ Error setting remote description:", error);
+      }
+    };
+
+    const handleIceCandidate = async (data: { candidate: RTCIceCandidateInit }) => {
+      console.log("🧊 ICE candidate received");
+      try {
+        if (peerConnectionRef.current) {
+          await peerConnectionRef.current.addIceCandidate(new RTCIceCandidate(data.candidate));
+        }
+      } catch (error) {
+        console.error("❌ Error adding ICE candidate:", error);
+      }
+    };
+
+    const handleCallEnd = () => {
+      console.log("📞 Call ended by remote party");
+      endCall();
+    };
+
+    socket.on('call_offer', handleCallOffer);
+    socket.on('call_answer', handleCallAnswer);
+    socket.on('ice_candidate', handleIceCandidate);
+    socket.on('call_end', handleCallEnd);
+
+    return () => {
+      socket.off('call_offer', handleCallOffer);
+      socket.off('call_answer', handleCallAnswer);
+      socket.off('ice_candidate', handleIceCandidate);
+      socket.off('call_end', handleCallEnd);
+    };
+  }, [socket]);
+
+  // Cleanup on component unmount
+  useEffect(() => {
+    return () => {
+      if (ongoingCall || incomingCall) {
+        endCall();
+      }
+    };
+  }, []);
 
   const { data: users = [], isLoading: usersLoading } = useQuery<UserData[]>({
     queryKey: ["/api/users"],
@@ -107,6 +222,182 @@ export default function AdminMessages() {
         message: message.trim(),
       });
     }
+  };
+
+  // WebRTC Helper Functions
+  const initPeerConnection = (targetUserId: string) => {
+    const pc = new RTCPeerConnection({
+      iceServers: [{ urls: 'stun:stun.l.google.com:19302' }]
+    });
+
+    // Add local tracks to peer connection
+    if (localStreamRef.current) {
+      localStreamRef.current.getTracks().forEach(track => {
+        pc.addTrack(track, localStreamRef.current!);
+      });
+    }
+
+    // Handle remote stream
+    pc.ontrack = (event) => {
+      console.log("📹 Remote track received:", event.streams[0]);
+      if (remoteVideoRef.current) {
+        remoteVideoRef.current.srcObject = event.streams[0];
+      }
+    };
+
+    // Handle ICE candidates (use parameter instead of state to avoid stale closure)
+    pc.onicecandidate = (event) => {
+      if (event.candidate && socket) {
+        console.log("🧊 Sending ICE candidate to:", targetUserId);
+        socket.emit('ice_candidate', {
+          targetUserId: targetUserId,
+          candidate: event.candidate
+        });
+      }
+    };
+
+    peerConnectionRef.current = pc;
+    return pc;
+  };
+
+  const startCall = async (callType: 'voice' | 'video') => {
+    try {
+      console.log(`📞 Starting ${callType} call with ${selectedUser?.name}`);
+      
+      const constraints = callType === 'video' 
+        ? { video: true, audio: true }
+        : { video: false, audio: true };
+      
+      const stream = await navigator.mediaDevices.getUserMedia(constraints);
+      localStreamRef.current = stream;
+      
+      if (localVideoRef.current && callType === 'video') {
+        localVideoRef.current.srcObject = stream;
+      }
+      
+      const pc = initPeerConnection(selectedUserId!);
+      const offer = await pc.createOffer();
+      await pc.setLocalDescription(offer);
+      
+      socket?.emit('call_offer', {
+        targetUserId: selectedUserId,
+        offer: offer,
+        callType
+      });
+      
+      setOngoingCall({ 
+        targetUserId: selectedUserId!, 
+        targetName: selectedUser?.name || 'User',
+        callType 
+      });
+
+      toast({
+        title: `${callType === 'video' ? 'Video' : 'Voice'} Call Started`,
+        description: `Calling ${selectedUser?.name}...`
+      });
+    } catch (error) {
+      console.error("❌ Call start error:", error);
+      toast({
+        title: "Call Failed",
+        description: error instanceof Error ? error.message : "Could not access camera/microphone",
+        variant: "destructive"
+      });
+    }
+  };
+
+  const acceptCall = async () => {
+    if (!incomingCall) return;
+    
+    try {
+      console.log(`📞 Accepting ${incomingCall.callType} call from ${incomingCall.callerName}`);
+      
+      const constraints = incomingCall.callType === 'video'
+        ? { video: true, audio: true }
+        : { video: false, audio: true };
+      
+      const stream = await navigator.mediaDevices.getUserMedia(constraints);
+      localStreamRef.current = stream;
+      
+      if (localVideoRef.current && incomingCall.callType === 'video') {
+        localVideoRef.current.srcObject = stream;
+      }
+      
+      const pc = initPeerConnection(incomingCall.callerId);
+      await pc.setRemoteDescription(new RTCSessionDescription(incomingCall.offer));
+      const answer = await pc.createAnswer();
+      await pc.setLocalDescription(answer);
+      
+      socket?.emit('call_answer', {
+        targetUserId: incomingCall.callerId,
+        answer: answer
+      });
+      
+      setOngoingCall({
+        targetUserId: incomingCall.callerId,
+        targetName: incomingCall.callerName,
+        callType: incomingCall.callType
+      });
+      setIncomingCall(null);
+
+      toast({
+        title: "Call Connected",
+        description: `Connected with ${incomingCall.callerName}`
+      });
+    } catch (error) {
+      console.error("❌ Call accept error:", error);
+      toast({
+        title: "Call Failed",
+        description: error instanceof Error ? error.message : "Could not accept call",
+        variant: "destructive"
+      });
+      setIncomingCall(null);
+    }
+  };
+
+  const rejectCall = () => {
+    if (incomingCall) {
+      socket?.emit('call_end', { targetUserId: incomingCall.callerId });
+      setIncomingCall(null);
+      toast({
+        title: "Call Rejected",
+        description: `Declined call from ${incomingCall.callerName}`
+      });
+    }
+  };
+
+  const endCall = () => {
+    console.log("📞 Ending call");
+    
+    // Stop all media tracks
+    localStreamRef.current?.getTracks().forEach(track => {
+      track.stop();
+      console.log(`🛑 Stopped track: ${track.kind}`);
+    });
+    
+    // Close peer connection
+    peerConnectionRef.current?.close();
+    
+    // Emit call end to other party
+    if (ongoingCall) {
+      socket?.emit('call_end', { targetUserId: ongoingCall.targetUserId });
+    }
+    
+    // Clear refs and state
+    setOngoingCall(null);
+    localStreamRef.current = null;
+    peerConnectionRef.current = null;
+    
+    if (localVideoRef.current) {
+      localVideoRef.current.srcObject = null;
+    }
+    if (remoteVideoRef.current) {
+      remoteVideoRef.current.srcObject = null;
+    }
+
+    toast({
+      title: "Call Ended",
+      description: "The call has been disconnected"
+    });
   };
 
   const getRoleBadgeColor = (role: string) => {
@@ -273,12 +564,8 @@ export default function AdminMessages() {
                     <Button
                       variant="ghost"
                       size="icon"
-                      onClick={() => {
-                        toast({
-                          title: "Voice Call",
-                          description: `Initiating voice call with ${selectedUser.name}...`,
-                        });
-                      }}
+                      onClick={() => startCall('voice')}
+                      disabled={!selectedUserId || !!ongoingCall || !!incomingCall}
                       data-testid="button-voice-call"
                     >
                       <Phone className="h-5 w-5" />
@@ -286,12 +573,8 @@ export default function AdminMessages() {
                     <Button
                       variant="ghost"
                       size="icon"
-                      onClick={() => {
-                        toast({
-                          title: "Video Call",
-                          description: `Initiating video call with ${selectedUser.name}...`,
-                        });
-                      }}
+                      onClick={() => startCall('video')}
+                      disabled={!selectedUserId || !!ongoingCall || !!incomingCall}
                       data-testid="button-video-call"
                     >
                       <Video className="h-5 w-5" />
@@ -334,9 +617,18 @@ export default function AdminMessages() {
                             >
                               <p className="text-sm">{msg.message}</p>
                             </div>
-                            <p className="text-xs text-muted-foreground mt-1">
-                              {formatDistanceToNow(new Date(msg.createdAt), { addSuffix: true })}
-                            </p>
+                            <div className="flex items-center gap-1 mt-1">
+                              <p className="text-xs text-muted-foreground">
+                                {formatDistanceToNow(new Date(msg.createdAt), { addSuffix: true })}
+                              </p>
+                              {msg.senderId === user?.id && (
+                                <MessageStatusTicks
+                                  status={msg.status || "sent"}
+                                  deliveredAt={msg.deliveredAt}
+                                  readAt={msg.readAt}
+                                />
+                              )}
+                            </div>
                           </div>
                         </div>
                       ))}
@@ -381,6 +673,121 @@ export default function AdminMessages() {
           </Card>
         </div>
       </div>
+
+      {/* Incoming Call Dialog */}
+      {incomingCall && (
+        <Dialog open={!!incomingCall} onOpenChange={() => rejectCall()}>
+          <DialogContent className="sm:max-w-md">
+            <DialogHeader>
+              <DialogTitle className="text-center text-xl">
+                Incoming {incomingCall.callType === 'video' ? 'Video' : 'Voice'} Call
+              </DialogTitle>
+            </DialogHeader>
+            <div className="space-y-6 py-4">
+              <div className="text-center">
+                <div className="h-16 w-16 rounded-full bg-primary/10 flex items-center justify-center mx-auto mb-4">
+                  {incomingCall.callType === 'video' ? (
+                    <Video className="h-8 w-8 text-primary" />
+                  ) : (
+                    <Phone className="h-8 w-8 text-primary" />
+                  )}
+                </div>
+                <p className="text-lg font-semibold mb-2">{incomingCall.callerName}</p>
+                <p className="text-sm text-muted-foreground">
+                  is calling you...
+                </p>
+              </div>
+              <div className="flex gap-4">
+                <Button
+                  onClick={acceptCall}
+                  className="flex-1"
+                  size="lg"
+                  data-testid="button-accept-call"
+                >
+                  <Phone className="h-5 w-5 mr-2" />
+                  Accept
+                </Button>
+                <Button
+                  onClick={rejectCall}
+                  variant="destructive"
+                  className="flex-1"
+                  size="lg"
+                  data-testid="button-reject-call"
+                >
+                  <PhoneOff className="h-5 w-5 mr-2" />
+                  Decline
+                </Button>
+              </div>
+            </div>
+          </DialogContent>
+        </Dialog>
+      )}
+
+      {/* Ongoing Call Dialog */}
+      {ongoingCall && (
+        <Dialog open={!!ongoingCall} onOpenChange={endCall}>
+          <DialogContent className="max-w-4xl">
+            <DialogHeader>
+              <DialogTitle className="text-center text-xl">
+                {ongoingCall.callType === 'video' ? 'Video' : 'Voice'} Call with {ongoingCall.targetName}
+              </DialogTitle>
+            </DialogHeader>
+            <div className="space-y-4 py-4">
+              {ongoingCall.callType === 'video' ? (
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="relative bg-black rounded-lg overflow-hidden aspect-video">
+                    <video
+                      ref={remoteVideoRef}
+                      autoPlay
+                      playsInline
+                      className="w-full h-full object-cover"
+                      data-testid="video-remote"
+                    />
+                    <div className="absolute bottom-3 left-3 bg-black/70 px-3 py-1 rounded-md">
+                      <p className="text-white text-sm font-medium">{ongoingCall.targetName}</p>
+                    </div>
+                  </div>
+                  <div className="relative bg-black rounded-lg overflow-hidden aspect-video">
+                    <video
+                      ref={localVideoRef}
+                      autoPlay
+                      playsInline
+                      muted
+                      className="w-full h-full object-cover"
+                      data-testid="video-local"
+                    />
+                    <div className="absolute bottom-3 left-3 bg-black/70 px-3 py-1 rounded-md">
+                      <p className="text-white text-sm font-medium">You</p>
+                    </div>
+                  </div>
+                </div>
+              ) : (
+                <div className="text-center py-12">
+                  <div className="h-24 w-24 rounded-full bg-primary/10 flex items-center justify-center mx-auto mb-6 animate-pulse">
+                    <Phone className="h-12 w-12 text-primary" />
+                  </div>
+                  <p className="text-lg font-semibold mb-2">Voice Call in Progress</p>
+                  <p className="text-sm text-muted-foreground">
+                    Connected with {ongoingCall.targetName}
+                  </p>
+                </div>
+              )}
+              <div className="flex justify-center gap-4">
+                <Button
+                  onClick={endCall}
+                  variant="destructive"
+                  size="lg"
+                  className="min-w-[150px]"
+                  data-testid="button-end-call"
+                >
+                  <PhoneOff className="h-5 w-5 mr-2" />
+                  End Call
+                </Button>
+              </div>
+            </div>
+          </DialogContent>
+        </Dialog>
+      )}
     </DashboardLayout>
   );
 }
