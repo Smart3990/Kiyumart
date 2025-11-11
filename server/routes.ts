@@ -2716,10 +2716,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const { riderId } = req.params;
       
-      const allOrders = await storage.getOrders();
-      const deliveries = allOrders
-        .filter(order => order.riderId === riderId)
-        .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+      const deliveries = await storage.getOrdersByUser(riderId, "rider");
       
       res.json(deliveries);
     } catch (error: any) {
@@ -2778,10 +2775,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const { sellerId } = req.params;
       
-      const allOrders = await storage.getOrders();
-      const sales = allOrders
-        .filter(order => order.sellerId === sellerId)
-        .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+      const sales = await storage.getOrdersByUser(sellerId, "seller");
       
       const totalSales = sales.length;
       const totalRevenue = sales.reduce((sum, order) => {

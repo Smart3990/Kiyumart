@@ -3,6 +3,7 @@ import { useQuery } from "@tanstack/react-query";
 import { useLocation, useParams } from "wouter";
 import DashboardLayout from "@/components/DashboardLayout";
 import { useAuth } from "@/lib/auth";
+import { useLanguage } from "@/contexts/LanguageContext";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -54,6 +55,7 @@ export default function RiderDetailsPage() {
   const params = useParams<{ id: string }>();
   const riderId = params.id;
   const { user, isAuthenticated, isLoading: authLoading } = useAuth();
+  const { formatPrice } = useLanguage();
 
   useEffect(() => {
     if (!authLoading && (!isAuthenticated || (user?.role !== "admin" && user?.role !== "super_admin"))) {
@@ -148,7 +150,7 @@ export default function RiderDetailsPage() {
                 <DollarSign className="h-4 w-4 text-muted-foreground" />
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold">GHS {earnings.totalEarnings.toFixed(2)}</div>
+                <div className="text-2xl font-bold">{formatPrice(earnings.totalEarnings)}</div>
                 <p className="text-xs text-muted-foreground mt-1">All time earnings</p>
               </CardContent>
             </Card>
@@ -161,7 +163,7 @@ export default function RiderDetailsPage() {
               <CardContent>
                 <div className="text-2xl font-bold">{earnings.completedThisMonth}</div>
                 <p className="text-xs text-muted-foreground mt-1">
-                  GHS {earnings.earningsThisMonth.toFixed(2)}
+                  {formatPrice(earnings.earningsThisMonth)}
                 </p>
               </CardContent>
             </Card>
@@ -172,7 +174,7 @@ export default function RiderDetailsPage() {
                 <TrendingUp className="h-4 w-4 text-muted-foreground" />
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold">GHS {earnings.avgDeliveryFee.toFixed(2)}</div>
+                <div className="text-2xl font-bold">{formatPrice(earnings.avgDeliveryFee)}</div>
                 <p className="text-xs text-muted-foreground mt-1">Per delivery</p>
               </CardContent>
             </Card>
@@ -229,7 +231,7 @@ export default function RiderDetailsPage() {
                             </div>
                             <div>
                               <p className="text-muted-foreground">Delivery Fee</p>
-                              <p className="font-medium">GHS {parseFloat(order.deliveryFee || "0").toFixed(2)}</p>
+                              <p className="font-medium">{formatPrice(parseFloat(order.deliveryFee || "0"))}</p>
                             </div>
                             <div>
                               <p className="text-muted-foreground">Created</p>
@@ -277,7 +279,7 @@ export default function RiderDetailsPage() {
                     </div>
                     <div className="flex justify-between items-center">
                       <span className="text-muted-foreground">Average Delivery Fee</span>
-                      <span className="font-bold text-lg">GHS {earnings.avgDeliveryFee.toFixed(2)}</span>
+                      <span className="font-bold text-lg">{formatPrice(earnings.avgDeliveryFee)}</span>
                     </div>
                   </CardContent>
                 </Card>
@@ -290,13 +292,13 @@ export default function RiderDetailsPage() {
                     <div className="flex justify-between items-center">
                       <span className="text-muted-foreground">Total Earnings</span>
                       <span className="font-bold text-lg text-green-600">
-                        GHS {earnings.totalEarnings.toFixed(2)}
+                        {formatPrice(earnings.totalEarnings)}
                       </span>
                     </div>
                     <div className="flex justify-between items-center">
                       <span className="text-muted-foreground">Earnings This Month</span>
                       <span className="font-bold text-lg text-green-600">
-                        GHS {earnings.earningsThisMonth.toFixed(2)}
+                        {formatPrice(earnings.earningsThisMonth)}
                       </span>
                     </div>
                   </CardContent>

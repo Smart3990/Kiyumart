@@ -2,6 +2,7 @@ import { useEffect } from "react";
 import { useLocation } from "wouter";
 import { useQuery } from "@tanstack/react-query";
 import { useAuth } from "@/lib/auth";
+import { useLanguage } from "@/contexts/LanguageContext";
 import DashboardLayout from "@/components/DashboardLayout";
 import MetricCard from "@/components/MetricCard";
 import OrderCard from "@/components/OrderCard";
@@ -25,6 +26,7 @@ interface Order {
 export default function RiderDashboard() {
   const [, navigate] = useLocation();
   const { user, isAuthenticated, isLoading: authLoading } = useAuth();
+  const { formatPrice } = useLanguage();
 
   useEffect(() => {
     if (!authLoading && (!isAuthenticated || user?.role !== "rider")) {
@@ -78,7 +80,7 @@ export default function RiderDashboard() {
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
                   <MetricCard
                     title="Today's Earnings"
-                    value={`GHS ${todayEarnings.toFixed(2)}`}
+                    value={formatPrice(todayEarnings)}
                     icon={DollarSign}
                   />
                   <MetricCard

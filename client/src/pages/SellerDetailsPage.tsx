@@ -3,6 +3,7 @@ import { useQuery } from "@tanstack/react-query";
 import { useLocation, useParams } from "wouter";
 import DashboardLayout from "@/components/DashboardLayout";
 import { useAuth } from "@/lib/auth";
+import { useLanguage } from "@/contexts/LanguageContext";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -53,6 +54,7 @@ export default function SellerDetailsPage() {
   const params = useParams<{ id: string }>();
   const sellerId = params.id;
   const { user, isAuthenticated, isLoading: authLoading } = useAuth();
+  const { formatPrice } = useLanguage();
 
   useEffect(() => {
     if (!authLoading && (!isAuthenticated || (user?.role !== "admin" && user?.role !== "super_admin"))) {
@@ -158,9 +160,9 @@ export default function SellerDetailsPage() {
                 <DollarSign className="h-4 w-4 text-muted-foreground" />
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold">GHS {analytics.totalRevenue.toFixed(2)}</div>
+                <div className="text-2xl font-bold">{formatPrice(analytics.totalRevenue)}</div>
                 <p className="text-xs text-muted-foreground mt-1">
-                  Paid: GHS {analytics.totalPaid.toFixed(2)}
+                  Paid: {formatPrice(analytics.totalPaid)}
                 </p>
               </CardContent>
             </Card>
@@ -173,7 +175,7 @@ export default function SellerDetailsPage() {
               <CardContent>
                 <div className="text-2xl font-bold">{analytics.salesThisMonth}</div>
                 <p className="text-xs text-muted-foreground mt-1">
-                  GHS {analytics.revenueThisMonth.toFixed(2)}
+                  {formatPrice(analytics.revenueThisMonth)}
                 </p>
               </CardContent>
             </Card>
@@ -184,7 +186,7 @@ export default function SellerDetailsPage() {
                 <TrendingUp className="h-4 w-4 text-muted-foreground" />
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold">GHS {analytics.avgOrderValue.toFixed(2)}</div>
+                <div className="text-2xl font-bold">{formatPrice(analytics.avgOrderValue)}</div>
                 <p className="text-xs text-muted-foreground mt-1">Per order</p>
               </CardContent>
             </Card>
@@ -237,7 +239,7 @@ export default function SellerDetailsPage() {
                             <div>
                               <p className="text-muted-foreground">Order Total</p>
                               <p className="font-medium text-green-600">
-                                GHS {parseFloat(order.total || "0").toFixed(2)}
+                                {formatPrice(parseFloat(order.total || "0"))}
                               </p>
                             </div>
                             <div>
@@ -282,7 +284,7 @@ export default function SellerDetailsPage() {
                     </div>
                     <div className="flex justify-between items-center">
                       <span className="text-muted-foreground">Average Order Value</span>
-                      <span className="font-bold text-lg">GHS {analytics.avgOrderValue.toFixed(2)}</span>
+                      <span className="font-bold text-lg">{formatPrice(analytics.avgOrderValue)}</span>
                     </div>
                   </CardContent>
                 </Card>
@@ -295,19 +297,19 @@ export default function SellerDetailsPage() {
                     <div className="flex justify-between items-center">
                       <span className="text-muted-foreground">Total Revenue</span>
                       <span className="font-bold text-lg text-green-600">
-                        GHS {analytics.totalRevenue.toFixed(2)}
+                        {formatPrice(analytics.totalRevenue)}
                       </span>
                     </div>
                     <div className="flex justify-between items-center">
                       <span className="text-muted-foreground">Total Paid</span>
                       <span className="font-bold text-lg text-green-600">
-                        GHS {analytics.totalPaid.toFixed(2)}
+                        {formatPrice(analytics.totalPaid)}
                       </span>
                     </div>
                     <div className="flex justify-between items-center">
                       <span className="text-muted-foreground">Revenue This Month</span>
                       <span className="font-bold text-lg text-green-600">
-                        GHS {analytics.revenueThisMonth.toFixed(2)}
+                        {formatPrice(analytics.revenueThisMonth)}
                       </span>
                     </div>
                   </CardContent>

@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { useLocation } from "wouter";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { useAuth } from "@/lib/auth";
+import { useLanguage } from "@/contexts/LanguageContext";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import DashboardSidebar from "@/components/DashboardSidebar";
 import MetricCard from "@/components/MetricCard";
@@ -83,6 +84,7 @@ export default function SellerDashboardConnected() {
   const [activeItem, setActiveItem] = useState("dashboard");
   const [location, navigate] = useLocation();
   const { user, isAuthenticated, isLoading: authLoading } = useAuth();
+  const { formatPrice } = useLanguage();
   const { toast } = useToast();
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingCoupon, setEditingCoupon] = useState<Coupon | null>(null);
@@ -409,7 +411,7 @@ export default function SellerDashboardConnected() {
                   <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
                     <MetricCard
                       title="Total Sales"
-                      value={`GHS ${parseFloat(analytics.totalRevenue.toString()).toFixed(2)}`}
+                      value={formatPrice(parseFloat(analytics.totalRevenue.toString()))}
                       icon={DollarSign}
                       change={18.2}
                     />
@@ -699,11 +701,11 @@ export default function SellerDashboardConnected() {
                               <TableCell data-testid={`text-discount-${coupon.id}`}>
                                 {coupon.discountType === "percentage"
                                   ? `${coupon.discountValue}%`
-                                  : `GHS ${parseFloat(coupon.discountValue).toFixed(2)}`}
+                                  : formatPrice(parseFloat(coupon.discountValue))}
                               </TableCell>
                               <TableCell data-testid={`text-min-purchase-${coupon.id}`}>
                                 {coupon.minimumPurchase && parseFloat(coupon.minimumPurchase) > 0
-                                  ? `GHS ${parseFloat(coupon.minimumPurchase).toFixed(2)}`
+                                  ? formatPrice(parseFloat(coupon.minimumPurchase))
                                   : "-"}
                               </TableCell>
                               <TableCell data-testid={`text-usage-${coupon.id}`}>
