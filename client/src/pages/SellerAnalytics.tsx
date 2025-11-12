@@ -10,12 +10,8 @@ export default function SellerAnalytics() {
   const { formatPrice } = useLanguage();
 
   const { data: stats, isLoading } = useQuery({
-    queryKey: ["/api/seller/analytics"],
-    queryFn: async () => {
-      const res = await fetch("/api/seller/analytics");
-      if (!res.ok) throw new Error("Failed to fetch analytics");
-      return res.json();
-    },
+    queryKey: ["/api/analytics"],
+    enabled: !!user && user.role === "seller",
   });
 
   const metrics = [

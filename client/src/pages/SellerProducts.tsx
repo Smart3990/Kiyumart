@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { useLocation } from "wouter";
 import DashboardLayout from "@/components/DashboardLayout";
@@ -21,6 +21,8 @@ import { apiRequest, queryClient } from "@/lib/queryClient";
 import MediaUploadInput from "@/components/MediaUploadInput";
 import ProductGallery from "@/components/ProductGallery";
 import { CategorySelect } from "@/components/CategorySelect";
+import { DynamicFieldRenderer } from "@/components/DynamicFieldRenderer";
+import { getStoreTypeFields, getStoreTypeSchema, StoreType } from "@shared/storeTypes";
 
 interface Product {
   id: string;
@@ -38,14 +40,16 @@ interface Product {
   tags: string[] | null;
   isActive: boolean;
   createdAt: string;
+  dynamicFields?: Record<string, any>;
 }
 
 interface Store {
   id: string;
-  storeType: string;
+  storeType: StoreType;
 }
 
-const productSchema = z.object({
+// Base product schema (media rules: 3-8 images required, video optional)
+const baseProductSchema = z.object({
   name: z.string().min(2, "Name must be at least 2 characters"),
   description: z.string().min(10, "Description must be at least 10 characters"),
   price: z.string().regex(/^\d+(\.\d{1,2})?$/, "Invalid price format"),
@@ -53,12 +57,11 @@ const productSchema = z.object({
   categoryId: z.string().optional(),
   stockQuantity: z.string().regex(/^\d+$/, "Must be a valid number"),
   tags: z.string().optional(),
-  images: z.array(z.string().url()).min(5, "Exactly 5 product images are required").max(5, "Maximum 5 images allowed"),
-  videoUrl: z.string().url("Product video is required").min(1, "Product video is required"),
+  images: z.array(z.string().url()).min(3, "Minimum 3 product images required").max(8, "Maximum 8 images allowed"),
+  videoUrl: z.string().url("Invalid video URL").optional().or(z.literal("")),
   inStock: z.boolean().default(true),
+  dynamicFields: z.record(z.any()).optional(),
 });
-
-type ProductFormData = z.infer<typeof productSchema>;
 
 function ProductFormDialog({ product, mode }: { product?: Product; mode: "create" | "edit" }) {
   const [open, setOpen] = useState(false);
@@ -70,6 +73,24 @@ function ProductFormDialog({ product, mode }: { product?: Product; mode: "create
     queryKey: ["/api/stores/my-store"],
     enabled: !!user?.id,
   });
+
+  // Merge base schema with dynamic storeType schema
+  const productSchema = useMemo(() => {
+    if (!store?.storeType) return baseProductSchema;
+    
+    const dynamicSchema = getStoreTypeSchema(store.storeType);
+    return baseProductSchema.extend({
+      dynamicFields: dynamicSchema,
+    });
+  }, [store?.storeType]);
+
+  type ProductFormData = z.infer<typeof productSchema>;
+
+  // Get dynamic fields for rendering
+  const dynamicFields = useMemo(() => {
+    if (!store?.storeType) return [];
+    return getStoreTypeFields(store.storeType);
+  }, [store?.storeType]);
 
   const form = useForm<ProductFormData>({
     resolver: zodResolver(productSchema),
@@ -84,6 +105,7 @@ function ProductFormDialog({ product, mode }: { product?: Product; mode: "create
       images: product.images || [],
       videoUrl: product.video || "",
       inStock: true,
+      dynamicFields: product.dynamicFields || {},
     } : {
       name: "",
       description: "",
@@ -95,8 +117,68 @@ function ProductFormDialog({ product, mode }: { product?: Product; mode: "create
       images: [],
       videoUrl: "",
       inStock: true,
+      dynamicFields: store?.storeType ? (() => {
+        const fields = getStoreTypeFields(store.storeType);
+        const defaults: Record<string, any> = {};
+        fields.forEach(field => {
+          if (field.type === "multiselect") {
+            defaults[field.name] = [];
+          } else if (field.type === "number") {
+            defaults[field.name] = 0;
+          } else {
+            defaults[field.name] = "";
+          }
+        });
+        return defaults;
+      })() : {},
     },
   });
+
+  // Reset form when store changes or dialog opens/closes
+  useEffect(() => {
+    if (open && store?.storeType) {
+      const dynamicDefaults: Record<string, any> = {};
+      const fields = getStoreTypeFields(store.storeType);
+      fields.forEach(field => {
+        if (field.type === "multiselect") {
+          dynamicDefaults[field.name] = [];
+        } else if (field.type === "number") {
+          dynamicDefaults[field.name] = 0;
+        } else {
+          dynamicDefaults[field.name] = "";
+        }
+      });
+      
+      form.reset(product ? {
+        name: product.name,
+        description: product.description,
+        price: product.price,
+        compareAtPrice: product.compareAtPrice || "",
+        categoryId: product.categoryId || undefined,
+        stockQuantity: product.stock.toString(),
+        tags: product.tags?.join(", ") || "",
+        images: product.images || [],
+        videoUrl: product.video || "",
+        inStock: true,
+        dynamicFields: {
+          ...dynamicDefaults,
+          ...(product.dynamicFields || {}),
+        },
+      } : {
+        name: "",
+        description: "",
+        price: "",
+        compareAtPrice: "",
+        categoryId: undefined,
+        stockQuantity: "0",
+        tags: "",
+        images: [],
+        videoUrl: "",
+        inStock: true,
+        dynamicFields: dynamicDefaults,
+      });
+    }
+  }, [open, store?.storeType, product, form]);
 
   const createProductMutation = useMutation({
     mutationFn: async (data: ProductFormData) => {
@@ -111,10 +193,11 @@ function ProductFormDialog({ product, mode }: { product?: Product; mode: "create
         compareAtPrice: data.compareAtPrice || null,
         categoryId: data.categoryId,
         stock: parseInt(data.stockQuantity),
-        images: data.images || [], // Optional images array (0-5)
+        images: data.images || [],
         video: data.videoUrl || null,
-        sellerId: user.id, // Required: authenticated seller ID
-        storeId: store?.id || null, // Optional: multi-vendor store ID
+        sellerId: user.id,
+        storeId: store?.id || null,
+        dynamicFields: data.dynamicFields || {},
       };
 
       if (data.tags) {
@@ -151,8 +234,9 @@ function ProductFormDialog({ product, mode }: { product?: Product; mode: "create
         compareAtPrice: data.compareAtPrice || null,
         categoryId: data.categoryId,
         stock: parseInt(data.stockQuantity),
-        images: data.images, // Use images array directly from form
+        images: data.images,
         video: data.videoUrl || null,
+        dynamicFields: data.dynamicFields || {},
       };
 
       if (data.tags) {
@@ -329,6 +413,24 @@ function ProductFormDialog({ product, mode }: { product?: Product; mode: "create
               )}
             />
 
+            {/* Dynamic Store-Type Specific Fields */}
+            {dynamicFields.length > 0 && (
+              <Card className="p-4">
+                <h3 className="font-semibold mb-4">
+                  {store?.storeType ? `${store.storeType.replace(/_/g, ' ')} Store Information` : 'Store-Specific Information'}
+                </h3>
+                <div className="space-y-4">
+                  {dynamicFields.map((field) => (
+                    <DynamicFieldRenderer
+                      key={field.name}
+                      field={field}
+                      form={form}
+                    />
+                  ))}
+                </div>
+              </Card>
+            )}
+
             <FormField
               control={form.control}
               name="images"
@@ -338,9 +440,9 @@ function ProductFormDialog({ product, mode }: { product?: Product; mode: "create
                     <ProductGallery
                       images={field.value || []}
                       onChange={field.onChange}
-                      maxImages={5}
-                      required={false}
-                      description="Capture product from all angles - front, back, sides, and detailed shots"
+                      maxImages={8}
+                      required={true}
+                      description="Upload 3-8 high-quality product images - front, back, sides, and detailed shots"
                     />
                   </FormControl>
                   <FormMessage />

@@ -7,7 +7,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Loader2, Search, Eye, Package } from "lucide-react";
+import { Loader2, Search, Eye, Package, ShoppingBag, Store } from "lucide-react";
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 interface Order {
   id: string;
@@ -19,18 +20,16 @@ interface Order {
   createdAt: string;
 }
 
+type OrderContext = "seller" | "buyer";
+
 export default function SellerOrders() {
   const { user } = useAuth();
   const { formatPrice, t } = useLanguage();
   const [searchQuery, setSearchQuery] = useState("");
+  const [orderContext, setOrderContext] = useState<OrderContext>("seller");
 
   const { data: orders = [], isLoading } = useQuery<Order[]>({
-    queryKey: ["/api/orders", "seller"],
-    queryFn: async () => {
-      const res = await fetch("/api/orders?context=seller");
-      if (!res.ok) throw new Error("Failed to fetch orders");
-      return res.json();
-    },
+    queryKey: [`/api/orders?context=${orderContext}`],
   });
 
   const filteredOrders = orders.filter(order =>
@@ -51,11 +50,28 @@ export default function SellerOrders() {
   return (
     <DashboardLayout role="seller">
       <div className="p-6">
-        <div className="flex justify-between items-center mb-6">
+        <div className="flex flex-wrap justify-between items-start gap-4 mb-6">
           <div>
             <h1 className="text-3xl font-bold" data-testid="text-page-title">Orders</h1>
-            <p className="text-muted-foreground">Manage your store orders</p>
+            <p className="text-muted-foreground">
+              {orderContext === "seller" 
+                ? "Manage orders from your customers" 
+                : "View your personal shopping orders"}
+            </p>
           </div>
+          
+          <Tabs value={orderContext} onValueChange={(value) => setOrderContext(value as OrderContext)}>
+            <TabsList data-testid="tabs-order-context">
+              <TabsTrigger value="seller" data-testid="tab-business-orders">
+                <Store className="h-4 w-4 mr-2" />
+                Business Orders
+              </TabsTrigger>
+              <TabsTrigger value="buyer" data-testid="tab-personal-orders">
+                <ShoppingBag className="h-4 w-4 mr-2" />
+                Personal Orders
+              </TabsTrigger>
+            </TabsList>
+          </Tabs>
         </div>
 
         <div className="mb-6">
@@ -78,10 +94,18 @@ export default function SellerOrders() {
         ) : filteredOrders.length === 0 ? (
           <Card className="p-12">
             <div className="text-center">
-              <Package className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+              {orderContext === "seller" ? (
+                <Store className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+              ) : (
+                <ShoppingBag className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+              )}
               <h3 className="text-lg font-semibold mb-2">No orders found</h3>
               <p className="text-muted-foreground">
-                {searchQuery ? "No orders match your search" : "You haven't received any orders yet"}
+                {searchQuery 
+                  ? "No orders match your search" 
+                  : orderContext === "seller"
+                    ? "You haven't received any customer orders yet"
+                    : "You haven't placed any orders as a customer yet"}
               </p>
             </div>
           </Card>
