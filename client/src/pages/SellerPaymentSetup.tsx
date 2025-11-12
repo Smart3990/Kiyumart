@@ -105,9 +105,22 @@ export default function SellerPaymentSetup() {
       }
     },
     onError: (error: any) => {
+      // apiRequest throws the JSON response, so error.error contains the message
+      const errorMsg = error.error || error.message || "Could not verify account. Please check details.";
+      
+      // Provide additional context based on error type
+      let description = errorMsg;
+      if (errorMsg.includes('timed out') || errorMsg.includes('internet')) {
+        description = `${errorMsg} Make sure you have a stable internet connection.`;
+      } else if (errorMsg.includes('Account not found') || errorMsg.includes('Invalid account')) {
+        description = `${errorMsg} Double-check that you entered the correct 10-digit account number and selected the right bank.`;
+      } else if (errorMsg.includes('Too many requests')) {
+        description = `${errorMsg} You've made too many verification attempts. Please wait 1-2 minutes before trying again.`;
+      }
+      
       toast({
         title: "Verification Failed",
-        description: error.message || "Could not verify account. Please check details.",
+        description,
         variant: "destructive",
       });
     },
@@ -150,9 +163,30 @@ export default function SellerPaymentSetup() {
       setTimeout(() => navigate("/seller"), 1500);
     },
     onError: (error: any) => {
+      // apiRequest throws the JSON response, so error.error contains the message
+      const errorMsg = error.error || error.message || "Failed to set up payment details";
+      
+      // Provide additional context based on error type
+      let title = "Setup Failed";
+      let description = errorMsg;
+      
+      if (errorMsg.includes('already set up') || errorMsg.includes('already exist')) {
+        title = "Account Already Configured";
+        description = `${errorMsg} If you need to update your payment details, please contact support for assistance.`;
+      } else if (errorMsg.includes('timed out') || errorMsg.includes('internet')) {
+        description = `${errorMsg} Please ensure you have a stable internet connection and try again.`;
+      } else if (errorMsg.includes('Invalid') || errorMsg.includes('verify')) {
+        description = `${errorMsg} Please make sure you verified your account first and all details are correct.`;
+      } else if (errorMsg.includes('temporarily unavailable')) {
+        description = `${errorMsg} This is usually temporary. You can try again shortly or contact support if the issue persists.`;
+      } else if (errorMsg.includes('authentication failed') || errorMsg.includes('contact support')) {
+        title = "System Error";
+        description = `${errorMsg} Our team has been notified and will resolve this soon.`;
+      }
+      
       toast({
-        title: "Setup Failed",
-        description: error.message || "Failed to set up payment details",
+        title,
+        description,
         variant: "destructive",
       });
     },
