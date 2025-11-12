@@ -1306,11 +1306,24 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // ============ Delivery Zone Routes ============
   app.post("/api/delivery-zones", requireAuth, requireRole("admin", "super_admin"), async (req, res) => {
     try {
-      const validatedData = insertDeliveryZoneSchema.parse(req.body);
-      const zone = await storage.createDeliveryZone(validatedData);
+      // Storage layer handles all validation
+      const zone = await storage.createDeliveryZone(req.body);
       res.json(zone);
     } catch (error: any) {
-      res.status(400).json({ error: error.message });
+      // Handle storage layer errors
+      if (error.code === 'DUPLICATE_ZONE_NAME') {
+        return res.status(409).json({ 
+          error: error.message,
+          code: error.code
+        });
+      }
+      
+      // Zod validation errors from storage
+      if (error.errors) {
+        return res.status(400).json({ error: error.errors[0]?.message || "Validation failed" });
+      }
+      
+      res.status(400).json({ error: error.message || "Failed to create delivery zone" });
     }
   });
 
@@ -1325,13 +1338,29 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.patch("/api/delivery-zones/:id", requireAuth, requireRole("admin", "super_admin"), async (req, res) => {
     try {
+      // Storage layer handles all validation
       const zone = await storage.updateDeliveryZone(req.params.id, req.body);
       if (!zone) {
         return res.status(404).json({ error: "Zone not found" });
       }
       res.json(zone);
     } catch (error: any) {
-      res.status(400).json({ error: error.message });
+      // Handle storage layer errors
+      if (error.code === 'DUPLICATE_ZONE_NAME') {
+        return res.status(409).json({ 
+          error: error.message,
+          code: error.code
+        });
+      }
+      
+      if (error.code === 'INVALID_FEE' || error.code === 'INVALID_NAME') {
+        return res.status(400).json({ 
+          error: error.message,
+          code: error.code
+        });
+      }
+      
+      res.status(400).json({ error: error.message || "Failed to update delivery zone" });
     }
   });
 

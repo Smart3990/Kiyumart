@@ -214,7 +214,7 @@ export const products = pgTable("products", {
 
 export const deliveryZones = pgTable("delivery_zones", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
-  name: text("name").notNull(),
+  name: text("name").notNull(), // Unique constraint on normalized lowercase name
   fee: decimal("fee", { precision: 10, scale: 2 }).notNull(),
   isActive: boolean("is_active").default(true),
   createdAt: timestamp("created_at").defaultNow(),
@@ -712,6 +712,10 @@ export const insertProductSchema = createInsertSchema(products).pick({
 export const insertDeliveryZoneSchema = createInsertSchema(deliveryZones).pick({
   name: true,
   fee: true,
+}).extend({
+  name: z.string().min(1, "Zone name is required").max(100, "Zone name must be less than 100 characters"),
+  // Use coerce to accept both string and number inputs (for seeds/scripts)
+  fee: z.coerce.number().nonnegative("Delivery fee must be a non-negative number"),
 });
 
 export const insertOrderSchema = createInsertSchema(orders).pick({

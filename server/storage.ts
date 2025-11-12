@@ -539,7 +539,32 @@ export class DbStorage implements IStorage {
 
   // Delivery Zone operations
   async createDeliveryZone(zone: InsertDeliveryZone): Promise<DeliveryZone> {
-    const result = await db.insert(deliveryZones).values(zone).returning();
+    // CRITICAL: Validate at storage layer to prevent bypass via seeds/scripts
+    const { insertDeliveryZoneSchema } = await import("@shared/schema");
+    
+    // Parse and validate input (throws if invalid)
+    // Zod coerce handles both string and number inputs
+    const validatedZone = insertDeliveryZoneSchema.parse(zone);
+    
+    // Normalize zone name (trim whitespace)
+    const normalizedZone = {
+      ...validatedZone,
+      name: validatedZone.name.trim(),
+      fee: validatedZone.fee.toString(), // Convert number to string for database
+    };
+    
+    // Check for duplicate names (case-insensitive)
+    const existingZones = await db.select()
+      .from(deliveryZones)
+      .where(sql`lower(${deliveryZones.name}) = lower(${normalizedZone.name})`);
+    
+    if (existingZones.length > 0) {
+      const error = new Error("A delivery zone with this name already exists. Please use a different name.");
+      (error as any).code = 'DUPLICATE_ZONE_NAME';
+      throw error;
+    }
+    
+    const result = await db.insert(deliveryZones).values(normalizedZone).returning();
     return result[0];
   }
 
@@ -548,7 +573,60 @@ export class DbStorage implements IStorage {
   }
 
   async updateDeliveryZone(id: string, data: Partial<DeliveryZone>): Promise<DeliveryZone | undefined> {
-    const result = await db.update(deliveryZones).set(data).where(eq(deliveryZones.id, id)).returning();
+    // CRITICAL: Validate at storage layer to prevent bypass
+    // Don't mutate input - create new object with validated values
+    const updateData: Partial<DeliveryZone> = {};
+    
+    // Validate fee if provided
+    if (data.fee !== undefined) {
+      const feeValue = typeof data.fee === 'string' ? parseFloat(data.fee) : data.fee;
+      if (isNaN(feeValue) || feeValue < 0) {
+        const error = new Error("Delivery fee must be a non-negative number");
+        (error as any).code = 'INVALID_FEE';
+        throw error;
+      }
+      updateData.fee = feeValue.toString() as any;
+    }
+    
+    // Validate and normalize name if provided
+    if (data.name !== undefined) {
+      const trimmedName = data.name.trim();
+      if (trimmedName.length === 0) {
+        const error = new Error("Zone name cannot be empty");
+        (error as any).code = 'INVALID_NAME';
+        throw error;
+      }
+      if (trimmedName.length > 100) {
+        const error = new Error("Zone name must be less than 100 characters");
+        (error as any).code = 'INVALID_NAME';
+        throw error;
+      }
+      
+      // Check for duplicate names (case-insensitive), excluding current zone
+      const existingZones = await db.select()
+        .from(deliveryZones)
+        .where(
+          and(
+            sql`lower(${deliveryZones.name}) = lower(${trimmedName})`,
+            sql`${deliveryZones.id} != ${id}`
+          )
+        );
+      
+      if (existingZones.length > 0) {
+        const error = new Error("A delivery zone with this name already exists. Please use a different name.");
+        (error as any).code = 'DUPLICATE_ZONE_NAME';
+        throw error;
+      }
+      
+      updateData.name = trimmedName;
+    }
+    
+    // Copy over other fields that don't need validation
+    if (data.isActive !== undefined) {
+      updateData.isActive = data.isActive;
+    }
+    
+    const result = await db.update(deliveryZones).set(updateData).where(eq(deliveryZones.id, id)).returning();
     return result[0];
   }
 
