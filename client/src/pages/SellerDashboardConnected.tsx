@@ -376,7 +376,7 @@ export default function SellerDashboardConnected() {
 
         <main className="flex-1 overflow-y-auto p-6">
           <div className="max-w-7xl mx-auto space-y-6">
-            {!store?.paystackSubaccountId && !store?.isPayoutVerified && (
+            {store && !store.paystackSubaccountId && !store.isPayoutVerified && (
               <div className="bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-lg p-4">
                 <div className="flex items-start gap-3">
                   <AlertCircle className="h-5 w-5 text-amber-600 dark:text-amber-400 flex-shrink-0 mt-0.5" />
@@ -395,6 +395,31 @@ export default function SellerDashboardConnected() {
                     >
                       <DollarSign className="h-4 w-4 mr-1" />
                       Set Up Payment Now
+                    </Button>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {!store && user?.isApproved && (
+              <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-4">
+                <div className="flex items-start gap-3">
+                  <AlertCircle className="h-5 w-5 text-blue-600 dark:text-blue-400 flex-shrink-0 mt-0.5" />
+                  <div className="flex-1">
+                    <h3 className="font-semibold text-blue-900 dark:text-blue-100 mb-1">
+                      Store Setup In Progress
+                    </h3>
+                    <p className="text-sm text-blue-800 dark:text-blue-200 mb-3">
+                      Your seller account is approved! Your store profile is being created. This usually completes within a few moments. Please refresh the page if this message persists.
+                    </p>
+                    <Button 
+                      size="sm"
+                      variant="outline"
+                      onClick={() => window.location.reload()}
+                      data-testid="button-refresh-store"
+                      className="border-blue-600 text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/30"
+                    >
+                      Refresh Page
                     </Button>
                   </div>
                 </div>
