@@ -69,6 +69,7 @@ export interface IStorage {
   // Commission operations
   createCommission(data: InsertCommission): Promise<Commission>;
   createPlatformEarning(data: InsertPlatformEarning): Promise<PlatformEarning>;
+  createCommissionWithEarning(orderId: string): Promise<{commission: Commission, earning: PlatformEarning}>;
   
   // Platform settings
   getPlatformSettings(): Promise<PlatformSettings>;
@@ -706,6 +707,91 @@ export class DbStorage implements IStorage {
   async createPlatformEarning(data: InsertPlatformEarning): Promise<PlatformEarning> {
     const result = await db.insert(platformEarnings).values(data as any).returning();
     return result[0];
+  }
+
+  // CRITICAL: Atomic commission creation with platform earning
+  async createCommissionWithEarning(orderId: string): Promise<{commission: Commission, earning: PlatformEarning}> {
+    return await db.transaction(async (tx) => {
+      // Step 1: Check if commission already exists (idempotency)
+      const existingCommission = await tx.select().from(commissions)
+        .where(eq(commissions.orderId, orderId))
+        .limit(1);
+      
+      if (existingCommission.length > 0) {
+        const error = new Error(`Commission already exists for order ${orderId}`);
+        (error as any).code = 'COMMISSION_ALREADY_EXISTS';
+        throw error;
+      }
+
+      // Step 2: Get and validate order
+      const [order] = await tx.select().from(orders)
+        .where(eq(orders.id, orderId))
+        .limit(1);
+      
+      if (!order) {
+        const error = new Error(`Order ${orderId} not found`);
+        (error as any).code = 'ORDER_NOT_FOUND';
+        throw error;
+      }
+
+      if (order.paymentStatus !== 'completed') {
+        const error = new Error(`Order ${orderId} payment not completed (status: ${order.paymentStatus})`);
+        (error as any).code = 'PAYMENT_NOT_COMPLETED';
+        throw error;
+      }
+
+      if (!order.sellerId) {
+        const error = new Error(`Order ${orderId} missing sellerId`);
+        (error as any).code = 'MISSING_SELLER';
+        throw error;
+      }
+
+      // Step 3: Get platform commission rate
+      const settings = await this.getPlatformSettings();
+      const commissionRatePercent = parseFloat(settings.defaultCommissionRate || "10.00");
+
+      // Step 4: Calculate amounts using integer arithmetic (cents) for precision
+      // Convert to cents to avoid floating point errors
+      const orderAmountCents = Math.round(parseFloat(order.total) * 100);
+      const commissionAmountCents = Math.round((orderAmountCents * commissionRatePercent) / 100);
+      const sellerAmountCents = orderAmountCents - commissionAmountCents;
+
+      // Validation: Ensure splits add up correctly
+      if (sellerAmountCents + commissionAmountCents !== orderAmountCents) {
+        const error = new Error(`Commission split calculation error: ${sellerAmountCents} + ${commissionAmountCents} !== ${orderAmountCents}`);
+        (error as any).code = 'CALCULATION_ERROR';
+        throw error;
+      }
+
+      // Convert back to decimal strings for database
+      const orderAmountDecimal = (orderAmountCents / 100).toFixed(2);
+      const commissionAmountDecimal = (commissionAmountCents / 100).toFixed(2);
+      const sellerAmountDecimal = (sellerAmountCents / 100).toFixed(2);
+
+      // Step 5: Create commission record with processedAt timestamp
+      const [commission] = await tx.insert(commissions).values({
+        orderId: order.id,
+        sellerId: order.sellerId,
+        orderAmount: orderAmountDecimal,
+        commissionRate: commissionRatePercent.toFixed(2),
+        commissionAmount: commissionAmountDecimal,
+        sellerAmount: sellerAmountDecimal,
+        platformAmount: commissionAmountDecimal, // Same as commission amount
+        status: "pending", // Can be processed later for payout
+        processedAt: new Date(), // Set when commission is calculated
+      } as any).returning();
+
+      // Step 6: Create linked platform earning
+      const [earning] = await tx.insert(platformEarnings).values({
+        orderId: order.id,
+        commissionId: commission.id, // Link to commission
+        amount: commissionAmountDecimal,
+        type: "commission",
+        description: `Commission from order #${order.orderNumber}`,
+      } as any).returning();
+
+      return { commission, earning };
+    });
   }
 
   // Platform settings

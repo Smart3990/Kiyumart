@@ -3972,44 +3972,46 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // ============ Commission Calculation Helper ============
   async function calculateAndRecordCommission(orderId: string) {
     try {
-      const order = await storage.getOrder(orderId);
-      if (!order || !order.sellerId) {
-        console.error('[COMMISSION] Order not found or missing seller:', orderId);
-        return;
+      // CRITICAL: Use atomic transaction method with idempotency
+      const { commission, earning } = await storage.createCommissionWithEarning(orderId);
+      
+      console.log(`[COMMISSION] ✅ Recorded commission for order ${orderId}:`);
+      console.log(`  - Order Amount: ${commission.orderAmount}`);
+      console.log(`  - Commission Rate: ${commission.commissionRate}%`);
+      console.log(`  - Platform: ${commission.platformAmount}`);
+      console.log(`  - Seller: ${commission.sellerAmount}`);
+      console.log(`  - Earning ID: ${earning.id}`);
+    } catch (error: any) {
+      // Handle idempotent retry (webhook duplicate)
+      if (error.code === 'COMMISSION_ALREADY_EXISTS') {
+        console.log(`[COMMISSION] ⏭️  Commission already calculated for order ${orderId}, skipping (idempotent)`);
+        return; // Safe to ignore - webhook retry
       }
 
-      // Get platform commission rate
-      const settings = await storage.getPlatformSettings();
-      const commissionRate = parseFloat(settings.defaultCommissionRate || "10.00");
+      // Handle validation errors
+      if (error.code === 'ORDER_NOT_FOUND') {
+        console.error(`[COMMISSION] ❌ Order ${orderId} not found`);
+        throw error; // Propagate - this is a real error
+      }
 
-      // Calculate amounts
-      const orderAmount = parseFloat(order.total);
-      const commissionAmount = (orderAmount * commissionRate) / 100;
-      const sellerAmount = orderAmount - commissionAmount;
+      if (error.code === 'PAYMENT_NOT_COMPLETED') {
+        console.error(`[COMMISSION] ❌ Order ${orderId} payment not completed:`, error.message);
+        throw error; // Propagate - shouldn't calculate commission yet
+      }
 
-      // Create commission record
-      await storage.createCommission({
-        orderId: order.id,
-        sellerId: order.sellerId,
-        orderAmount: orderAmount.toFixed(2),
-        commissionRate: commissionRate.toFixed(2),
-        commissionAmount: commissionAmount.toFixed(2),
-        sellerAmount: sellerAmount.toFixed(2),
-        platformAmount: commissionAmount.toFixed(2),
-        status: "pending",
-      });
+      if (error.code === 'MISSING_SELLER') {
+        console.error(`[COMMISSION] ❌ Order ${orderId} missing seller`);
+        throw error; // Propagate - data integrity issue
+      }
 
-      // Record platform earnings
-      await storage.createPlatformEarning({
-        orderId: order.id,
-        amount: commissionAmount.toFixed(2),
-        type: "commission",
-        description: `Commission from order #${order.orderNumber}`,
-      });
+      if (error.code === 'CALCULATION_ERROR') {
+        console.error(`[COMMISSION] ❌ Commission calculation error:`, error.message);
+        throw error; // Propagate - arithmetic mismatch
+      }
 
-      console.log(`[COMMISSION] Recorded commission for order ${order.orderNumber}: Platform ${commissionAmount.toFixed(2)}, Seller ${sellerAmount.toFixed(2)}`);
-    } catch (error) {
-      console.error('[COMMISSION] Error calculating commission:', error);
+      // Unknown error
+      console.error('[COMMISSION] ❌ Unexpected error calculating commission:', error);
+      throw error; // Propagate - don't silently fail
     }
   }
 

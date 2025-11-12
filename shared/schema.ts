@@ -500,7 +500,7 @@ export const adminWalletTransactions = pgTable("admin_wallet_transactions", {
 // Commission System Tables
 export const commissions = pgTable("commissions", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
-  orderId: varchar("order_id").notNull().references(() => orders.id),
+  orderId: varchar("order_id").notNull().references(() => orders.id).unique(), // CRITICAL: One commission per order
   sellerId: varchar("seller_id").notNull().references(() => users.id),
   orderAmount: decimal("order_amount", { precision: 10, scale: 2 }).notNull(),
   commissionRate: decimal("commission_rate", { precision: 5, scale: 2 }).notNull(), // Percentage
@@ -540,12 +540,15 @@ export const sellerPayouts = pgTable("seller_payouts", {
 export const platformEarnings = pgTable("platform_earnings", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
   orderId: varchar("order_id").notNull().references(() => orders.id),
-  commissionId: varchar("commission_id").references(() => commissions.id),
+  commissionId: varchar("commission_id").references(() => commissions.id).unique(), // One earning per commission
   amount: decimal("amount", { precision: 10, scale: 2 }).notNull(),
   type: text("type").notNull(), // commission, service_fee, delivery_fee
   description: text("description"),
   createdAt: timestamp("created_at").defaultNow(),
-});
+}, (table) => ({
+  // Index for commission lookup
+  commissionIdx: index("platform_earnings_commission_id_idx").on(table.commissionId),
+}));
 
 export const promotions = pgTable("promotions", {
   id: serial("id").primaryKey(),
