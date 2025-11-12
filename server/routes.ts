@@ -2703,7 +2703,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.patch("/api/orders/:id/status", requireAuth, async (req, res) => {
+  app.patch("/api/orders/:id/status", requireAuth, async (req: AuthRequest, res) => {
     try {
       const { status, reason } = req.body;
       const orderId = req.params.id;
@@ -2717,6 +2717,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
         req.user!.role,
         reason
       );
+      
+      if (!updatedOrder) {
+        return res.status(404).json({ error: "Order not found" });
+      }
       
       // Create notification for buyer about status update
       if (updatedOrder.buyerId) {
@@ -4014,6 +4018,170 @@ export async function registerRoutes(app: Express): Promise<Server> {
       throw error; // Propagate - don't silently fail
     }
   }
+
+  // ============ Seller Payout Routes ============
+  
+  // Get seller available balance
+  app.get("/api/seller/balance", requireAuth, async (req: AuthRequest, res) => {
+    try {
+      const user = req.user;
+      if (!user || user.role !== 'seller') {
+        return res.status(403).json({ error: "Seller access required" });
+      }
+
+      const balance = await storage.getSellerAvailableBalance(user.id);
+      const commissions = await storage.getSellerCommissions(user.id, 'pending');
+      
+      res.json({ 
+        availableBalance: balance,
+        pendingCommissions: commissions.length,
+        currency: 'GHS'
+      });
+    } catch (error) {
+      console.error('[BALANCE] Error fetching seller balance:', error);
+      res.status(500).json({ error: "Failed to fetch balance" });
+    }
+  });
+
+  // Get seller commissions
+  app.get("/api/seller/commissions", requireAuth, async (req: AuthRequest, res) => {
+    try {
+      const user = req.user;
+      if (!user || user.role !== 'seller') {
+        return res.status(403).json({ error: "Seller access required" });
+      }
+
+      const { status } = req.query;
+      const commissions = await storage.getSellerCommissions(
+        user.id, 
+        status as string | undefined
+      );
+      
+      res.json(commissions);
+    } catch (error) {
+      console.error('[COMMISSIONS] Error fetching commissions:', error);
+      res.status(500).json({ error: "Failed to fetch commissions" });
+    }
+  });
+
+  // Request seller payout
+  app.post("/api/seller/payout", requireAuth, async (req: AuthRequest, res) => {
+    try {
+      const user = req.user;
+      if (!user || user.role !== 'seller') {
+        return res.status(403).json({ error: "Seller access required" });
+      }
+
+      const { amount, method, bankDetails, notes } = req.body;
+
+      // Validate input
+      if (!amount || !method) {
+        return res.status(400).json({ error: "Amount and method are required" });
+      }
+
+      // Create payout request
+      const payout = await storage.createSellerPayout({
+        sellerId: user.id,
+        amount: amount.toString(),
+        currency: 'GHS',
+        method,
+        bankDetails,
+        notes,
+      });
+
+      console.log(`[PAYOUT] ✅ Seller ${user.email} requested payout of ${amount}`);
+      
+      res.json(payout);
+    } catch (error: any) {
+      console.error('[PAYOUT] Error creating payout request:', error);
+      
+      // Handle specific validation errors
+      if (error.code === 'SELLER_NOT_FOUND') {
+        return res.status(404).json({ error: error.message || 'Seller not found' });
+      }
+      if (error.code === 'BELOW_MINIMUM_PAYOUT') {
+        return res.status(400).json({ error: error.message || 'Payout amount below minimum' });
+      }
+      if (error.code === 'INVALID_AMOUNT') {
+        return res.status(400).json({ error: error.message || 'Invalid payout amount' });
+      }
+      if (error.code === 'INSUFFICIENT_BALANCE') {
+        return res.status(400).json({ error: error.message || 'Insufficient balance' });
+      }
+      if (error.code === 'AMOUNT_NOT_COMPOSABLE') {
+        return res.status(400).json({ error: error.message || 'Cannot compose exact payout amount from available commissions' });
+      }
+      if (error.code === 'MISSING_BANK_DETAILS' || error.code === 'MISSING_MOBILE_NUMBER') {
+        return res.status(400).json({ error: error.message || 'Payment details required' });
+      }
+      
+      res.status(500).json({ error: "Failed to create payout request" });
+    }
+  });
+
+  // Get seller payout history
+  app.get("/api/seller/payouts", requireAuth, async (req: AuthRequest, res) => {
+    try {
+      const user = req.user;
+      if (!user || user.role !== 'seller') {
+        return res.status(403).json({ error: "Seller access required" });
+      }
+
+      const payouts = await storage.getSellerPayouts(user.id);
+      res.json(payouts);
+    } catch (error) {
+      console.error('[PAYOUTS] Error fetching seller payouts:', error);
+      res.status(500).json({ error: "Failed to fetch payouts" });
+    }
+  });
+
+  // ============ Admin Payout Management Routes ============
+  
+  // Get all pending payouts (admin only)
+  app.get("/api/admin/payouts/pending", requireAuth, async (req: AuthRequest, res) => {
+    try {
+      const user = req.user;
+      if (!user || (user.role !== 'admin' && user.role !== 'super_admin')) {
+        return res.status(403).json({ error: "Admin access required" });
+      }
+
+      const payouts = await storage.getAllPendingPayouts();
+      res.json(payouts);
+    } catch (error) {
+      console.error('[ADMIN-PAYOUTS] Error fetching pending payouts:', error);
+      res.status(500).json({ error: "Failed to fetch pending payouts" });
+    }
+  });
+
+  // Process payout (admin only)
+  app.patch("/api/admin/payouts/:id", requireAuth, async (req: AuthRequest, res) => {
+    try {
+      const user = req.user;
+      if (!user || (user.role !== 'admin' && user.role !== 'super_admin')) {
+        return res.status(403).json({ error: "Admin access required" });
+      }
+
+      const { id } = req.params;
+      const { status, notes } = req.body;
+
+      if (!status || !['processing', 'completed', 'failed'].includes(status)) {
+        return res.status(400).json({ error: "Invalid status. Must be processing, completed, or failed" });
+      }
+
+      const updated = await storage.updatePayoutStatus(id, status, user.id);
+      
+      if (!updated) {
+        return res.status(404).json({ error: "Payout not found" });
+      }
+
+      console.log(`[ADMIN-PAYOUT] ✅ Admin ${user.email} updated payout ${id} to ${status}`);
+      
+      res.json(updated);
+    } catch (error) {
+      console.error('[ADMIN-PAYOUT] Error processing payout:', error);
+      res.status(500).json({ error: "Failed to process payout" });
+    }
+  });
 
   // ============ Analytics Routes ============
   app.get("/api/analytics", requireAuth, async (req: AuthRequest, res) => {

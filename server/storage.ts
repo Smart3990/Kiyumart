@@ -4,7 +4,7 @@ import {
   chatMessages, transactions, platformSettings, cart, wishlist, reviews, riderReviews,
   productVariants, heroBanners, coupons, bannerCollections, marketplaceBanners,
   stores, categoryFields, categories, notifications, mediaLibrary, footerPages,
-  commissions, platformEarnings, roleFeatures,
+  commissions, platformEarnings, sellerPayouts, roleFeatures,
   type User, type InsertUser, type Product, type InsertProduct,
   type Order, type InsertOrder, type DeliveryZone, type InsertDeliveryZone,
   type ChatMessage, type InsertChatMessage, type Transaction, type PlatformSettings,
@@ -15,6 +15,7 @@ import {
   type Category, type Notification, type InsertNotification, type MediaLibrary,
   type InsertMediaLibrary, type FooterPage, type InsertFooterPage,
   type Commission, type InsertCommission, type PlatformEarning, type InsertPlatformEarning,
+  type SellerPayout, type InsertSellerPayout,
   type OrderStatusHistory, type InsertOrderStatusHistory
 } from "@shared/schema";
 import { eq, and, desc, sql, lte, gte, or, isNull } from "drizzle-orm";
@@ -70,6 +71,14 @@ export interface IStorage {
   createCommission(data: InsertCommission): Promise<Commission>;
   createPlatformEarning(data: InsertPlatformEarning): Promise<PlatformEarning>;
   createCommissionWithEarning(orderId: string): Promise<{commission: Commission, earning: PlatformEarning}>;
+  getSellerAvailableBalance(sellerId: string): Promise<number>;
+  getSellerCommissions(sellerId: string, status?: string): Promise<Commission[]>;
+  
+  // Seller Payout operations
+  createSellerPayout(data: InsertSellerPayout): Promise<SellerPayout>;
+  getSellerPayouts(sellerId: string): Promise<SellerPayout[]>;
+  getAllPendingPayouts(): Promise<SellerPayout[]>;
+  updatePayoutStatus(payoutId: string, status: string, processedBy?: string): Promise<SellerPayout | undefined>;
   
   // Platform settings
   getPlatformSettings(): Promise<PlatformSettings>;
@@ -791,6 +800,238 @@ export class DbStorage implements IStorage {
       } as any).returning();
 
       return { commission, earning };
+    });
+  }
+
+  // Get seller's available balance (sum of pending commissions not in payouts)
+  async getSellerAvailableBalance(sellerId: string): Promise<number> {
+    // Get all pending commissions for seller
+    const pendingCommissions = await db.select()
+      .from(commissions)
+      .where(
+        and(
+          eq(commissions.sellerId, sellerId),
+          eq(commissions.status, 'pending')
+        )
+      );
+
+    // Calculate total available (sum of sellerAmount)
+    const totalCents = pendingCommissions.reduce((sum, commission) => {
+      return sum + Math.round(parseFloat(commission.sellerAmount) * 100);
+    }, 0);
+
+    return totalCents / 100; // Convert back to decimal
+  }
+
+  // Get seller commissions
+  async getSellerCommissions(sellerId: string, status?: string): Promise<Commission[]> {
+    if (status) {
+      return await db.select()
+        .from(commissions)
+        .where(
+          and(
+            eq(commissions.sellerId, sellerId),
+            eq(commissions.status, status)
+          )
+        )
+        .orderBy(desc(commissions.createdAt));
+    }
+    
+    return await db.select()
+      .from(commissions)
+      .where(eq(commissions.sellerId, sellerId))
+      .orderBy(desc(commissions.createdAt));
+  }
+
+  // CRITICAL: Create seller payout with comprehensive validation
+  async createSellerPayout(data: InsertSellerPayout): Promise<SellerPayout> {
+    return await db.transaction(async (tx) => {
+      // Step 1: Validate seller exists
+      const [seller] = await tx.select()
+        .from(users)
+        .where(eq(users.id, data.sellerId))
+        .limit(1);
+
+      if (!seller || seller.role !== 'seller') {
+        const error = new Error(`Seller ${data.sellerId} not found`);
+        (error as any).code = 'SELLER_NOT_FOUND';
+        throw error;
+      }
+
+      // Step 2: Get platform settings for minimum payout amount
+      const settings = await this.getPlatformSettings();
+      const minPayoutAmount = parseFloat(settings.minimumPayoutAmount || "50.00");
+
+      // Step 3: Validate payout amount
+      const requestedAmount = parseFloat(data.amount);
+      if (requestedAmount < minPayoutAmount) {
+        const error = new Error(`Payout amount ${requestedAmount.toFixed(2)} is below minimum ${minPayoutAmount.toFixed(2)}`);
+        (error as any).code = 'BELOW_MINIMUM_PAYOUT';
+        throw error;
+      }
+
+      if (requestedAmount <= 0) {
+        const error = new Error(`Invalid payout amount: ${requestedAmount.toFixed(2)}`);
+        (error as any).code = 'INVALID_AMOUNT';
+        throw error;
+      }
+
+      // Step 4: Calculate available balance from pending commissions
+      const pendingCommissions = await tx.select()
+        .from(commissions)
+        .where(
+          and(
+            eq(commissions.sellerId, data.sellerId),
+            eq(commissions.status, 'pending')
+          )
+        );
+
+      const availableBalanceCents = pendingCommissions.reduce((sum, commission) => {
+        return sum + Math.round(parseFloat(commission.sellerAmount) * 100);
+      }, 0);
+      const availableBalance = availableBalanceCents / 100;
+
+      // Step 5: Validate sufficient balance
+      if (requestedAmount > availableBalance) {
+        const error = new Error(`Insufficient balance. Requested: ${requestedAmount.toFixed(2)}, Available: ${availableBalance.toFixed(2)}`);
+        (error as any).code = 'INSUFFICIENT_BALANCE';
+        throw error;
+      }
+
+      // Step 6: Find commissions that sum to exact requested amount
+      // CRITICAL: Use subset sum algorithm to find exact match, allowing skips
+      const requestedCents = Math.round(requestedAmount * 100);
+      const sortedCommissions = pendingCommissions.sort((a, b) => 
+        new Date(a.createdAt!).getTime() - new Date(b.createdAt!).getTime()
+      );
+      
+      // Convert commissions to cents for precise calculation
+      const commissionData = sortedCommissions.map(c => ({
+        id: c.id,
+        amountCents: Math.round(parseFloat(c.sellerAmount) * 100),
+        amountDisplay: parseFloat(c.sellerAmount).toFixed(2)
+      }));
+
+      // Find subset that sums to exactly requestedCents (greedy with backtracking)
+      const commissionsToInclude: string[] = [];
+      let accumulatedCents = 0;
+
+      for (const commission of commissionData) {
+        // Can we add this commission without exceeding?
+        if (accumulatedCents + commission.amountCents <= requestedCents) {
+          commissionsToInclude.push(commission.id);
+          accumulatedCents += commission.amountCents;
+          
+          // Exact match found!
+          if (accumulatedCents === requestedCents) {
+            break;
+          }
+        }
+        // Skip commissions that would cause overshoot, continue searching
+      }
+
+      // Verify exact match found
+      if (accumulatedCents !== requestedCents) {
+        // No exact composition exists - provide helpful error
+        const availableAmounts = commissionData.map(c => c.amountDisplay).join(', ');
+        const error = new Error(
+          `Cannot compose exact payout amount ${requestedAmount.toFixed(2)} from available commissions. ` +
+          `Available commissions (oldest first): ${availableAmounts}. ` +
+          `Please request an amount that equals the sum of one or more commissions, or withdraw your full balance of ${availableBalance.toFixed(2)}.`
+        );
+        (error as any).code = 'AMOUNT_NOT_COMPOSABLE';
+        throw error;
+      }
+
+      // Step 7: Validate payout method details
+      if (data.method === 'bank_transfer' || data.method === 'bank_account') {
+        if (!data.bankDetails?.accountNumber || !data.bankDetails?.bankName) {
+          const error = new Error('Bank account details required for bank transfer');
+          (error as any).code = 'MISSING_BANK_DETAILS';
+          throw error;
+        }
+      } else if (data.method === 'mobile_money') {
+        if (!data.bankDetails?.mobileNumber) {
+          const error = new Error('Mobile number required for mobile money payout');
+          (error as any).code = 'MISSING_MOBILE_NUMBER';
+          throw error;
+        }
+      }
+
+      // Step 8: Create payout record
+      const [payout] = await tx.insert(sellerPayouts).values({
+        ...data,
+        commissionIds: commissionsToInclude,
+        status: 'pending',
+      } as any).returning();
+
+      // Step 9: Mark included commissions as 'processing'
+      if (commissionsToInclude.length > 0) {
+        await tx.update(commissions)
+          .set({ status: 'processing' })
+          .where(
+            and(
+              eq(commissions.sellerId, data.sellerId),
+              sql`${commissions.id} = ANY(${commissionsToInclude})`
+            )
+          );
+      }
+
+      return payout;
+    });
+  }
+
+  // Get seller payouts
+  async getSellerPayouts(sellerId: string): Promise<SellerPayout[]> {
+    return await db.select()
+      .from(sellerPayouts)
+      .where(eq(sellerPayouts.sellerId, sellerId))
+      .orderBy(desc(sellerPayouts.createdAt));
+  }
+
+  // Get all pending payouts (for admin)
+  async getAllPendingPayouts(): Promise<SellerPayout[]> {
+    return await db.select()
+      .from(sellerPayouts)
+      .where(eq(sellerPayouts.status, 'pending'))
+      .orderBy(desc(sellerPayouts.createdAt));
+  }
+
+  // Update payout status (for admin processing)
+  async updatePayoutStatus(payoutId: string, status: string, processedBy?: string): Promise<SellerPayout | undefined> {
+    return await db.transaction(async (tx) => {
+      // Get payout
+      const [payout] = await tx.select()
+        .from(sellerPayouts)
+        .where(eq(sellerPayouts.id, payoutId))
+        .limit(1);
+
+      if (!payout) {
+        return undefined;
+      }
+
+      // Update payout status
+      const [updated] = await tx.update(sellerPayouts)
+        .set({
+          status,
+          processedBy: processedBy || payout.processedBy,
+          processedAt: status === 'completed' || status === 'failed' ? new Date() : payout.processedAt,
+        } as any)
+        .where(eq(sellerPayouts.id, payoutId))
+        .returning();
+
+      // Update commission status based on payout outcome
+      if (payout.commissionIds && payout.commissionIds.length > 0) {
+        const commissionStatus = status === 'completed' ? 'processed' : 
+                               status === 'failed' ? 'pending' : 
+                               'processing';
+
+        await tx.update(commissions)
+          .set({ status: commissionStatus })
+          .where(sql`${commissions.id} = ANY(${payout.commissionIds})`);
+      }
+
+      return updated;
     });
   }
 
