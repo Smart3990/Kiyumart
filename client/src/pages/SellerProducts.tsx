@@ -4,6 +4,7 @@ import { useLocation } from "wouter";
 import DashboardLayout from "@/components/DashboardLayout";
 import { useAuth } from "@/lib/auth";
 import { useToast } from "@/hooks/use-toast";
+import { useDebounce } from "@/hooks/useDebounce";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -564,6 +565,12 @@ export default function SellerProducts() {
   const [, navigate] = useLocation();
   const { user, isAuthenticated, isLoading: authLoading } = useAuth();
 
+  // Debounce search query to avoid excessive filtering
+  const debouncedSearchQuery = useDebounce(searchQuery, 300);
+  
+  // Show loading state while debouncing
+  const isSearching = searchQuery !== debouncedSearchQuery;
+
   useEffect(() => {
     if (!authLoading && (!isAuthenticated || user?.role !== "seller")) {
       navigate("/auth");
@@ -578,10 +585,13 @@ export default function SellerProducts() {
     retryDelay: 1000,
   });
 
-  const filteredProducts = products.filter(p => 
-    p.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    p.description.toLowerCase().includes(searchQuery.toLowerCase())
-  );
+  // Use debounced search query for filtering
+  const filteredProducts = useMemo(() => {
+    return products.filter(p => 
+      p.name.toLowerCase().includes(debouncedSearchQuery.toLowerCase()) ||
+      p.description.toLowerCase().includes(debouncedSearchQuery.toLowerCase())
+    );
+  }, [products, debouncedSearchQuery]);
 
   if (authLoading || !isAuthenticated || user?.role !== "seller") {
     return (
@@ -604,7 +614,11 @@ export default function SellerProducts() {
 
         <div className="mb-6">
           <div className="relative">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+            {isSearching ? (
+              <Loader2 className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground animate-spin" />
+            ) : (
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+            )}
             <Input
               placeholder="Search products..."
               value={searchQuery}
@@ -612,6 +626,11 @@ export default function SellerProducts() {
               className="pl-10"
               data-testid="input-search-products"
             />
+            {isSearching && (
+              <span className="absolute right-3 top-1/2 transform -translate-y-1/2 text-xs text-muted-foreground">
+                Searching...
+              </span>
+            )}
           </div>
         </div>
 
@@ -707,11 +726,11 @@ export default function SellerProducts() {
               </Card>
             ))}
             
-            {filteredProducts.length === 0 && (
+            {filteredProducts.length === 0 && !isSearching && (
               <div className="text-center py-12">
                 <Package className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
                 <p className="text-muted-foreground" data-testid="text-no-products">
-                  {searchQuery ? "No products found matching your search" : "No products yet. Add your first product to get started!"}
+                  {debouncedSearchQuery ? "No products found matching your search" : "No products yet. Add your first product to get started!"}
                 </p>
               </div>
             )}

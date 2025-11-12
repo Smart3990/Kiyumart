@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
@@ -7,12 +7,19 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Badge } from "@/components/ui/badge";
-import { Search, Filter, ShoppingBag } from "lucide-react";
+import { Search, Filter, ShoppingBag, Loader2 } from "lucide-react";
+import { useDebounce } from "@/hooks/useDebounce";
 import type { Product } from "@shared/schema";
 
 export default function AllProducts() {
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
+  
+  // Debounce search query to avoid excessive filtering
+  const debouncedSearchQuery = useDebounce(searchQuery, 300);
+  
+  // Show loading state while debouncing
+  const isSearching = searchQuery !== debouncedSearchQuery;
 
   const { data: products = [], isLoading } = useQuery<Product[]>({
     queryKey: ["/api/products"],
@@ -26,13 +33,16 @@ export default function AllProducts() {
     },
   });
 
-  const filteredProducts = products.filter((product) => {
-    const matchesSearch =
-      product.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      product.category.toLowerCase().includes(searchQuery.toLowerCase());
-    const matchesCategory = !selectedCategory || product.category === selectedCategory;
-    return matchesSearch && matchesCategory;
-  });
+  // Use debounced search query for filtering
+  const filteredProducts = useMemo(() => {
+    return products.filter((product) => {
+      const matchesSearch =
+        product.name.toLowerCase().includes(debouncedSearchQuery.toLowerCase()) ||
+        product.category.toLowerCase().includes(debouncedSearchQuery.toLowerCase());
+      const matchesCategory = !selectedCategory || product.category === selectedCategory;
+      return matchesSearch && matchesCategory;
+    });
+  }, [products, debouncedSearchQuery, selectedCategory]);
 
   return (
     <div className="min-h-screen flex flex-col bg-background dark:bg-gray-900">
@@ -55,7 +65,11 @@ export default function AllProducts() {
 
             <div className="flex flex-col sm:flex-row gap-4">
               <div className="relative flex-1">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground w-4 h-4" />
+                {isSearching ? (
+                  <Loader2 className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground w-4 h-4 animate-spin" />
+                ) : (
+                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground w-4 h-4" />
+                )}
                 <Input
                   placeholder="Search products..."
                   value={searchQuery}
@@ -63,6 +77,11 @@ export default function AllProducts() {
                   className="pl-10"
                   data-testid="input-search"
                 />
+                {isSearching && (
+                  <span className="absolute right-3 top-1/2 transform -translate-y-1/2 text-xs text-muted-foreground">
+                    Searching...
+                  </span>
+                )}
               </div>
               <div className="flex gap-2 overflow-x-auto pb-2">
                 <Button
@@ -93,6 +112,10 @@ export default function AllProducts() {
               {[...Array(10)].map((_, i) => (
                 <Skeleton key={i} className="aspect-square rounded-lg" data-testid={`skeleton-product-${i}`} />
               ))}
+            </div>
+          ) : isSearching ? (
+            <div className="flex justify-center items-center py-16">
+              <Loader2 className="h-8 w-8 animate-spin text-primary" />
             </div>
           ) : filteredProducts.length > 0 ? (
             <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4" data-testid="grid-products">

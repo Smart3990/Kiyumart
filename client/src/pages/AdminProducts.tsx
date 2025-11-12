@@ -1,15 +1,16 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { useLocation } from "wouter";
 import DashboardLayout from "@/components/DashboardLayout";
 import { useAuth } from "@/lib/auth";
 import { useToast } from "@/hooks/use-toast";
 import { useLanguage } from "@/contexts/LanguageContext";
+import { useDebounce } from "@/hooks/useDebounce";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Loader2, Search, Edit, Trash2, Eye, ArrowLeft, ToggleLeft, ToggleRight } from "lucide-react";
+import { Loader2, Search, Edit, Trash2, Eye, ArrowLeft, ToggleLeft, ToggleRight, Package } from "lucide-react";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 
@@ -131,6 +132,12 @@ export default function AdminProducts() {
   const { user, isAuthenticated, isLoading: authLoading } = useAuth();
   const { formatPrice } = useLanguage();
 
+  // Debounce search query to avoid excessive filtering
+  const debouncedSearchQuery = useDebounce(searchQuery, 300);
+  
+  // Show loading state while debouncing
+  const isSearching = searchQuery !== debouncedSearchQuery;
+
   useEffect(() => {
     if (!authLoading && (!isAuthenticated || (user?.role !== "admin" && user?.role !== "super_admin"))) {
       navigate("/auth");
@@ -142,10 +149,13 @@ export default function AdminProducts() {
     enabled: isAuthenticated && (user?.role === "admin" || user?.role === "super_admin"),
   });
 
-  const filteredProducts = products.filter(p => 
-    p.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    p.category.toLowerCase().includes(searchQuery.toLowerCase())
-  );
+  // Use debounced search query for filtering
+  const filteredProducts = useMemo(() => {
+    return products.filter(p => 
+      p.name.toLowerCase().includes(debouncedSearchQuery.toLowerCase()) ||
+      p.category.toLowerCase().includes(debouncedSearchQuery.toLowerCase())
+    );
+  }, [products, debouncedSearchQuery]);
 
   if (authLoading || !isAuthenticated || (user?.role !== "admin" && user?.role !== "super_admin")) {
     return (
@@ -175,7 +185,11 @@ export default function AdminProducts() {
 
           <div className="mb-6">
             <div className="relative">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              {isSearching ? (
+                <Loader2 className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground animate-spin" />
+              ) : (
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              )}
               <Input
                 placeholder="Search products..."
                 value={searchQuery}
@@ -183,11 +197,20 @@ export default function AdminProducts() {
                 className="pl-10"
                 data-testid="input-search-products"
               />
+              {isSearching && (
+                <span className="absolute right-3 top-1/2 transform -translate-y-1/2 text-xs text-muted-foreground">
+                  Searching...
+                </span>
+              )}
             </div>
           </div>
 
           {isLoading ? (
             <div className="flex justify-center py-12">
+              <Loader2 className="h-8 w-8 animate-spin text-primary" />
+            </div>
+          ) : isSearching ? (
+            <div className="flex justify-center items-center py-16">
               <Loader2 className="h-8 w-8 animate-spin text-primary" />
             </div>
           ) : (
@@ -253,10 +276,11 @@ export default function AdminProducts() {
                 </Card>
               ))}
               
-              {filteredProducts.length === 0 && (
+              {filteredProducts.length === 0 && !isSearching && (
                 <div className="text-center py-12">
+                  <Package className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
                   <p className="text-muted-foreground" data-testid="text-no-products">
-                    No products found
+                    {debouncedSearchQuery ? "No products found matching your search" : "No products available"}
                   </p>
                 </div>
               )}
