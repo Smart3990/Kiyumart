@@ -3,6 +3,7 @@ import { useLocation } from "wouter";
 import DashboardSidebar from "./DashboardSidebar";
 import BackButton from "./BackButton";
 import { useQuery } from "@tanstack/react-query";
+import { useSellerProfileGuard } from "@/hooks/useSellerProfileGuard";
 
 interface User {
   id: string;
@@ -87,6 +88,10 @@ export default function DashboardLayout({
   const { data: user } = useQuery<User>({
     queryKey: ["/api/auth/me"],
   });
+
+  // CRITICAL: Enforce profile completion for sellers
+  // Hook is always called (React Hooks Rules), but internally exempts /seller/settings
+  useSellerProfileGuard(role === "seller" ? location : undefined);
 
   const activeItem = useMemo(() => {
     // Handle shopping routes for all roles
