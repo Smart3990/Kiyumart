@@ -2676,34 +2676,57 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.patch("/api/orders/:id/status", requireAuth, async (req, res) => {
     try {
-      const { status } = req.body;
-      const order = await storage.updateOrderStatus(req.params.id, status);
-      if (!order) {
-        return res.status(404).json({ error: "Order not found" });
-      }
+      const { status, reason } = req.body;
+      const orderId = req.params.id;
+      
+      // CRITICAL: All validation, side effects, and audit trail happen INSIDE the transaction
+      // in applyOrderStatusTransition() to prevent TOCTOU race conditions
+      const updatedOrder = await storage.applyOrderStatusTransition(
+        orderId,
+        status,
+        req.user!.id,
+        req.user!.role,
+        reason
+      );
       
       // Create notification for buyer about status update
-      if (order.buyerId) {
+      if (updatedOrder.buyerId) {
         await storage.createNotification({
-          userId: order.buyerId,
+          userId: updatedOrder.buyerId,
           type: "order",
           title: "Order Status Updated",
-          message: `Your order #${order.orderNumber} status has been updated to ${status}`,
-          metadata: { orderId: order.id, orderNumber: order.orderNumber, status } as any
+          message: `Your order #${updatedOrder.orderNumber} status has been updated to ${status}`,
+          metadata: { orderId: updatedOrder.id, orderNumber: updatedOrder.orderNumber, status } as any
         });
         
         // Emit real-time order status update to buyer
-        io.to(order.buyerId).emit("order_status_updated", {
-          orderId: order.id,
-          orderNumber: order.orderNumber,
-          status: order.status,
-          updatedAt: order.updatedAt,
+        io.to(updatedOrder.buyerId).emit("order_status_updated", {
+          orderId: updatedOrder.id,
+          orderNumber: updatedOrder.orderNumber,
+          status: updatedOrder.status,
+          updatedAt: updatedOrder.updatedAt,
         });
       }
       
-      res.json(order);
+      res.json(updatedOrder);
     } catch (error: any) {
-      res.status(400).json({ error: error.message });
+      console.error("Error updating order status:", error);
+      
+      // Map error codes to appropriate HTTP status codes
+      const errorCode = (error as any).code;
+      
+      if (error.message === "ORDER_NOT_FOUND") {
+        return res.status(404).json({ error: "Order not found" });
+      } else if (errorCode === "role_violation") {
+        return res.status(403).json({ error: error.message, details: (error as any).details });
+      } else if (errorCode === "invalid_transition") {
+        return res.status(409).json({ error: error.message, details: (error as any).details });
+      } else if (errorCode === "precondition_failed" || errorCode === "payment_required") {
+        return res.status(422).json({ error: error.message, details: (error as any).details });
+      }
+      
+      // Generic server error for unexpected failures
+      res.status(500).json({ error: error.message || "Failed to update order status" });
     }
   });
 

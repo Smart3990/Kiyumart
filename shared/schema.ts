@@ -284,6 +284,21 @@ export const orderItems = pgTable("order_items", {
   total: decimal("total", { precision: 10, scale: 2 }).notNull(),
 });
 
+export const orderStatusHistory = pgTable("order_status_history", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  orderId: varchar("order_id").notNull().references(() => orders.id, { onDelete: "cascade" }),
+  fromStatus: orderStatusEnum("from_status"),
+  toStatus: orderStatusEnum("to_status").notNull(),
+  changedBy: varchar("changed_by").notNull().references(() => users.id),
+  changedByRole: userRoleEnum("changed_by_role").notNull(),
+  reason: text("reason"),
+  metadata: jsonb("metadata"),
+  createdAt: timestamp("created_at").defaultNow(),
+}, (table) => ({
+  orderIdx: index("order_status_history_order_id_idx").on(table.orderId),
+  createdAtIdx: index("order_status_history_created_at_idx").on(table.createdAt),
+}));
+
 export const deliveryTracking = pgTable("delivery_tracking", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
   orderId: varchar("order_id").notNull().references(() => orders.id),
@@ -856,6 +871,14 @@ export type InsertOrder = z.infer<typeof insertOrderSchema>;
 export type Order = typeof orders.$inferSelect;
 
 export type OrderItem = typeof orderItems.$inferSelect;
+
+export const insertOrderStatusHistorySchema = createInsertSchema(orderStatusHistory).omit({
+  id: true,
+  createdAt: true,
+});
+
+export type InsertOrderStatusHistory = z.infer<typeof insertOrderStatusHistorySchema>;
+export type OrderStatusHistory = typeof orderStatusHistory.$inferSelect;
 
 export type InsertChatMessage = z.infer<typeof insertChatMessageSchema>;
 export type ChatMessage = typeof chatMessages.$inferSelect;

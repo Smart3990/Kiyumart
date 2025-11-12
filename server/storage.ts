@@ -1,6 +1,6 @@
 import { db } from "../db/index";
 import { 
-  users, products, orders, orderItems, deliveryZones, deliveryTracking,
+  users, products, orders, orderItems, orderStatusHistory, deliveryZones, deliveryTracking,
   chatMessages, transactions, platformSettings, cart, wishlist, reviews, riderReviews,
   productVariants, heroBanners, coupons, bannerCollections, marketplaceBanners,
   stores, categoryFields, categories, notifications, mediaLibrary, footerPages,
@@ -14,7 +14,8 @@ import {
   type MarketplaceBanner, type InsertMarketplaceBanner, type Store, type CategoryField,
   type Category, type Notification, type InsertNotification, type MediaLibrary,
   type InsertMediaLibrary, type FooterPage, type InsertFooterPage,
-  type Commission, type InsertCommission, type PlatformEarning, type InsertPlatformEarning
+  type Commission, type InsertCommission, type PlatformEarning, type InsertPlatformEarning,
+  type OrderStatusHistory, type InsertOrderStatusHistory
 } from "@shared/schema";
 import { eq, and, desc, sql, lte, gte, or, isNull } from "drizzle-orm";
 
@@ -41,6 +42,9 @@ export interface IStorage {
   getOrdersByUser(userId: string, role: "buyer" | "seller" | "rider"): Promise<Order[]>;
   getOrderItems(orderId: string): Promise<Array<{ productId: string; productName: string; quantity: number; price: string }>>;
   updateOrderStatus(id: string, status: string): Promise<Order | undefined>;
+  applyOrderStatusTransition(orderId: string, toStatus: string, changedBy: string, changedByRole: string, reason?: string, sideEffects?: Partial<Order>): Promise<Order | undefined>;
+  createOrderStatusHistory(data: InsertOrderStatusHistory): Promise<OrderStatusHistory>;
+  getOrderStatusHistory(orderId: string): Promise<OrderStatusHistory[]>;
   updateOrder(orderId: string, data: Partial<Order>): Promise<Order | undefined>;
   assignRider(orderId: string, riderId: string): Promise<Order | undefined>;
   getAvailableRidersWithOrderCounts(): Promise<Array<{ rider: User; activeOrderCount: number }>>;
@@ -380,6 +384,105 @@ export class DbStorage implements IStorage {
       ...(status === "delivered" ? { deliveredAt: new Date() } : {})
     }).where(eq(orders.id, id)).returning();
     return result[0];
+  }
+
+  async applyOrderStatusTransition(
+    orderId: string,
+    toStatus: string,
+    changedBy: string,
+    changedByRole: string,
+    reason?: string
+  ): Promise<Order | undefined> {
+    // CRITICAL: Use transaction to ensure atomicity
+    // Read order, validate, compute side effects, update, and audit trail must all be atomic
+    try {
+      const updatedOrder = await db.transaction(async (tx) => {
+        // CRITICAL: Read order INSIDE transaction with row lock (FOR UPDATE)
+        // This prevents TOCTOU race conditions
+        const currentOrderResult = await tx.select()
+          .from(orders)
+          .where(eq(orders.id, orderId))
+          .for('update'); // Lock row for duration of transaction
+
+        const currentOrder = currentOrderResult[0];
+
+        if (!currentOrder) {
+          throw new Error("ORDER_NOT_FOUND");
+        }
+
+        const fromStatus = currentOrder.status;
+
+        // CRITICAL: Validate transition INSIDE transaction with locked order state
+        // This prevents validation on stale data
+        const { assertCanTransition, getTransitionSideEffects } = await import("./services/orderStateMachine");
+
+        const transitionResult = assertCanTransition({
+          order: currentOrder, // Use locked order state
+          targetStatus: toStatus as any,
+          actorId: changedBy,
+          actorRole: changedByRole as any,
+          reason,
+        });
+
+        if (!transitionResult.valid) {
+          const error = transitionResult.error;
+          // Throw with error code for proper HTTP status mapping
+          const errorWithCode = new Error(error.message);
+          (errorWithCode as any).code = error.code;
+          (errorWithCode as any).details = error.details;
+          throw errorWithCode;
+        }
+
+        // Compute side effects based on locked order state
+        const sideEffects = getTransitionSideEffects(currentOrder, toStatus as any);
+
+        // Apply status change with side effects
+        const result = await tx.update(orders).set({
+          status: toStatus as any,
+          updatedAt: new Date(),
+          ...sideEffects,
+        })
+        .where(eq(orders.id, orderId))
+        .returning();
+
+        const updatedOrder = result[0];
+
+        if (!updatedOrder) {
+          throw new Error("UPDATE_FAILED");
+        }
+
+        // Create audit trail entry (inside same transaction)
+        await tx.insert(orderStatusHistory).values({
+          orderId,
+          fromStatus: fromStatus as any,
+          toStatus: toStatus as any,
+          changedBy,
+          changedByRole: changedByRole as any,
+          reason,
+          metadata: sideEffects as any,
+        });
+
+        return updatedOrder;
+      });
+
+      return updatedOrder;
+    } catch (error: any) {
+      console.error("Failed to apply order status transition:", error);
+      // Re-throw with error code for proper HTTP status mapping
+      throw error;
+    }
+  }
+
+  async createOrderStatusHistory(data: InsertOrderStatusHistory): Promise<OrderStatusHistory> {
+    const result = await db.insert(orderStatusHistory).values(data).returning();
+    return result[0];
+  }
+
+  async getOrderStatusHistory(orderId: string): Promise<OrderStatusHistory[]> {
+    return db.select()
+      .from(orderStatusHistory)
+      .where(eq(orderStatusHistory.orderId, orderId))
+      .orderBy(desc(orderStatusHistory.createdAt));
   }
 
   async updateOrder(orderId: string, data: Partial<Order>): Promise<Order | undefined> {
