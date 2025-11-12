@@ -38,7 +38,7 @@ export default function AllProducts() {
     return products.filter((product) => {
       const matchesSearch =
         product.name.toLowerCase().includes(debouncedSearchQuery.toLowerCase()) ||
-        product.category.toLowerCase().includes(debouncedSearchQuery.toLowerCase());
+        (product.category?.toLowerCase().includes(debouncedSearchQuery.toLowerCase()) ?? false);
       const matchesCategory = !selectedCategory || product.category === selectedCategory;
       return matchesSearch && matchesCategory;
     });
