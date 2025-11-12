@@ -243,12 +243,12 @@ function ViewOrderDialog({
 
 export default function AdminOrders() {
   const [searchQuery, setSearchQuery] = useState("");
-  const [, navigate] = useLocation();
+  const [location, navigate] = useLocation();
   const { user, isAuthenticated, isLoading: authLoading } = useAuth();
   const { formatPrice } = useLanguage();
   
   // Parse URL params to get orderId for dialog
-  const urlParams = new URLSearchParams(window.location.search);
+  const urlParams = new URLSearchParams(location.split('?')[1] || '');
   const orderIdFromUrl = urlParams.get('orderId');
   const [openOrderId, setOpenOrderId] = useState<string | null>(orderIdFromUrl);
 
@@ -263,12 +263,12 @@ export default function AdminOrders() {
     enabled: isAuthenticated && (user?.role === "admin" || user?.role === "super_admin"),
   });
   
-  // Sync openOrderId with URL params
+  // Sync openOrderId with URL params (wouter location hook)
   useEffect(() => {
-    const params = new URLSearchParams(window.location.search);
+    const params = new URLSearchParams(location.split('?')[1] || '');
     const orderId = params.get('orderId');
     setOpenOrderId(orderId);
-  }, [window.location.search]);
+  }, [location]);
   
   // Validate orderId exists in orders list, auto-close if invalid
   useEffect(() => {

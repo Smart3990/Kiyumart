@@ -197,10 +197,12 @@ export default function LiveTracking() {
     address: order.deliveryAddress,
   };
 
+  // Calculate rider rating from deliveries (no rider review system yet)
+  // TODO: Implement proper rider rating system with buyer feedback
   const riderInfo = rider ? {
     name: rider.name,
     profileImage: rider.profileImage,
-    rating: 4.8, // TODO: Fetch actual rating from reviews
+    rating: undefined, // No rider rating system implemented - future enhancement
     vehicleType: rider.vehicleInfo?.type || "Motorcycle",
   } : undefined;
 

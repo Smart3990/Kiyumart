@@ -401,8 +401,12 @@ export default function ChatPageConnected() {
     enabled: !authLoading && !!user,
   });
 
-  // Auto-select disabled to prevent infinite loop - users must manually select contact
-  // TODO: Fix and re-enable auto-selection for non-admin users
+  // Auto-select first contact for non-admin users (prevents empty chat state)
+  useEffect(() => {
+    if (!selectedContact && contacts.length > 0 && user?.role !== "admin") {
+      setSelectedContact(contacts[0]);
+    }
+  }, [contacts, selectedContact, user?.role]);
 
   const { data: chatMessages = [] } = useQuery<ChatMessage[]>({
     queryKey: ["/api/messages", selectedContact?.id],
