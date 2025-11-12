@@ -3,7 +3,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Upload, Link as LinkIcon, Loader2, X, Image, Video } from "lucide-react";
+import { Progress } from "@/components/ui/progress";
+import { Upload, Link as LinkIcon, Loader2, X, Image, Video, CheckCircle } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
 interface MediaUploadInputProps {
@@ -30,12 +31,21 @@ export default function MediaUploadInput({
   disabled = false,
 }: MediaUploadInputProps) {
   const [isUploading, setIsUploading] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState(0);
+  const [validationStatus, setValidationStatus] = useState("");
+  const [fileInfo, setFileInfo] = useState<{ name: string; size: string } | null>(null);
   const [activeTab, setActiveTab] = useState<"url" | "upload">("url");
   const { toast } = useToast();
 
+  const formatFileSize = (bytes: number): string => {
+    if (bytes < 1024) return `${bytes} B`;
+    if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
+    return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+  };
+
   const validateImageDimensions = (file: File): Promise<{ width: number; height: number }> => {
     return new Promise((resolve, reject) => {
-      const img = new Image();
+      const img = new window.Image();
       const objectURL = URL.createObjectURL(file);
 
       img.onload = function() {
@@ -76,9 +86,16 @@ export default function MediaUploadInput({
     const file = e.target.files?.[0];
     if (!file) return;
 
+    // Reset states
+    setUploadProgress(0);
+    setValidationStatus("");
+    setFileInfo({ name: file.name, size: formatFileSize(file.size) });
+
     // Validate file type
     const isImage = file.type.startsWith("image/");
     const isVideo = file.type.startsWith("video/");
+
+    setValidationStatus("Checking file type...");
 
     if (accept === "image" && !isImage) {
       toast({
@@ -86,6 +103,7 @@ export default function MediaUploadInput({
         description: "Please upload an image file",
         variant: "destructive",
       });
+      setFileInfo(null);
       return;
     }
 
@@ -95,23 +113,27 @@ export default function MediaUploadInput({
         description: "Please upload a video file",
         variant: "destructive",
       });
+      setFileInfo(null);
       return;
     }
 
     // Validate file size (max 10MB for images, 30MB for videos)
-    const maxSize = accept === "video" ? 30 * 1024 * 1024 : 10 * 1024 * 1024;
+    setValidationStatus("Checking file size...");
+    const maxSize = isVideo ? 30 * 1024 * 1024 : 10 * 1024 * 1024;
     if (file.size > maxSize) {
       toast({
         title: "File too large",
-        description: `Maximum size is ${accept === "video" ? "30MB" : "10MB"}`,
+        description: `File is ${formatFileSize(file.size)}. Maximum size is ${isVideo ? "30MB" : "10MB"}`,
         variant: "destructive",
       });
+      setFileInfo(null);
       return;
     }
 
     // Validate 4K image dimensions (3840x2160 minimum)
     if (isImage) {
       try {
+        setValidationStatus("Checking image dimensions...");
         const { width, height } = await validateImageDimensions(file);
         if (width < 3840 || height < 2160) {
           toast({
@@ -120,14 +142,17 @@ export default function MediaUploadInput({
             variant: "destructive",
           });
           e.target.value = "";
+          setFileInfo(null);
           return;
         }
+        setValidationStatus(`✓ Image validated (${width}×${height}px)`);
       } catch (error) {
         toast({
           title: "Validation failed",
           description: "Could not validate image dimensions",
           variant: "destructive",
         });
+        setFileInfo(null);
         return;
       }
     }
@@ -135,6 +160,7 @@ export default function MediaUploadInput({
     // Validate video duration (under 30 seconds)
     if (isVideo) {
       try {
+        setValidationStatus("Checking video duration...");
         const duration = await validateVideoDuration(file);
         if (duration >= 30) {
           toast({
@@ -143,50 +169,96 @@ export default function MediaUploadInput({
             variant: "destructive",
           });
           e.target.value = "";
+          setFileInfo(null);
           return;
         }
+        setValidationStatus(`✓ Video validated (${duration.toFixed(1)}s)`);
       } catch (error) {
         toast({
           title: "Validation failed",
           description: "Could not validate video duration",
           variant: "destructive",
         });
+        setFileInfo(null);
         return;
       }
     }
 
     setIsUploading(true);
+    setValidationStatus("Uploading to cloud storage...");
 
     try {
       const formData = new FormData();
       formData.append("file", file);
 
       const endpoint = isVideo ? "/api/upload/video" : "/api/upload/image";
-      const res = await fetch(endpoint, {
-        method: "POST",
-        body: formData,
+      
+      // Use XMLHttpRequest for upload progress tracking
+      const uploadPromise = new Promise<string>((resolve, reject) => {
+        const xhr = new XMLHttpRequest();
+
+        xhr.upload.addEventListener("progress", (e) => {
+          if (e.lengthComputable) {
+            const percentComplete = Math.round((e.loaded / e.total) * 100);
+            setUploadProgress(percentComplete);
+          }
+        });
+
+        xhr.addEventListener("load", () => {
+          if (xhr.status >= 200 && xhr.status < 300) {
+            try {
+              const data = JSON.parse(xhr.responseText);
+              resolve(data.url);
+            } catch (error) {
+              reject(new Error("Invalid response from server"));
+            }
+          } else {
+            try {
+              const error = JSON.parse(xhr.responseText);
+              reject(new Error(error.error || "Upload failed"));
+            } catch {
+              reject(new Error(`Upload failed with status ${xhr.status}`));
+            }
+          }
+        });
+
+        xhr.addEventListener("error", () => {
+          reject(new Error("Network error during upload"));
+        });
+
+        xhr.addEventListener("abort", () => {
+          reject(new Error("Upload cancelled"));
+        });
+
+        xhr.open("POST", endpoint);
+        xhr.send(formData);
       });
 
-      if (!res.ok) {
-        const error = await res.json();
-        throw new Error(error.error || "Upload failed");
-      }
+      const url = await uploadPromise;
+      onChange(url);
 
-      const data = await res.json();
-      onChange(data.url);
-
+      setValidationStatus("✓ Upload complete!");
       toast({
         title: "Upload successful",
         description: `${isVideo ? "Video" : "Image"} uploaded successfully`,
       });
+
+      // Clear status after a short delay
+      setTimeout(() => {
+        setValidationStatus("");
+        setFileInfo(null);
+      }, 2000);
     } catch (error: any) {
       toast({
         title: "Upload failed",
         description: error.message,
         variant: "destructive",
       });
+      setValidationStatus("");
+      setFileInfo(null);
     } finally {
       setIsUploading(false);
+      setUploadProgress(0);
       e.target.value = ""; // Reset input
     }
   };
@@ -298,6 +370,37 @@ export default function MediaUploadInput({
               </Button>
             )}
           </div>
+
+          {fileInfo && (
+            <div className="text-xs text-muted-foreground">
+              <span className="font-medium">{fileInfo.name}</span>
+              <span className="mx-2">•</span>
+              <span>{fileInfo.size}</span>
+            </div>
+          )}
+
+          {validationStatus && (
+            <div className="flex items-start gap-2 text-xs">
+              {validationStatus.startsWith('✓') ? (
+                <CheckCircle className="h-4 w-4 text-green-600 dark:text-green-400 shrink-0 mt-0.5" />
+              ) : (
+                <Loader2 className="h-4 w-4 animate-spin shrink-0 mt-0.5" />
+              )}
+              <span className={validationStatus.startsWith('✓') ? "text-green-600 dark:text-green-400" : ""}>
+                {validationStatus}
+              </span>
+            </div>
+          )}
+
+          {isUploading && uploadProgress > 0 && (
+            <div className="space-y-1">
+              <Progress value={uploadProgress} className="h-2" />
+              <p className="text-xs text-muted-foreground text-center">
+                {uploadProgress}% uploaded
+              </p>
+            </div>
+          )}
+
           {value && (
             <p className="text-xs text-muted-foreground break-all">
               Current: {value}
