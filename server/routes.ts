@@ -4010,7 +4010,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         console.log(`🎥 ${user.name} joined group call ${callId}`);
 
         // Notify all existing participants about the new joiner
-        for (const participantId of call.participants) {
+        for (const participantId of Array.from(call.participants)) {
           if (participantId !== userId) {
             io.to(participantId).emit("group_call_participant_joined", {
               callId,
@@ -4092,7 +4092,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       console.log(`🎥 User ${userId} left group call ${callId}`);
 
       // Notify remaining participants
-      for (const participantId of call.participants) {
+      for (const participantId of Array.from(call.participants)) {
         io.to(participantId).emit("group_call_participant_left", {
           callId,
           userId,
@@ -4124,7 +4124,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       console.log(`🎥 Group call ${callId} ended by host ${userId}`);
 
       // Notify all participants
-      for (const participantId of call.participants) {
+      for (const participantId of Array.from(call.participants)) {
         io.to(participantId).emit("group_call_ended", { callId });
       }
 

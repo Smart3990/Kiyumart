@@ -27,7 +27,7 @@ export default function SellerOrders() {
   const { data: orders = [], isLoading } = useQuery<Order[]>({
     queryKey: ["/api/orders", "seller"],
     queryFn: async () => {
-      const res = await fetch("/api/orders?role=seller");
+      const res = await fetch("/api/orders?context=seller");
       if (!res.ok) throw new Error("Failed to fetch orders");
       return res.json();
     },
