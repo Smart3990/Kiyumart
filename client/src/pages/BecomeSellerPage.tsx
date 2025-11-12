@@ -528,10 +528,10 @@ export default function BecomeSellerPage() {
                                     <Checkbox
                                       id={`${field.name}-${option}`}
                                       checked={
-                                        form.watch("storeTypeMetadata")[field.name]?.includes(option) || false
+                                        (form.watch("storeTypeMetadata")?.[field.name] as string[])?.includes(option) || false
                                       }
                                       onCheckedChange={(checked) => {
-                                        const current = form.watch("storeTypeMetadata")[field.name] || [];
+                                        const current = (form.watch("storeTypeMetadata")?.[field.name] as string[]) || [];
                                         const updated = checked
                                           ? [...current, option]
                                           : current.filter((v: string) => v !== option);
@@ -571,7 +571,7 @@ export default function BecomeSellerPage() {
                                     [field.name]: value,
                                   });
                                 }}
-                                value={form.watch("storeTypeMetadata")[field.name] || ""}
+                                value={(form.watch("storeTypeMetadata")?.[field.name] as string) || ""}
                               >
                                 <SelectTrigger data-testid={`select-${field.name}`}>
                                   <SelectValue placeholder={field.placeholder || `Select ${field.label}`} />
@@ -599,7 +599,7 @@ export default function BecomeSellerPage() {
                               </FormLabel>
                               <Textarea
                                 placeholder={field.placeholder}
-                                value={form.watch("storeTypeMetadata")[field.name] || ""}
+                                value={(form.watch("storeTypeMetadata")?.[field.name] as string) || ""}
                                 onChange={(e) => {
                                   form.setValue("storeTypeMetadata", {
                                     ...form.watch("storeTypeMetadata"),
@@ -624,7 +624,7 @@ export default function BecomeSellerPage() {
                               <Input
                                 type={field.type === "number" ? "number" : "text"}
                                 placeholder={field.placeholder}
-                                value={form.watch("storeTypeMetadata")[field.name] || ""}
+                                value={(form.watch("storeTypeMetadata")?.[field.name] as string | number) || ""}
                                 onChange={(e) => {
                                   const value = field.type === "number" ? Number(e.target.value) : e.target.value;
                                   form.setValue("storeTypeMetadata", {

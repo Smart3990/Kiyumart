@@ -19,7 +19,7 @@ import { uploadToCloudinary, uploadWithMetadata, uploadWith4KEnhancement } from 
 import { getExchangeRates, convertCurrency, SUPPORTED_CURRENCIES } from "./currency";
 import multer from "multer";
 import sharp from "sharp";
-import { insertUserSchema, insertProductSchema, insertDeliveryZoneSchema, insertOrderSchema, insertWishlistSchema, insertReviewSchema, insertBannerCollectionSchema, insertMarketplaceBannerSchema, insertFooterPageSchema, vehicleInfoSchema } from "@shared/schema";
+import { insertUserSchema, insertProductSchema, insertDeliveryZoneSchema, insertOrderSchema, insertWishlistSchema, insertReviewSchema, insertBannerCollectionSchema, insertMarketplaceBannerSchema, insertFooterPageSchema, vehicleInfoSchema, type User } from "@shared/schema";
 import { getStoreTypeSchema, type StoreType, STORE_TYPES } from "@shared/storeTypes";
 
 const upload = multer({ storage: multer.memoryStorage() });
@@ -547,8 +547,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(404).json({ error: "User not found" });
       }
       
-      // For sellers: Create store BEFORE approving to ensure atomicity
+      // CRITICAL: Validate role-specific requirements before approval
       if (user.role === "seller") {
+        if (!user.storeType) {
+          return res.status(400).json({ 
+            error: "Cannot approve seller without store type",
+            details: "The seller must have a store type set. Please ask them to update their profile or set it manually before approval."
+          });
+        }
+        
+        if (!STORE_TYPES.includes(user.storeType)) {
+          return res.status(400).json({ 
+            error: "Invalid store type",
+            details: `Store type "${user.storeType}" is not valid. Valid types: ${STORE_TYPES.join(", ")}`
+          });
+        }
+        
+        // For sellers: Create store BEFORE approving to ensure atomicity
         try {
           // Use centralized helper (requireApproval=false allows creation before approval)
           await storage.ensureStoreForSeller(user.id, { requireApproval: false });
@@ -559,6 +574,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
           return res.status(400).json({ 
             error: `Cannot approve seller: ${storeError.message}`,
             details: "Please ensure the seller has provided all required information (especially store type) before approval."
+          });
+        }
+      }
+      
+      if (user.role === "rider") {
+        if (!user.vehicleInfo || !user.vehicleInfo.type) {
+          return res.status(400).json({ 
+            error: "Cannot approve rider without vehicle information",
+            details: "The rider must have vehicle type and details set. Please ask them to update their profile before approval."
           });
         }
       }
@@ -704,7 +728,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
       };
 
       // Handle rider-specific fields - validate and coerce into vehicleInfo JSONB
-      if (validatedData.role === "rider" && vehicleType) {
+      if (validatedData.role === "rider") {
+        if (!vehicleType) {
+          return res.status(400).json({ 
+            error: "Vehicle type is required for rider accounts" 
+          });
+        }
+        
         const vehiclePayload = {
           type: vehicleType,
           color: vehicleColor,
@@ -722,8 +752,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
         userData.vehicleInfo = parsedVehicle.data;
       }
 
-      // Handle seller-specific fields
-      if (validatedData.role === "seller" && storeType) {
+      // Handle seller-specific fields - ENFORCE storeType requirement
+      if (validatedData.role === "seller") {
+        if (!storeType) {
+          return res.status(400).json({ 
+            error: "Store type is required for seller accounts. Please select a store type to continue." 
+          });
+        }
+        
+        if (!STORE_TYPES.includes(storeType)) {
+          return res.status(400).json({ error: "Invalid store type" });
+        }
+        
         userData.storeType = storeType;
         userData.storeName = storeName;
         userData.storeDescription = storeDescription;
@@ -803,7 +843,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.patch("/api/users/:id", requireAuth, requireRole("admin", "super_admin"), async (req: AuthRequest, res) => {
     try {
-      const allowedFields = ['name', 'email', 'phone', 'role', 'isActive', 'isApproved', 'vehicleInfo'];
+      const allowedFields = ['name', 'email', 'phone', 'role', 'isActive', 'isApproved', 'vehicleInfo', 'storeType', 'storeName', 'storeDescription', 'storeBanner'];
       const updateData: Record<string, any> = {};
       
       for (const field of allowedFields) {
@@ -825,6 +865,40 @@ export async function registerRoutes(app: Express): Promise<Server> {
         const existingUser = await storage.getUserByEmail(updateData.email);
         if (existingUser && existingUser.id !== req.params.id) {
           return res.status(400).json({ error: "Email already exists" });
+        }
+      }
+      
+      // CRITICAL: Get user to validate role-specific requirements
+      const currentUser = await storage.getUser(req.params.id);
+      if (!currentUser) {
+        return res.status(404).json({ error: "User not found" });
+      }
+      
+      // ENFORCE: Sellers cannot lose storeType if approved
+      if (currentUser.role === "seller" && currentUser.isApproved) {
+        if ('storeType' in updateData && !updateData.storeType) {
+          return res.status(400).json({ 
+            error: "Cannot remove store type from approved seller",
+            details: "Approved sellers must maintain a valid store type. To change it, provide a new valid type."
+          });
+        }
+        
+        // Validate storeType if being updated
+        if (updateData.storeType && !STORE_TYPES.includes(updateData.storeType)) {
+          return res.status(400).json({ 
+            error: "Invalid store type",
+            details: `Valid types: ${STORE_TYPES.join(", ")}`
+          });
+        }
+      }
+      
+      // ENFORCE: Riders cannot lose vehicleInfo if approved
+      if (currentUser.role === "rider" && currentUser.isApproved) {
+        if ('vehicleInfo' in updateData && (!updateData.vehicleInfo || !updateData.vehicleInfo.type)) {
+          return res.status(400).json({ 
+            error: "Cannot remove vehicle information from approved rider",
+            details: "Approved riders must maintain valid vehicle information."
+          });
         }
       }
       
@@ -2891,6 +2965,72 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.json({ count });
     } catch (error: any) {
       res.status(400).json({ error: error.message });
+    }
+  });
+
+  // ============ Admin Audit Endpoints ============
+  app.get("/api/admin/audit/incomplete-sellers", requireAuth, requireRole("admin", "super_admin"), async (req, res) => {
+    try {
+      const sellers = await storage.getUsersByRole("seller");
+      
+      // Enhanced criteria: check ALL critical seller attributes
+      const incompleteSellers = sellers.filter((seller: User) => {
+        const missing = [];
+        if (!seller.storeType) missing.push("storeType");
+        if (!seller.storeName) missing.push("storeName");
+        if (!seller.storeDescription) missing.push("storeDescription");
+        return missing.length > 0;
+      });
+      
+      const sellerSummary = incompleteSellers.map((seller: User) => {
+        const missingFields = [];
+        if (!seller.storeType) missingFields.push("storeType");
+        if (!seller.storeName) missingFields.push("storeName");
+        if (!seller.storeDescription) missingFields.push("storeDescription");
+        
+        return {
+          id: seller.id,
+          name: seller.name,
+          email: seller.email,
+          isApproved: seller.isApproved,
+          isActive: seller.isActive,
+          storeType: seller.storeType,
+          storeName: seller.storeName,
+          storeDescription: seller.storeDescription,
+          missingFields,
+          severity: !seller.storeType ? "CRITICAL" : "WARNING", // Missing storeType blocks payment setup
+          canBeApproved: !!seller.storeType, // Can only approve if storeType exists
+        };
+      });
+      
+      const critical = sellerSummary.filter(s => s.severity === "CRITICAL");
+      const warnings = sellerSummary.filter(s => s.severity === "WARNING");
+      
+      res.json({
+        summary: {
+          total: sellers.length,
+          complete: sellers.length - incompleteSellers.length,
+          incomplete: incompleteSellers.length,
+          critical: critical.length,
+          warnings: warnings.length,
+        },
+        incompleteSellers: sellerSummary,
+        remediation: {
+          critical: critical.length > 0 
+            ? `${critical.length} seller(s) missing CRITICAL storeType - they cannot access payment setup, create products, or be approved. Action required: Update their profile with a store type via Admin User Edit or ask them to complete their profile.`
+            : "No critical issues!",
+          warnings: warnings.length > 0
+            ? `${warnings.length} seller(s) have incomplete profiles (missing storeName/storeDescription). While they can function, complete profiles improve marketplace quality.`
+            : "All sellers have complete profiles!",
+          actionItems: [
+            critical.length > 0 && "1. Navigate to Admin > Users, find incomplete sellers, and add missing storeType",
+            warnings.length > 0 && "2. Encourage sellers to complete their store description for better visibility",
+            incompleteSellers.length === 0 && "✅ All sellers have complete profiles - no action needed!"
+          ].filter(Boolean),
+        }
+      });
+    } catch (error: any) {
+      res.status(500).json({ error: error.message });
     }
   });
 
