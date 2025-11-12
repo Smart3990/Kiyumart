@@ -9,7 +9,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Loader2, Search, Package, Edit, Trash2, Plus, Eye } from "lucide-react";
+import { Loader2, Search, Package, Edit, Trash2, Plus, Eye, AlertCircle, RotateCcw } from "lucide-react";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage, FormDescription } from "@/components/ui/form";
@@ -570,10 +570,12 @@ export default function SellerProducts() {
     }
   }, [isAuthenticated, authLoading, user, navigate]);
 
-  const { data: products = [], isLoading } = useQuery<Product[]>({
+  const { data: products = [], isLoading, isError, error, refetch } = useQuery<Product[]>({
     queryKey: ["/api/products"],
     enabled: isAuthenticated && user?.role === "seller",
     select: (data) => data.filter(p => p.sellerId === user?.id),
+    retry: 2,
+    retryDelay: 1000,
   });
 
   const filteredProducts = products.filter(p => 
@@ -613,9 +615,38 @@ export default function SellerProducts() {
           </div>
         </div>
 
-        {isLoading ? (
-          <div className="flex justify-center py-12">
-            <Loader2 className="h-8 w-8 animate-spin text-primary" />
+        {isError ? (
+          <Card className="p-8">
+            <div className="text-center">
+              <AlertCircle className="h-12 w-12 mx-auto text-destructive mb-4" />
+              <h3 className="text-lg font-semibold mb-2">Failed to Load Products</h3>
+              <p className="text-muted-foreground mb-4">
+                {error instanceof Error ? error.message : "An error occurred while loading your products"}
+              </p>
+              <Button onClick={() => refetch()} data-testid="button-retry-products">
+                <RotateCcw className="mr-2 h-4 w-4" />
+                Try Again
+              </Button>
+            </div>
+          </Card>
+        ) : isLoading ? (
+          <div className="grid gap-4">
+            {[1, 2, 3].map((i) => (
+              <Card key={i} className="p-4">
+                <div className="flex items-start gap-4 animate-pulse">
+                  <div className="w-24 h-24 bg-muted rounded-lg" />
+                  <div className="flex-1 space-y-3">
+                    <div className="h-6 bg-muted rounded w-1/3" />
+                    <div className="h-4 bg-muted rounded w-2/3" />
+                    <div className="h-4 bg-muted rounded w-1/2" />
+                    <div className="flex gap-2">
+                      <div className="h-6 bg-muted rounded w-20" />
+                      <div className="h-6 bg-muted rounded w-20" />
+                    </div>
+                  </div>
+                </div>
+              </Card>
+            ))}
           </div>
         ) : (
           <div className="grid gap-4">
