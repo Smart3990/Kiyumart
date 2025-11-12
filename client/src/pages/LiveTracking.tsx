@@ -80,27 +80,18 @@ export default function LiveTracking() {
     enabled: !!order?.riderId,
   });
 
-  // Fetch rider's completed deliveries for rating calculation
-  // TODO: Replace with proper rider review system when implemented
-  const { data: riderDeliveries = [] } = useQuery<any[]>({
-    queryKey: ["/api/orders", "rider", order?.riderId, "completed"],
+  // Fetch rider's average rating from actual reviews
+  const { data: riderRating } = useQuery<{ averageRating: number }>({
+    queryKey: ["/api/riders", order?.riderId, "rating"],
     queryFn: async () => {
-      const res = await fetch(`/api/orders?riderId=${order?.riderId}&status=delivered`, {
+      const res = await fetch(`/api/riders/${order?.riderId}/rating`, {
         credentials: "include",
       });
-      if (!res.ok) return [];
+      if (!res.ok) return { averageRating: 0 };
       return res.json();
     },
     enabled: !!order?.riderId,
   });
-
-  // Calculate rider rating based on delivery experience
-  const calculateRiderRating = (deliveryCount: number): number => {
-    if (deliveryCount === 0) return 4.0; // New rider
-    if (deliveryCount <= 10) return 4.3; // Beginner
-    if (deliveryCount <= 50) return 4.6; // Experienced
-    return 4.8; // Veteran (50+ deliveries)
-  };
 
   // Initialize Socket.IO for real-time updates
   useEffect(() => {
@@ -219,12 +210,11 @@ export default function LiveTracking() {
     address: order.deliveryAddress,
   };
 
-  // Calculate rider rating from actual delivery data (data-driven approach)
-  // Uses completed delivery count as proxy for reliability until review system exists
+  // Use actual rider rating from reviews (data-driven from real customer feedback)
   const riderInfo = rider ? {
     name: rider.name,
     profileImage: rider.profileImage,
-    rating: calculateRiderRating(riderDeliveries.length),
+    rating: riderRating?.averageRating || undefined, // Real review data, undefined if no reviews yet
     vehicleType: rider.vehicleInfo?.type || "Motorcycle",
   } : undefined;
 

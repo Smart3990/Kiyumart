@@ -19,7 +19,7 @@ import { uploadToCloudinary, uploadWithMetadata, uploadWith4KEnhancement } from 
 import { getExchangeRates, convertCurrency, SUPPORTED_CURRENCIES } from "./currency";
 import multer from "multer";
 import sharp from "sharp";
-import { insertUserSchema, insertProductSchema, insertDeliveryZoneSchema, insertOrderSchema, insertWishlistSchema, insertReviewSchema, insertBannerCollectionSchema, insertMarketplaceBannerSchema, insertFooterPageSchema, vehicleInfoSchema, type User } from "@shared/schema";
+import { insertUserSchema, insertProductSchema, insertDeliveryZoneSchema, insertOrderSchema, insertWishlistSchema, insertReviewSchema, insertRiderReviewSchema, insertBannerCollectionSchema, insertMarketplaceBannerSchema, insertFooterPageSchema, vehicleInfoSchema, type User } from "@shared/schema";
 import { getStoreTypeSchema, type StoreType, STORE_TYPES } from "@shared/storeTypes";
 
 const upload = multer({ storage: multer.memoryStorage() });
@@ -1579,6 +1579,55 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const reviews = await storage.getProductReviews(req.params.productId);
       res.json(reviews);
+    } catch (error: any) {
+      res.status(400).json({ error: error.message });
+    }
+  });
+
+  // ============ Rider Review Routes ============
+  app.post("/api/rider-reviews", requireAuth, async (req: AuthRequest, res) => {
+    try {
+      const validatedData = insertRiderReviewSchema.parse(req.body);
+      
+      // Verify user received delivery from this rider for this order
+      const order = await storage.getOrder(validatedData.orderId);
+      if (!order) {
+        return res.status(404).json({ error: "Order not found" });
+      }
+      if (order.buyerId !== req.user!.id) {
+        return res.status(403).json({ error: "You can only review riders for your own orders" });
+      }
+      if (order.riderId !== validatedData.riderId) {
+        return res.status(400).json({ error: "This rider did not deliver your order" });
+      }
+      if (order.status !== "delivered") {
+        return res.status(400).json({ error: "You can only review completed deliveries" });
+      }
+      
+      const review = await storage.createRiderReview({
+        ...validatedData,
+        userId: req.user!.id,
+      });
+      
+      res.json(review);
+    } catch (error: any) {
+      res.status(400).json({ error: error.message });
+    }
+  });
+
+  app.get("/api/riders/:riderId/reviews", async (req, res) => {
+    try {
+      const reviews = await storage.getRiderReviews(req.params.riderId);
+      res.json(reviews);
+    } catch (error: any) {
+      res.status(400).json({ error: error.message });
+    }
+  });
+
+  app.get("/api/riders/:riderId/rating", async (req, res) => {
+    try {
+      const avgRating = await storage.getRiderAverageRating(req.params.riderId);
+      res.json({ averageRating: avgRating });
     } catch (error: any) {
       res.status(400).json({ error: error.message });
     }

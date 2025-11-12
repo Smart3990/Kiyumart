@@ -383,6 +383,19 @@ export const reviews = pgTable("reviews", {
   createdAt: timestamp("created_at").defaultNow(),
 });
 
+export const riderReviews = pgTable("rider_reviews", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  riderId: varchar("rider_id").notNull().references(() => users.id),
+  userId: varchar("user_id").notNull().references(() => users.id), // Buyer who left the review
+  orderId: varchar("order_id").notNull().references(() => orders.id), // Delivery order being reviewed
+  rating: integer("rating").notNull(), // 1-5 stars
+  comment: text("comment"),
+  isApproved: boolean("is_approved").default(true), // Admin moderation
+  createdAt: timestamp("created_at").defaultNow(),
+}, (table) => ({
+  uniqueUserOrder: unique("rider_review_user_order_unique").on(table.userId, table.orderId),
+}));
+
 export const notifications = pgTable("notifications", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
   userId: varchar("user_id").notNull().references(() => users.id),
@@ -730,6 +743,13 @@ export const insertReviewSchema = createInsertSchema(reviews).pick({
   isVerifiedPurchase: true,
 });
 
+export const insertRiderReviewSchema = createInsertSchema(riderReviews).pick({
+  riderId: true,
+  orderId: true,
+  rating: true,
+  comment: true,
+});
+
 export const insertNotificationSchema = createInsertSchema(notifications).pick({
   userId: true,
   type: true,
@@ -854,6 +874,9 @@ export type DeliveryTracking = typeof deliveryTracking.$inferSelect;
 
 export type InsertReview = z.infer<typeof insertReviewSchema>;
 export type Review = typeof reviews.$inferSelect;
+
+export type InsertRiderReview = z.infer<typeof insertRiderReviewSchema>;
+export type RiderReview = typeof riderReviews.$inferSelect;
 
 export type InsertNotification = z.infer<typeof insertNotificationSchema>;
 export type Notification = typeof notifications.$inferSelect;

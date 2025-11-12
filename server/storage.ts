@@ -1,7 +1,7 @@
 import { db } from "../db/index";
 import { 
   users, products, orders, orderItems, deliveryZones, deliveryTracking,
-  chatMessages, transactions, platformSettings, cart, wishlist, reviews,
+  chatMessages, transactions, platformSettings, cart, wishlist, reviews, riderReviews,
   productVariants, heroBanners, coupons, bannerCollections, marketplaceBanners,
   stores, categoryFields, categories, notifications, mediaLibrary, footerPages,
   commissions, platformEarnings, roleFeatures,
@@ -9,7 +9,7 @@ import {
   type Order, type InsertOrder, type DeliveryZone, type InsertDeliveryZone,
   type ChatMessage, type InsertChatMessage, type Transaction, type PlatformSettings,
   type Cart, type Wishlist, type DeliveryTracking, type InsertDeliveryTracking,
-  type Review, type InsertReview, type ProductVariant, type HeroBanner,
+  type Review, type InsertReview, type RiderReview, type InsertRiderReview, type ProductVariant, type HeroBanner,
   type Coupon, type InsertCoupon, type BannerCollection, type InsertBannerCollection,
   type MarketplaceBanner, type InsertMarketplaceBanner, type Store, type CategoryField,
   type Category, type Notification, type InsertNotification, type MediaLibrary,
@@ -695,6 +695,38 @@ export class DbStorage implements IStorage {
       .where(eq(reviews.productId, productId))
       .orderBy(desc(reviews.createdAt));
     return result as Array<Review & { userName: string }>;
+  }
+
+  async createRiderReview(review: InsertRiderReview & { userId: string }): Promise<RiderReview> {
+    const [newReview] = await db.insert(riderReviews).values(review).returning();
+    return newReview;
+  }
+
+  async getRiderReviews(riderId: string): Promise<Array<RiderReview & { userName: string }>> {
+    const result = await db.select({
+      id: riderReviews.id,
+      riderId: riderReviews.riderId,
+      userId: riderReviews.userId,
+      orderId: riderReviews.orderId,
+      rating: riderReviews.rating,
+      comment: riderReviews.comment,
+      createdAt: riderReviews.createdAt,
+      userName: users.name,
+    })
+      .from(riderReviews)
+      .leftJoin(users, eq(riderReviews.userId, users.id))
+      .where(eq(riderReviews.riderId, riderId))
+      .orderBy(desc(riderReviews.createdAt));
+    return result as Array<RiderReview & { userName: string }>;
+  }
+
+  async getRiderAverageRating(riderId: string): Promise<number> {
+    const result = await db.select({
+      avgRating: sql<number>`avg(${riderReviews.rating})::float`,
+    })
+      .from(riderReviews)
+      .where(eq(riderReviews.riderId, riderId));
+    return result[0]?.avgRating || 0;
   }
 
   async addSellerReply(reviewId: string, reply: string): Promise<Review | undefined> {
